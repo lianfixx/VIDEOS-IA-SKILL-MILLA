@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "ejemplo-boutique",
+    "title": "Ejemplo: cinco beneficios de una firma boutique",
+    "content_domain": "legal"
+  },
+  "output": {
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "durationSeconds": 55
+  },
+  "quality": {
+    "particles_allowed": false,
+    "watermarks_allowed": false,
+    "allowed_image_providers": [
+      "kie"
+    ],
+    "minimum_transition_families": 4
+  },
+  "voice": {
+    "provider": "fish",
+    "reference_id": "",
+    "rejected_reference_ids": [],
+    "approval": {
+      "status": "pending",
+      "sample_path": "audio/voice-sample.mp3",
+      "sample_sha256": "",
+      "approved_by": "",
+      "approved_at": "",
+      "model": "",
+      "reference_id": ""
+    },
+    "model": ""
+  },
+  "assets": [
+    {
+      "id": "visual-01",
+      "path": "assets/visual-01.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-02",
+      "path": "assets/visual-02.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-03",
+      "path": "assets/visual-03.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-04",
+      "path": "assets/visual-04.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-05",
+      "path": "assets/visual-05.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-06",
+      "path": "assets/visual-06.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "visual-07",
+      "path": "assets/visual-07.png",
+      "sha256": "",
+      "kind": "image",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    },
+    {
+      "id": "narration",
+      "path": "audio/narration.mp3",
+      "sha256": "",
+      "kind": "audio",
+      "provider": "fish",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      },
+      "reference_id": ""
+    },
+    {
+      "id": "music",
+      "path": "audio/music.mp3",
+      "sha256": "",
+      "kind": "audio",
+      "provider": "kie",
+      "model": "",
+      "source": {
+        "type": "generated",
+        "url": "",
+        "license": "",
+        "rights_confirmed": false
+      },
+      "qa": {
+        "watermark": false,
+        "third_party_logo": false,
+        "particles": false,
+        "approved": false
+      }
+    }
+  ],
+  "scenes": [
+    {
+      "id": "scene-01",
+      "start": 0,
+      "end": 6.4,
+      "asset_ids": [
+        "visual-01"
+      ],
+      "title": "Una decisión a tiempo",
+      "theme": "ivory",
+      "transition": {
+        "family": "fade",
+        "durationSeconds": 0
+      }
+    },
+    {
+      "id": "scene-02",
+      "start": 6,
+      "end": 14.4,
+      "asset_ids": [
+        "visual-02"
+      ],
+      "title": "Prevención",
+      "theme": "ivory",
+      "transition": {
+        "family": "wipe",
+        "durationSeconds": 0.4
+      }
+    },
+    {
+      "id": "scene-03",
+      "start": 14,
+      "end": 22.4,
+      "asset_ids": [
+        "visual-03"
+      ],
+      "title": "Estrategia personal",
+      "theme": "ivory",
+      "transition": {
+        "family": "push",
+        "durationSeconds": 0.4
+      }
+    },
+    {
+      "id": "scene-04",
+      "start": 22,
+      "end": 30.4,
+      "asset_ids": [
+        "visual-04"
+      ],
+      "title": "Atención directa",
+      "theme": "ivory",
+      "transition": {
+        "family": "mask",
+        "durationSeconds": 0.4
+      }
+    },
+    {
+      "id": "scene-05",
+      "start": 30,
+      "end": 38.4,
+      "asset_ids": [
+        "visual-05"
+      ],
+      "title": "Visión integral",
+      "theme": "ivory",
+      "transition": {
+        "family": "depth",
+        "durationSeconds": 0.4
+      }
+    },
+    {
+      "id": "scene-06",
+      "start": 38,
+      "end": 47.4,
+      "asset_ids": [
+        "visual-06"
+      ],
+      "title": "Decisiones informadas",
+      "theme": "ivory",
+      "transition": {
+        "family": "pan",
+        "durationSeconds": 0.4
+      }
+    },
+    {
+      "id": "scene-07",
+      "start": 47,
+      "end": 55,
+      "asset_ids": [
+        "visual-07"
+      ],
+      "title": "MILLA ABOGADOS",
+      "theme": "navy",
+      "transition": {
+        "family": "zoom",
+        "durationSeconds": 0.4
+      }
+    }
+  ],
+  "sources": [],
+  "subtitleCues": [],
+  "subtitlesVerified": false,
+  "audio": {
+    "voice": "narration",
+    "music": "music",
+    "voiceVolume": 1,
+    "musicVolume": 0.12,
+    "sfx": []
+  },
+  "delivery": {
+    "video_path": "out/final.mp4"
+  }
+}

@@ -1,0 +1,24 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {isSafeAssetPath, validateManifest} from '../src/manifest-validation.mjs';
+const qa = {watermark:false,third_party_logo:false,particles:false,approved:true};
+const generated = (id,path=`assets/${id}.png`) => ({id,kind:'image',path,provider:'kie',source:{type:'generated',rights_confirmed:true},qa});
+const make = () => ({schema_version: 1, output: {width:1080,height:1920,fps:30,durationSeconds:10.4}, quality: {particles_allowed:false,watermarks_allowed:false,allowed_image_providers:['kie'],minimum_transition_families:4}, assets:[],scenes:['fade','wipe','push','mask','depth'].map((family,i)=>({id:`s${i}`,title:`Scene ${i}`,start:i*2,end:i*2+2.4,asset_ids:[],transition:{family,durationSeconds:i ? 0.4 : 0}}))});
+test('every encoded frame is covered and incoming is complete before outgoing ends',()=>{
+  const {total,scenes}=validateManifest(make());
+  assert.equal(total,312);
+  for(let frame=0;frame<total;frame++) assert.ok(scenes.some(s=>s.start<=frame&&s.end>frame));
+  for(let i=1;i<scenes.length;i++) assert.ok(scenes[i-1].end>=scenes[i].start+scenes[i].overlap);
+});
+test('rejects outgoing ending before mask can cover screen',()=>{const m=make();m.scenes[3].end=8.1;assert.throws(()=>validateManifest(m),/Hueco\/destello/);});
+test('rejects incomplete final frame coverage',()=>{const m=make();m.scenes[4].end=10.3;assert.throws(()=>validateManifest(m),/última escena/);});
+test('rejects repeated and unimplemented transition families',()=>{const m=make();m.scenes[3].transition.family='push';assert.throws(()=>validateManifest(m),/consecutivas/);m.scenes[3].transition.family='circle';assert.throws(()=>validateManifest(m),/no implementada/);});
+test('rejects inferred captions and image provider fallback',()=>{const m=make();m.subtitleCues=[{start:0,end:1,text:'Caption'}];assert.throws(()=>validateManifest(m),/verificación/);m.subtitleCues=[];m.assets=[{...generated('a'),provider:'chatgpt'}];assert.throws(()=>validateManifest(m),/Kie generado/);});
+test('only safe local public paths accepted',()=>{for(const path of ['../secret','https://x/a','/etc/passwd','a/../b','a\\b','a%2fsecret','data:image/x'])assert.equal(isSafeAssetPath(path),false,path);assert.equal(isSafeAssetPath('assets/casa.png'),true);});
+test('diagram edges must reference actual distinct nodes',()=>{const m=make();m.scenes[0].diagram={nodes:[{id:'a',label:'A',x:50,y:50}],edges:[{from:'a',to:'b'}]};assert.throws(()=>validateManifest(m),/arista/);});
+test('renaming an image ID cannot bypass uniqueness',()=>{const m=make();m.assets=[generated('a'),generated('b','assets/a.png')];m.scenes[0].asset_ids=['a'];m.scenes[1].asset_ids=['b'];assert.throws(()=>validateManifest(m),/otro ID/);});
+test('rejects colliding diagram nodes',()=>{const m=make();m.scenes[0].diagram={nodes:[{id:'a',label:'A',x:50,y:50},{id:'b',label:'B',x:51,y:50}],edges:[]};assert.throws(()=>validateManifest(m),/superponen/);});
+test('image plus diagram plus body cannot overlap lower safe zones',()=>{const m=make();m.assets=[generated('a')];Object.assign(m.scenes[0],{asset_ids:['a'],body:'Explanation',diagram:{nodes:[{id:'a',label:'A',x:50,y:50}],edges:[]}});assert.throws(()=>validateManifest(m),/zonas seguras/);});
+test('word highlight requires verified real intervals and exact cue text',()=>{const m=make();m.subtitlesVerified=true;m.subtitleCues=[{start:0,end:1,text:'Hola mundo',words:[{start:0,end:0.3,text:'Hola'},{start:0.4,end:0.8,text:'mundo'}]}];assert.throws(()=>validateManifest(m),/tiempos de palabra verificados/);m.wordTimestampsVerified=true;assert.doesNotThrow(()=>validateManifest(m));m.subtitleCues[0].words[1].start=0.2;assert.throws(()=>validateManifest(m),/Palabras solapadas/);m.subtitleCues[0].words[1].start=0.4;m.subtitleCues[0].words[1].text='todos';assert.throws(()=>validateManifest(m),/exactamente/);});
+test('real photography needs owned or licensed provenance and rights',()=>{const m=make();m.assets=[{...generated('a'),provider:'real-photo',source:{type:'owned',rights_confirmed:true}}];m.scenes[0].asset_ids=['a'];assert.doesNotThrow(()=>validateManifest(m));m.assets[0].source.rights_confirmed=false;assert.throws(()=>validateManifest(m),/derechos/);});
+test('a reduced transition profile needs a rationale and matches Python semantics',()=>{const m=make();m.quality.minimum_transition_families=2;assert.throws(()=>validateManifest(m),/rationale/);m.quality.transition_variety_rationale='Pieza breve y deliberadamente contenida.';assert.doesNotThrow(()=>validateManifest(m));});

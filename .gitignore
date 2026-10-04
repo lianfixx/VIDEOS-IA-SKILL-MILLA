@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+node_modules/
+out/
+productions/
+private/
+verification/
+*.mp4
+*.wav
+*.mp3
+*.mov
+*.pem
+*.key
+.DS_Store

@@ -1,0 +1,4 @@
+interface:
+  display_name: "MILLA Video Studio"
+  short_description: "Produce videos MILLA con guía, conexiones y revisión"
+  default_prompt: "Usa $milla-video-studio para producir y revisar este video con el estándar MILLA."
