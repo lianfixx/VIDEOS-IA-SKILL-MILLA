@@ -27,7 +27,7 @@ Esta tabla no certifica por sí sola adaptadores de API, renderizado, eliminaci�
 
 | Mejora | Criterio de aceptación | Situación |
 |---|---|---|
-| Registro de decisiones y aprobaciones | Cada voz, versión y regla tiene estado, evidencia y fecha; la V3 no aparece como aprobada sin decisión de Emi. | Requiere verificar la implementación y mantenerla por producción. |
+| Registro de decisiones y aprobaciones | Cada voz, versión y regla tiene estado, evidencia y fecha; la V3 no aparece como aprobada sin decisión expresa de la dirección creativa. | Requiere verificar la implementación y mantenerla por producción. |
 | Secretos y repositorio limpio | Variables de entorno o almacén de secretos; exclusiones adecuadas; revisión del diff y del historial antes de subir. Ninguna credencial real en fixtures o logs. | Control obligatorio en cada entrega. |
 | Manifiesto de producción | Guarda brief, guion, recursos, modelo, tarea, procedencia, hashes, tiempos y versiones sin secretos. Distingue desconocido de inferido. | Requiere verificar implementación y uso efectivo. |
 | Reanudación sin gasto duplicado | Una interrupción permite consultar tareas existentes y reutilizar activos válidos antes de crear otros. | Pendiente de prueba con adaptadores reales. |

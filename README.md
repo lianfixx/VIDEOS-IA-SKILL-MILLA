@@ -18,7 +18,7 @@ La referencia editorial aprobada es el Short de personas físicas. La nueva voz 
 | [Manual completo](MANUAL_COMPLETO.md) | Lectura portable para cualquier IA capaz de procesar el archivo |
 | `scripts/milla.py` dentro de la skill | Diagnóstico, proyecto, validación, auditoría MP4 y escaneo preventivo de secretos |
 | `scripts/providers.py` dentro de la skill | Kie Lite y Fish, simulación por defecto y estados para evitar reenvíos ciegos |
-| `assets/remotion-template` dentro de la skill | Compositor original para iniciar futuros montajes |
+| `assets/remotion-template` dentro de la skill | Compositor original que `init-project` copia a cada producción |
 | [Recapitulación](docs/RECAPITULACION.md) | Evolución, correcciones y evidencia disponible |
 | [Mejoras](docs/MEJORAS.md) | Prioridades y criterios de aceptación |
 | [Validación](docs/VALIDACION.md) | Qué se probó y qué sigue sin verificarse |

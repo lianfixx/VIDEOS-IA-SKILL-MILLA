@@ -1,14 +1,21 @@
 # Compositor Remotion: plantilla nueva
 
-Esta es una implementación original reutilizable, construida para este paquete. **No es el código original recuperado de los Shorts ni un render aprobado por Emi.** Traduce el estándar a controles editables; cada video necesita su propia dirección visual, escucha y revisión. No contiene imágenes comerciales, narración, pistas musicales, claves ni API de generación.
+Esta es una implementación original reutilizable, construida para este paquete. **No es el código original recuperado de los Shorts ni un render aprobado por la dirección creativa.** Traduce el estándar a controles editables; cada video necesita su propia dirección visual, escucha y revisión. No contiene imágenes comerciales, narración, pistas musicales, claves ni API de generación.
 
 ## Preparación
 
-1. Copiar `assets/remotion-template/` a la carpeta de trabajo del proyecto; mantener el original como plantilla. Excluir `node_modules/`, `out/` y medios de cualquier repositorio público.
-2. Instalar Node.js 22 o posterior y ejecutar `npm ci`. Las dependencias quedan fijadas por `package-lock.json`; Remotion y sus paquetes usan la misma versión exacta, `4.0.532`.
+1. Crear una producción autocontenida con `python3 /ruta/a/milla-video-studio/scripts/milla.py init-project /ruta/produccion --title "Tema"`. El comando copia esta plantilla y crea el manifiesto sin sobrescribir destinos existentes. Mantener la plantilla instalada como fuente inmutable y la producción fuera de repositorios públicos.
+2. Entrar en `/ruta/produccion`, instalar Node.js 22 o posterior y ejecutar `npm ci`. Las dependencias quedan fijadas por `package-lock.json`; Remotion y sus paquetes usan la misma versión exacta, `4.0.532`.
 3. Ejecutar `npm run typecheck` y `npm test`. Revisar la licencia vigente de Remotion según tamaño de empresa y tipo de uso; instalar el paquete no otorga automáticamente derechos para cualquier operación comercial.
-4. Colocar los medios aprobados en `public/`, conservando las rutas de `project.json`. Si un asset dice `assets/casa.png`, debe existir `public/assets/casa.png`. Nunca poner secretos en `public/`.
-5. Abrir `npm run studio` para inspeccionar. El demo predeterminado es silencioso, tipográfico y técnico, deliberadamente sin subtítulos inventados.
+4. Colocar cada medio aprobado bajo `public/`, conservando su ruta exacta de `project.json`. Si un asset declara `"path":"assets/casa.png"`, el único archivo válido es `/ruta/produccion/public/assets/casa.png`. El validador Python calcula el SHA-256 de ese archivo y Remotion lo carga mediante `staticFile("assets/casa.png")`.
+5. Validar desde cualquier directorio con `python3 /ruta/a/milla-video-studio/scripts/milla.py validate /ruta/produccion/project.json --allow-pending`; retirar `--allow-pending` antes del render completo. Después abrir `npm run studio` para inspeccionar. El demo predeterminado es silencioso, tipográfico y técnico, deliberadamente sin subtítulos inventados.
+
+Contrato único de ubicación:
+
+- `project.json`, `package.json`, `package-lock.json`, `src/` y `test/` viven en la raíz de la producción.
+- `assets[].path` y `voice.approval.sample_path` son rutas POSIX relativas a `public/`; no deben empezar por `public/`. Se rechazan rutas absolutas, URLs, barras inversas, segmentos vacíos, `.` o `..`, controles y `%`, `?` o `#`.
+- `public/assets/` contiene imágenes y `public/audio/` contiene muestra de voz, narración, música y SFX. No crear copias paralelas en `assets/` o `audio/` en la raíz: no son las que renderiza `staticFile()`.
+- `delivery.video_path` es relativo a la raíz de la producción y normalmente apunta a `out/final.mp4`. Nunca poner secretos en `public/`.
 
 ## Entrada: el mismo project.json
 
@@ -18,9 +25,10 @@ Pasar el manifiesto como objeto directo, sin envolverlo en otra propiedad:
 npm run render -- --props=project.json
 ```
 
-Produce `out/review.mp4` para revisión. El CLI oficial permite elegir otro nombre de salida:
+Produce `out/review.mp4` para revisión. Tras aprobarla, renderizar el archivo declarado por defecto en `delivery.video_path` con:
 
 ```bash
+npx remotion render src/index.ts MillaVideo out/final.mp4 --props=project.json --codec=h264 --audio-codec=aac --pixel-format=yuv420p
 npx remotion render src/index.ts MillaVideo out/corte-01.mp4 --props=project.json --codec=h264 --audio-codec=aac --pixel-format=yuv420p
 npx remotion still src/index.ts MillaVideo out/portada-candidata.png --props=project.json --frame=90
 ```
@@ -31,7 +39,7 @@ No confundir una portada candidata con una portada aprobada. Seleccionar el fram
 |---|---|
 | `schema_version` | `1` |
 | `output` | `width:1080`, `height:1920`, `fps:30`, `durationSeconds` positivo |
-| `assets` | IDs únicos, `path` relativo a `public/`, `kind`; imágenes con `provider:"kie"` |
+| `assets` | IDs únicos, `path` POSIX relativo a `public/`, `kind`; imágenes con `provider:"kie"`; Python verifica el mismo `public/<path>` que consume Remotion |
 | `scenes` | Array ordenado; cada escena tiene `id`, `start`, `end`, `asset_ids`, `title`, `transition` |
 | `scene.asset_ids` | Cero a tres imágenes; todas se muestran con `contain`, centradas; no se repiten entre escenas |
 | `scene.title` | Hasta 74 caracteres; título editorial, no transcripción automática |
@@ -108,7 +116,7 @@ La combinación de imagen + diagrama + `body` se rechaza porque excedería las z
 
 ## Fuentes primarias consultadas
 
-Registro de implementación inicial (4 de octubre de 2026): instalación de dependencias completada, `npm run typecheck` aprobado y nueve pruebas de validación aprobadas. El intento de `remotion still` compiló el bundle, pero **no produjo imagen**: el entorno devolvió un timeout del proxy al descargar Chrome y `uv_interface_addresses` al consultar interfaces del sistema. Por ello no se acredita aquí un render visual, compatibilidad de audio extremo a extremo ni aprobación estética. No se modificaron controles del entorno para sortear el bloqueo.
+Registro de implementación inicial (4 de octubre de 2026): instalación de dependencias completada, `npm run typecheck` aprobado y nueve pruebas iniciales. La revisión 1.0.1 amplió la suite a 16 pruebas e incorporó una prueba cruzada desde el validador Python. El intento de `remotion still` compiló el bundle, pero **no produjo imagen**: el entorno devolvió un timeout del proxy al descargar Chrome y `uv_interface_addresses` al consultar interfaces del sistema. Por ello no se acredita aquí un render visual, compatibilidad de audio extremo a extremo ni aprobación estética. No se modificaron controles del entorno para sortear el bloqueo.
 
 Consulta: 4 de octubre de 2026. Documentación oficial; revalidar cambios cuando se actualice la versión.
 

@@ -17,6 +17,7 @@ import urllib.request
 KIE_BASE = "https://api.kie.ai/api/v1/jobs/"
 FISH_TTS = "https://api.fish.audio/v1/tts"
 FISH_MODELS = ("s1", "s2-pro", "s2.1-pro", "s2.1-pro-free", "drama-3-preview")
+FISH_WAV_SAMPLE_RATE = 44100
 ASPECTS = ("1:1", "1:4", "1:8", "2:3", "3:2", "3:4", "4:1", "4:3", "4:5", "5:4", "8:1", "9:16", "16:9", "21:9", "auto")
 LIMIT = 128 * 1024 * 1024
 
@@ -209,14 +210,29 @@ def status(args):
 
 def tts(args):
     voice_id = safe_id(args.reference_id)
-    payload = {"text": read_text(args.text_file), "reference_id": voice_id, "format": "wav"}
+    payload = {
+        "text": read_text(args.text_file),
+        "reference_id": voice_id,
+        "format": "wav",
+        "sample_rate": FISH_WAV_SAMPLE_RATE,
+    }
     output = private_path(args.workspace, args.out)
     state_path = private_path(args.workspace, args.state)
+    if output.suffix.lower() != ".wav":
+        raise ProviderError("Fish output must use a .wav extension because this adapter requests WAV audio.")
     if output == state_path:
         raise ProviderError("Audio and state paths must differ.")
-    record = {"provider": "fish", "model": args.model, "voice_id": voice_id, "request_sha256": digest({"model": args.model, "body": payload}), "status": "dry_run"}
+    record = {
+        "provider": "fish",
+        "model": args.model,
+        "reference_id": voice_id,
+        "format": "wav",
+        "sample_rate_hz": FISH_WAV_SAMPLE_RATE,
+        "request_sha256": digest({"model": args.model, "body": payload}),
+        "status": "dry_run",
+    }
     if not args.execute:
-        return {k: v for k, v in record.items() if k != "voice_id"}
+        return {k: v for k, v in record.items() if k != "reference_id"}
     if output.exists():
         raise ProviderError("Output already exists; choose another path.")
     key = secret("FISH_API_KEY")
@@ -274,7 +290,7 @@ def parser():
     t.add_argument("--text-file", required=True)
     t.add_argument("--reference-id", required=True)
     t.add_argument("--model", choices=FISH_MODELS, required=True)
-    t.add_argument("--out", required=True)
+    t.add_argument("--out", required=True, help="Relative .wav output path; this adapter requests WAV from Fish")
     t.add_argument("--state", required=True)
     t.set_defaults(handler=tts)
     d = commands.add_parser("download")

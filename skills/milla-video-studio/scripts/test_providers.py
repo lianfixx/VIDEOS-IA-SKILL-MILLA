@@ -96,8 +96,23 @@ class ProvidersTest(unittest.TestCase):
         with patch.object(p, "request", return_value=wav) as mocked:
             p.tts(self.tts_args())
         self.assertEqual(mocked.call_args.args[4]["model"], "s2.1-pro-free")
+        self.assertEqual(mocked.call_args.args[4]["Accept"], "audio/wav")
         self.assertEqual(mocked.call_args.args[2]["reference_id"], "voice-123")
+        self.assertEqual(mocked.call_args.args[2]["format"], "wav")
+        self.assertEqual(mocked.call_args.args[2]["sample_rate"], 44100)
         self.assertEqual((self.root / "voice.wav").read_bytes(), wav)
+        state = json.loads((self.root / "tts.json").read_text())
+        self.assertEqual(state["reference_id"], "voice-123")
+        self.assertEqual(state["format"], "wav")
+        self.assertEqual(state["sample_rate_hz"], 44100)
+
+    def test_fish_refuses_extension_that_disagrees_with_requested_format(self):
+        args = self.args("fish-tts", "--text-file", str(self.prompt), "--reference-id", "voice-123",
+                         "--model", "s2.1-pro-free", "--out", "voice.mp3", "--state", "tts.json", "--execute")
+        with patch.object(p, "request") as mocked, self.assertRaisesRegex(p.ProviderError, "\\.wav extension"):
+            p.tts(args)
+        mocked.assert_not_called()
+        self.assertFalse((self.root / "tts.json").exists())
 
     def test_fish_json_error_is_not_audio(self):
         with patch.object(p, "request", return_value=b'{"error":"private-body"}'):

@@ -17,7 +17,11 @@
     "allowed_image_providers": [
       "kie"
     ],
-    "minimum_transition_families": 4
+    "minimum_transition_families": 4,
+    "integrated_lufs_target": -16,
+    "integrated_lufs_tolerance": 1,
+    "true_peak_max_dbtp": -1.5,
+    "preferred_true_peak_dbtp": -2
   },
   "voice": {
     "provider": "fish",
@@ -25,7 +29,7 @@
     "rejected_reference_ids": [],
     "approval": {
       "status": "pending",
-      "sample_path": "audio/voice-sample.mp3",
+      "sample_path": "audio/voice-sample.wav",
       "sample_sha256": "",
       "approved_by": "",
       "approved_at": "",
@@ -177,7 +181,7 @@
     },
     {
       "id": "narration",
-      "path": "audio/narration.mp3",
+      "path": "audio/narration.wav",
       "sha256": "",
       "kind": "audio",
       "provider": "fish",

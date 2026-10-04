@@ -1,6 +1,6 @@
 # Recapitulación del proyecto VIDEOS IA
 
-Este documento conserva las decisiones que dieron origen al flujo y distingue las instrucciones de Emi, las propuestas del asistente y los resultados que todavía necesitan comprobarse. Sirve para continuar el trabajo sin repetir sus errores ni convertir una respuesta anterior en una aprobación inexistente.
+Este documento conserva las decisiones que dieron origen al flujo y distingue las instrucciones del usuario, las propuestas del asistente y los resultados que todavía necesitan comprobarse. Sirve para continuar el trabajo sin repetir sus errores ni convertir una respuesta anterior en una aprobación inexistente.
 
 ## 1. Alcance y fuentes recuperadas
 
@@ -19,7 +19,7 @@ Material recuperado o identificado:
 
 ## 2. Cómo se resuelven las contradicciones
 
-Una corrección expresa posterior de Emi prevalece sobre una preferencia anterior incompatible. Las reglas compatibles se conservan. Una propuesta del asistente no debe convertirse silenciosamente en una exigencia del usuario, y la entrega de una versión no equivale a su aprobación.
+Una corrección expresa posterior del usuario prevalece sobre una preferencia anterior incompatible. Las reglas compatibles se conservan. Una propuesta del asistente no debe convertirse silenciosamente en una exigencia del usuario, y la entrega de una versión no equivale a su aprobación.
 
 Orden práctico: instrucción del encargo actual → corrección expresa más reciente → criterio aprobado y compatible → valor predeterminado propuesto. La documentación antigua conserva valor histórico, pero no puede reactivar partículas, ChatGPT Image o una voz rechazada.
 
@@ -28,16 +28,16 @@ Orden práctico: instrucción del encargo actual → corrección expresa más re
 | Mensajes | Qué ocurrió | Efecto para el método actual |
 |---|---|---|
 | 194–197 | El asistente reportó la entrega y auditoría del primer Short de personas físicas. | Referencia de producción; sus mediciones históricas no son pruebas ejecutadas por este repositorio. |
-| 198–201 | Emi aprobó el resultado y pidió conservar su espíritu en todos los videos; el asistente documentó un estándar. | Existe aprobación editorial del video de personas físicas. La adaptación razonada es obligatoria. |
-| 202–207 | Emi pidió predominio de Kie, más naturalidad y energía vocal, música, imágenes, transiciones, diagramas, profundidad, VFX y SFX; aportó una referencia de TikTok. | Se consolida una explicación visual dinámica, sin que los efectos desplacen el contenido. Las partículas y ChatGPT Image mencionados aquí fueron sustituidos después. |
-| 208–217 | Emi pidió aplicar las mejoras al video en curso. El asistente reportó nuevos recursos, música y voz mediante Kie/ElevenLabs. | Antecedente del enriquecimiento de V2, no configuración actual de voz. |
-| 218–226 | Tras continuar y recibir el paquete, Emi lo aprobó con dos observaciones: quitar partículas y variar las animaciones para no repetir el círculo. | El video aprobado permanece como referencia, pero los siguientes deben respetar ambas correcciones. |
-| 227–230 | Emi pidió Fish Studio y precisó Nano Banana Lite como motor principal, con otro modelo como respaldo si falla. | Fish es preferente para voz; Kie/Nano Banana Lite es prioritario para imágenes. No se reproducen credenciales del historial. |
-| 231–238 | Emi encargó cinco beneficios de una firma boutique para público de 27–65 años, con investigación previa. Se propuso un enfoque de prevención y decisiones informadas. | Tema y audiencia pertenecen a ese encargo; no son restricciones universales. |
-| 239–244 | Emi insistió en que comenzara la producción. Más tarde el asistente reportó recuperación del estándar y cierre del guion. | La herramienta debe producir avances comprobables y evitar cadenas de promesas de inicio. |
+| 198–201 | El usuario aprobó el resultado y pidió conservar su espíritu en todos los videos; el asistente documentó un estándar. | Existe aprobación editorial del video de personas físicas. La adaptación razonada es obligatoria. |
+| 202–207 | El usuario pidió predominio de Kie, más naturalidad y energía vocal, música, imágenes, transiciones, diagramas, profundidad, VFX y SFX; aportó una referencia de TikTok. | Se consolida una explicación visual dinámica, sin que los efectos desplacen el contenido. Las partículas y ChatGPT Image mencionados aquí fueron sustituidos después. |
+| 208–217 | El usuario pidió aplicar las mejoras al video en curso. El asistente reportó nuevos recursos, música y voz mediante Kie/ElevenLabs. | Antecedente del enriquecimiento de V2, no configuración actual de voz. |
+| 218–226 | Tras continuar y recibir el paquete, el usuario lo aprobó con dos observaciones: quitar partículas y variar las animaciones para no repetir el círculo. | El video aprobado permanece como referencia, pero los siguientes deben respetar ambas correcciones. |
+| 227–230 | El usuario pidió Fish Studio y precisó Nano Banana Lite como motor principal, con otro modelo como respaldo si falla. | Fish es preferente para voz; Kie/Nano Banana Lite es prioritario para imágenes. No se reproducen credenciales del historial. |
+| 231–238 | El usuario encargó cinco beneficios de una firma boutique para público de 27–65 años, con investigación previa. Se propuso un enfoque de prevención y decisiones informadas. | Tema y audiencia pertenecen a ese encargo; no son restricciones universales. |
+| 239–244 | El usuario insistió en que comenzara la producción. Más tarde el asistente reportó recuperación del estándar y cierre del guion. | La herramienta debe producir avances comprobables y evitar cadenas de promesas de inicio. |
 | 245–249 | Se reportaron nueve imágenes, voz Fish, música Kie/Suno, ajuste de cadencia y storyboard. | Antecedentes de procedencia y montaje; faltan los registros completos para reproducir las solicitudes. |
 | 250–256 | Se reportaron correcciones de cámara y de un salto de luminancia, y se entregó el video de beneficios. | Justifica revisar el archivo codificado y los solapamientos. No constituye aprobación del usuario. |
-| 257–262 | Emi rechazó la voz, prohibió imágenes generadas por ChatGPT y pidió ausencia del logo de Gemini. El asistente identificó distintivos en dos archivos y reportó su saneamiento. | ChatGPT Image queda fuera del flujo. La voz rechazada no se reutiliza. Se añade revisión explícita de marcas y recortes. |
+| 257–262 | El usuario rechazó la voz, prohibió imágenes generadas por ChatGPT y pidió ausencia del logo de Gemini. El asistente identificó distintivos en dos archivos y reportó su saneamiento. | ChatGPT Image queda fuera del flujo. La voz rechazada no se reutiliza. Se añade revisión explícita de marcas y recortes. |
 | 263–267 | El asistente reportó otra narración y entregó la V3 de beneficios con imágenes saneadas. | **La V3 fue entregada; no consta aprobación posterior de su voz.** Debe conservarse como candidata, no como voz aprobada. |
 
 ## 4. Estándar vigente
@@ -111,7 +111,7 @@ Orden práctico: instrucción del encargo actual → corrección expresa más re
 | Repetir que la producción comienza sin mostrar avances reales. | Estados verificables: preparado, solicitado, recibido, renderizado, medido y entregado. |
 | Responder a un nuevo video como si fuera otra V2 del anterior. | Identificador de producción, brief y alcance de versión antes de actuar. |
 | Tratar una entrega como aprobación. | Registro separado de aprobaciones, rechazos y candidatos. |
-| Voz técnicamente válida pero desagradable para Emi. | Escucha perceptual y muestra cuando cambia la voz; las métricas no certifican naturalidad. |
+| Voz técnicamente válida pero desagradable para la dirección creativa. | Escucha perceptual y muestra cuando cambia la voz; las métricas no certifican naturalidad. |
 | Ajustar una toma lenta principalmente con velocidad. | Priorizar nueva interpretación; usar cambios de velocidad solo si conservan naturalidad. |
 | Logo visible sobre un elemento de la escena. | Revisar archivo original, recorte y composición; el chroma no es una prueba de ausencia de marcas. |
 | Bordes y zonas interiores con chroma residual. | Revisar alfa sobre dos fondos y a escala de uso. |
@@ -151,6 +151,6 @@ Los mensajes anteriores alternan **dBFS y dBTP**: no son equivalentes y no deben
 
 El método debe funcionar primero como documentación neutral. Una skill facilita su lectura en plataformas compatibles, pero instalar el mismo texto no concede terminal, MCP, acceso a cuentas, saldo ni capacidad de render a todas las IA. Cada asistente debe detectar sus capacidades y explicar la siguiente acción posible sin simular ejecuciones.
 
-La guía de conexión avanza una pantalla o paso a la vez, con instrucciones breves. Las credenciales se configuran fuera del chat. El perfil MILLA aporta decisiones editoriales; cada nuevo usuario puede crear otro perfil sin alterar las reglas de Emi. Las mejoras se incorporan con propuesta, evidencia, revisión y changelog, conservando las preferencias explícitas y los estados de aprobación.
+La guía de conexión avanza una pantalla o paso a la vez, con instrucciones breves. Las credenciales se configuran fuera del chat. El perfil MILLA aporta decisiones editoriales; cada nuevo usuario puede crear otro perfil sin alterar sus reglas vigentes. Las mejoras se incorporan con propuesta, evidencia, revisión y changelog, conservando las preferencias explícitas y los estados de aprobación.
 
 La autorización para documentar o subir esta herramienta a GitHub no equivale a publicar videos en redes sociales ni a distribuir activos comerciales o datos privados indiscriminadamente.

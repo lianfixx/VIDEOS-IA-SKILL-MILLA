@@ -1,0 +1,312 @@
+{
+  "status": "needs_human_review",
+  "created_at": "2026-10-04T22:01:33.540094+00:00",
+  "sha256": "dbee266154c20c28b5e33804a1419fab433aa2ca3fb372f72abba94964e19126",
+  "video": {
+    "file": "milla-abogados-personas-fisicas-v2-final.mp4",
+    "duration_seconds": 50.2,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "video_codec": "h264",
+    "pixel_format": "yuvj420p",
+    "audio_codec": "aac",
+    "audio_channels": 2,
+    "audio_sample_rate_hz": 96000
+  },
+  "method": {
+    "tool_versions": {
+      "ffprobe": "ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers",
+      "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+    },
+    "video_filters": "blackdetect=d=0.03:pix_th=0.10:pic_th=0.98,freezedetect=n=-50dB:d=0.5,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+    "audio_filter": "loudnorm=I=-16:TP=-2:LRA=11:print_format=json",
+    "thresholds": {
+      "black_min_duration_seconds": 0.03,
+      "black_pixel_threshold": 0.1,
+      "black_picture_ratio": 0.98,
+      "freeze_noise_db": -50,
+      "freeze_min_duration_seconds": 0.5,
+      "target_lufs": -16,
+      "lufs_tolerance": 1,
+      "true_peak_max_dbtp": -1.5,
+      "preferred_true_peak_dbtp": -2
+    },
+    "luminance_enabled": true,
+    "modifies_input": false
+  },
+  "audio_measurements": {
+    "integrated_lufs": -16.04,
+    "true_peak_dbtp": -1.67,
+    "loudness_range_lu": 2.0
+  },
+  "black_intervals": [],
+  "freeze_events": [
+    {
+      "event": "freeze_start",
+      "seconds": 3.53333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.6
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 4.13333
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 11.0
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.6
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 12.6
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 13.9
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.566667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 14.4667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 25.4
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.5
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 25.9
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 26.7667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.83333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 28.6
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 28.6
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.1
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 29.7
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 32.2
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.533333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 32.7333
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 33.2667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.533333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 33.8
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 33.8333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 3.73333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 37.5667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 38.6333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.566667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 39.2
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 40.1333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.566667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 40.7
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 40.7
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.966667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 41.6667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 41.6667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.86667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 43.5333
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 44.6667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.533333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 45.2
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 45.3667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.03333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 46.4
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 46.8667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 2.1
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 48.9667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 48.9667
+    }
+  ],
+  "luminance": {
+    "frames": 1503,
+    "largest_mean_luma_changes": [
+      {
+        "frame": 1320,
+        "seconds_approx": 44.0,
+        "delta_yavg": 10.788999999999987
+      },
+      {
+        "frame": 726,
+        "seconds_approx": 24.2,
+        "delta_yavg": 10.634999999999991
+      },
+      {
+        "frame": 133,
+        "seconds_approx": 4.433333333333334,
+        "delta_yavg": 9.908000000000015
+      },
+      {
+        "frame": 1392,
+        "seconds_approx": 46.4,
+        "delta_yavg": 9.35499999999999
+      },
+      {
+        "frame": 465,
+        "seconds_approx": 15.5,
+        "delta_yavg": 9.312999999999988
+      },
+      {
+        "frame": 248,
+        "seconds_approx": 8.266666666666667,
+        "delta_yavg": 8.896999999999991
+      },
+      {
+        "frame": 1141,
+        "seconds_approx": 38.03333333333333,
+        "delta_yavg": 8.770999999999987
+      },
+      {
+        "frame": 88,
+        "seconds_approx": 2.933333333333333,
+        "delta_yavg": 8.525999999999982
+      },
+      {
+        "frame": 905,
+        "seconds_approx": 30.166666666666668,
+        "delta_yavg": 8.48599999999999
+      },
+      {
+        "frame": 587,
+        "seconds_approx": 19.566666666666666,
+        "delta_yavg": 8.36499999999998
+      }
+    ],
+    "note": "Candidate cuts only. Mean luma cannot certify flash safety or detect every local flash."
+  },
+  "flags": [
+    "pixel_format_differs_from_yuv420p",
+    "audio_sample_rate_differs_from_48000hz",
+    "freeze_candidates_require_review_intentional_holds_may_be_valid"
+  ],
+  "human_checks_required": [
+    "watch_and_listen_to_complete_encoded_file",
+    "voice_intention_and_pronunciation",
+    "subtitles_and_timing",
+    "third_party_logos_watermarks_and_anatomy",
+    "centering_safe_areas_and_transitions",
+    "legal_claims_and_cta"
+  ],
+  "limitations": "Black/freeze detection is heuristic. No measurement here approves a voice, proves legal accuracy or certifies absence of flashes."
+}

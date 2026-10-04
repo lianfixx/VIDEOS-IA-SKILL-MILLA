@@ -8,8 +8,8 @@ export type Asset = {
   model?: string;
   sha256?: string;
   discovery_provider?: string;
-  source?: {type: 'generated' | 'licensed' | 'owned' | 'code'; url?: string; license?: string; rights_confirmed?: boolean};
-  qa?: {watermark?: boolean; third_party_logo?: boolean; particles?: boolean; approved?: boolean};
+  source: {type: 'generated' | 'licensed' | 'owned' | 'code'; url?: string; license?: string; rights_confirmed?: boolean};
+  qa: {watermark: false; third_party_logo: false; particles: false; approved?: boolean};
 };
 export type Diagram = {
   nodes: Array<{id: string; label: string; x: number; y: number}>;
@@ -19,11 +19,12 @@ export type Scene = {
   id: string;
   start: number;
   end: number;
-  asset_ids: string[];
+  asset_ids: [] | [string] | [string, string] | [string, string, string];
   title: string;
   kicker?: string;
   body?: string;
   theme?: 'ivory' | 'navy';
+  kind?: never;
   transition: {family: TransitionFamily; durationSeconds: number};
   diagram?: Diagram;
 };
@@ -34,7 +35,7 @@ export type Manifest = {
   quality: {
     particles_allowed: false;
     watermarks_allowed: false;
-    allowed_image_providers: string[];
+    allowed_image_providers: ['kie'];
     minimum_transition_families: number;
     transition_variety_rationale?: string;
   };

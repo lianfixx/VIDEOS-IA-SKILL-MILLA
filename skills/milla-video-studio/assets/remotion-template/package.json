@@ -1,6 +1,6 @@
 {
   "name": "milla-video-template",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Plantilla nueva y determinista; no es el código recuperado ni un render aprobado.",
@@ -22,5 +22,7 @@
     "@types/react-dom": "19.1.9",
     "typescript": "5.9.3"
   },
-  "engines": {"node": ">=22"}
+  "engines": {
+    "node": ">=22"
+  }
 }

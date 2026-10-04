@@ -15,10 +15,14 @@ import subprocess
 import sys
 from urllib.parse import urlparse
 
-FAMILIES = {"wipe", "push", "mask", "depth", "match-cut", "pan", "zoom",
-            "diagram-morph", "object-reveal", "fade"}
+# Keep this set in lockstep with remotion-template/src/manifest-validation.mjs.
+# Aspirational transition names are rejected until the renderer implements them.
+FAMILIES = {"wipe", "push", "mask", "depth", "pan", "zoom", "fade"}
 SHA256 = re.compile(r"^[a-fA-F0-9]{64}$")
 ENV_NAMES = ("KIE_API_KEY", "FISH_API_KEY", "APIFY_TOKEN")
+# ECMAScript WhiteSpace + LineTerminator code points used by trim() and /\s/.
+JS_WHITESPACE = "\u0009\u000a\u000b\u000c\u000d\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+JS_WHITESPACE_RE = re.compile(f"[{re.escape(JS_WHITESPACE)}]+")
 
 
 def now():
@@ -41,15 +45,25 @@ def write_json(path, obj):
 
 def safe_path(root, value):
     """Project-owned, relative POSIX paths only; also stops escaping symlinks."""
-    if not isinstance(value, str) or not value or "\x00" in value or "\\" in value:
+    if (not isinstance(value, str) or not value or "\\" in value or
+            any(ord(char) < 32 for char in value) or any(char in value for char in "%?#")):
         raise ValueError("expected a relative POSIX path")
+    raw_parts = value.split("/")
+    if any(part in ("", ".", "..") for part in raw_parts):
+        raise ValueError("empty, dot and traversal path segments are forbidden")
     p = PurePosixPath(value)
-    if p.is_absolute() or ".." in p.parts or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", value):
+    if p.is_absolute() or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", value):
         raise ValueError("absolute paths and traversal are forbidden")
     target = (root / value).resolve()
     if not target.is_relative_to(root.resolve()) or target == root.resolve():
         raise ValueError("path must stay inside the project")
     return target
+
+
+def safe_public_path(root, value):
+    """Resolve the exact file Remotion staticFile(value) reads from public/."""
+    public = safe_path(root, "public")
+    return safe_path(public, value)
 
 
 def valid_url(value):
@@ -63,7 +77,36 @@ def valid_url(value):
 
 
 def number(value):
-    return isinstance(value, (float, int)) and not isinstance(value, bool) and math.isfinite(value)
+    if not isinstance(value, (float, int)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        return False
+
+
+def frame_of(seconds, fps=30):
+    """Match JavaScript Math.round for non-negative timeline values."""
+    scaled = seconds * fps
+    try:
+        if not math.isfinite(scaled):
+            return math.inf
+    except OverflowError:
+        return math.inf
+    return math.floor(scaled + 0.5)
+
+
+def utf16_length(value):
+    """Match JavaScript string.length used by the renderer's layout guards."""
+    return len(value.encode("utf-16-le", errors="surrogatepass")) // 2
+
+
+def js_trim(value):
+    return value.strip(JS_WHITESPACE)
+
+
+def normalize_js_text(value):
+    return JS_WHITESPACE_RE.sub(" ", js_trim(value))
 
 
 def project_template(title="Nuevo video MILLA"):
@@ -74,7 +117,7 @@ def project_template(title="Nuevo video MILLA"):
         "quality": {"particles_allowed": False, "watermarks_allowed": False,
                     "allowed_image_providers": ["kie"], "minimum_transition_families": 4},
         "voice": {"provider": "fish", "model": "", "reference_id": "", "rejected_reference_ids": [],
-                  "approval": {"status": "pending", "model": "", "reference_id": "", "sample_path": "audio/voice-sample.mp3",
+                  "approval": {"status": "pending", "model": "", "reference_id": "", "sample_path": "audio/voice-sample.wav",
                                "sample_sha256": "", "approved_by": "", "approved_at": ""}},
         "assets": [], "scenes": [], "sources": [], "subtitleCues": [],
         "subtitlesVerified": False,
@@ -104,7 +147,7 @@ def validate(data, root, allow_pending=False):
         return value
 
     def text_field(value, label):
-        if not isinstance(value, str) or not value.strip():
+        if not isinstance(value, str) or not js_trim(value):
             pending(f"{label}: required")
             return False
         return True
@@ -117,7 +160,11 @@ def validate(data, root, allow_pending=False):
             return None
 
     def check_file(path_value, sha, label):
-        path = check_path(path_value, f"{label}.path")
+        try:
+            path = safe_public_path(root, path_value)
+        except ValueError as exc:
+            fail(f"{label}.path: {exc}")
+            path = None
         valid_sha = isinstance(sha, str) and bool(SHA256.fullmatch(sha))
         if not valid_sha:
             pending(f"{label}: SHA-256 required")
@@ -144,11 +191,11 @@ def validate(data, root, allow_pending=False):
         fail("quality.allowed_image_providers must be ['kie']; ChatGPT/ImageGen is forbidden")
     minimum = quality.get("minimum_transition_families")
     if not isinstance(minimum, int) or isinstance(minimum, bool) or not 1 <= minimum <= len(FAMILIES):
-        fail("quality.minimum_transition_families must be an integer within 1..10 (default 4)")
+        fail(f"quality.minimum_transition_families must be an integer within 1..{len(FAMILIES)} (default 4)")
         minimum = 4
     elif minimum < 4:
         rationale = quality.get("transition_variety_rationale")
-        if not isinstance(rationale, str) or not rationale.strip():
+        if not isinstance(rationale, str) or not js_trim(rationale):
             fail("reducing the default of 4 transition families requires quality.transition_variety_rationale")
         else:
             adjustments.append({"field": "minimum_transition_families", "value": minimum, "rationale": rationale})
@@ -160,6 +207,11 @@ def validate(data, root, allow_pending=False):
     if not number(duration) or duration <= 0:
         fail("output.durationSeconds must be positive")
         duration = 0
+    else:
+        total_frames = frame_of(duration)
+        if not isinstance(total_frames, int) or not 1 <= total_frames <= 2**53 - 1:
+            fail("output.durationSeconds must produce a positive safe integer frame count")
+            duration = 0
     voice = obj(data.get("voice"), "voice")
     if voice.get("provider") != "fish":
         fail("voice.provider must be fish for the current profile")
@@ -192,8 +244,8 @@ def validate(data, root, allow_pending=False):
         label = f"assets[{i}]"
         asset = obj(raw, label)
         aid = asset.get("id")
-        if not isinstance(aid, str) or not aid:
-            fail(f"{label}.id must be nonempty text")
+        if not isinstance(aid, str) or not js_trim(aid) or utf16_length(aid) > 100:
+            fail(f"{label}.id must be nonempty text of at most 100 characters")
             continue
         if aid in asset_map:
             fail(f"{label}: duplicate asset id")
@@ -223,6 +275,8 @@ def validate(data, root, allow_pending=False):
         if kind == "image" and provider == "kie" and asset.get("model") and asset["model"] != "nano-banana-2-lite":
             text_field(asset.get("fallback_reason"), f"{label}.fallback_reason (Lite has first priority)")
         source = obj(asset.get("source"), f"{label}.source")
+        if kind == "image" and provider == "kie" and source.get("type") != "generated":
+            fail(f"{label}: Kie images require source.type generated")
         if real_photo:
             if source.get("type") not in ("licensed", "owned"):
                 fail(f"{label}: real-photo requires licensed or owned provenance")
@@ -246,27 +300,94 @@ def validate(data, root, allow_pending=False):
         if qa.get("approved") is not True:
             pending(f"{label}: visual/audio review pending")
 
+    def check_diagram(raw, label):
+        if not isinstance(raw, dict):
+            fail(f"{label}: expected object")
+            return
+        nodes = raw.get("nodes")
+        edges = raw.get("edges")
+        if not isinstance(nodes, list) or not 1 <= len(nodes) <= 6:
+            fail(f"{label}.nodes must contain 1..6 nodes")
+            nodes = []
+        if not isinstance(edges, list):
+            fail(f"{label}.edges must be an array")
+            edges = []
+        node_map = {}
+        positioned = []
+        for j, raw_node in enumerate(nodes):
+            node_label = f"{label}.nodes[{j}]"
+            if not isinstance(raw_node, dict):
+                fail(f"{node_label}: expected object")
+                continue
+            nid, caption = raw_node.get("id"), raw_node.get("label")
+            if not isinstance(nid, str) or not js_trim(nid) or utf16_length(nid) > 64:
+                fail(f"{node_label}.id must be nonempty text of at most 64 characters")
+            elif nid in node_map:
+                fail(f"{node_label}.id must be unique within the diagram")
+            else:
+                node_map[nid] = raw_node
+            if not isinstance(caption, str) or not js_trim(caption) or utf16_length(caption) > 28:
+                fail(f"{node_label}.label must be nonempty text of at most 28 characters")
+            x, y = raw_node.get("x"), raw_node.get("y")
+            if not number(x) or not number(y) or not 15 <= x <= 85 or not 15 <= y <= 85:
+                fail(f"{node_label}: x/y must be finite numbers within 15..85")
+                continue
+            for other_x, other_y in positioned:
+                if abs(x - other_x) * 8.4 < 214 and abs(y - other_y) * 4.8 < 102:
+                    fail(f"{node_label}: diagram nodes overlap")
+            positioned.append((x, y))
+        for j, raw_edge in enumerate(edges):
+            edge_label = f"{label}.edges[{j}]"
+            if not isinstance(raw_edge, dict):
+                fail(f"{edge_label}: expected object")
+                continue
+            source_id, target_id = raw_edge.get("from"), raw_edge.get("to")
+            if (not isinstance(source_id, str) or not isinstance(target_id, str) or
+                    source_id not in node_map or target_id not in node_map or source_id == target_id):
+                fail(f"{edge_label}: from/to must reference distinct diagram nodes")
+            caption = raw_edge.get("label")
+            if caption is not None and (not isinstance(caption, str) or not js_trim(caption) or utf16_length(caption) > 24):
+                fail(f"{edge_label}.label must be nonempty text of at most 24 characters")
+
     scenes = array(data.get("scenes"), "scenes")
     if not scenes:
         pending("scenes: no storyboard yet")
     scene_ids, visual_uses, families = set(), set(), []
-    previous = None
+    previous_timing = None
+    total_frames = frame_of(duration)
     for i, raw in enumerate(scenes):
         label = f"scenes[{i}]"
         scene = obj(raw, label)
         sid = scene.get("id")
-        if not isinstance(sid, str) or not sid or sid in scene_ids:
-            fail(f"{label}.id must be unique nonempty text")
+        if not isinstance(sid, str) or not js_trim(sid) or utf16_length(sid) > 100 or sid in scene_ids:
+            fail(f"{label}.id must be unique nonempty text of at most 100 characters")
         else:
             scene_ids.add(sid)
-        text_field(scene.get("title"), f"{label}.title")
+        title = scene.get("title")
+        if not isinstance(title, str) or not js_trim(title) or utf16_length(title) > 74:
+            fail(f"{label}.title must be nonempty text of at most 74 characters")
+        for field, limit in (("kicker", 48), ("body", 145)):
+            value = scene.get(field)
+            if value is not None and (not isinstance(value, str) or not js_trim(value) or utf16_length(value) > limit):
+                fail(f"{label}.{field} must be nonempty text of at most {limit} characters when present")
+        if "theme" in scene and scene.get("theme") not in ("ivory", "navy"):
+            fail(f"{label}.theme must be ivory or navy when present")
+        if "kind" in scene:
+            fail(f"{label}.kind is not implemented; use image/body/diagram fields instead")
         start, end = scene.get("start"), scene.get("end")
         timing_valid = number(start) and number(end) and 0 <= start < end <= duration
+        start_frame = end_frame = None
         if not timing_valid:
             fail(f"{label}: require 0 <= start < end <= durationSeconds")
+        else:
+            start_frame, end_frame = frame_of(start), frame_of(end)
+            if end_frame <= start_frame or end_frame > total_frames:
+                fail(f"{label}: times must span at least one frame and stay inside the composition")
         if i == 0 and start != 0:
             fail("first scene must start at zero")
         refs = array(scene.get("asset_ids"), f"{label}.asset_ids")
+        if len(refs) > 3:
+            fail(f"{label}.asset_ids supports at most 3 images")
         local_refs = set()
         for aid in refs:
             if not isinstance(aid, str) or aid not in asset_map:
@@ -275,32 +396,43 @@ def validate(data, root, allow_pending=False):
             if aid in local_refs:
                 fail(f"{label}: repeated asset reference")
             local_refs.add(aid)
-            if asset_map[aid].get("kind") in ("image", "video"):
-                if aid in visual_uses:
-                    fail(f"{label}: image/video repeated across scenes")
+            if asset_map[aid].get("kind") != "image":
+                fail(f"{label}: scene assets must be registered images; video/font/graphic rendering is not implemented")
+            elif aid in visual_uses:
+                fail(f"{label}: image repeated across scenes")
+            else:
                 visual_uses.add(aid)
+        diagram = scene.get("diagram")
+        if diagram is not None:
+            check_diagram(diagram, f"{label}.diagram")
+        if diagram is not None and refs and scene.get("body") is not None:
+            fail(f"{label}: image + diagram + body exceeds the safe layout zones")
         transition = obj(scene.get("transition"), f"{label}.transition")
         family = transition.get("family")
         if not isinstance(family, str) or family not in FAMILIES:
             fail(f"{label}: unsupported transition family (circles/rings prohibited)")
             family = "invalid"
         overlap = transition.get("durationSeconds")
-        if not number(overlap) or overlap < 0 or (timing_valid and overlap > end - start):
+        overlap_valid = number(overlap) and overlap >= 0
+        overlap_frames = frame_of(overlap) if overlap_valid else 0
+        if (not overlap_valid or
+                (start_frame is not None and end_frame is not None and overlap_frames >= end_frame - start_frame)):
             fail(f"{label}: transition duration must fit the scene")
-            overlap = 0
+        if i == 0 and overlap_frames != 0:
+            fail("first scene transition must round to zero frames")
         if i > 0:
             families.append(family)
             if len(families) > 1 and family == families[-2]:
                 fail(f"{label}: consecutive transitions repeat the same family")
-            if overlap <= 0:
-                fail(f"{label}: transitions must overlap")
-            if timing_valid and previous:
-                ps, pe = previous.get("start"), previous.get("end")
-                if number(ps) and start <= ps:
-                    fail(f"{label}: scene start times must increase")
-                if number(pe) and pe + 1e-6 < start + overlap:
+            if overlap_frames < 2:
+                fail(f"{label}: transitions must overlap by at least 2 encoded frames")
+            if start_frame is not None and end_frame is not None and previous_timing is not None:
+                previous_start, previous_end = previous_timing
+                if start_frame <= previous_start or end_frame <= previous_end:
+                    fail(f"{label}: scene start and end frames must both increase")
+                if previous_end < start_frame + overlap_frames:
                     fail(f"{label}: previous scene ends before transition overlap completes")
-        previous = scene
+        previous_timing = (start_frame, end_frame) if start_frame is not None and end_frame is not None else None
     if scenes and isinstance(scenes[-1], dict) and scenes[-1].get("end") != duration:
         fail("last scene must end at output.durationSeconds")
     if len(families) >= 5 and len(set(families)) < minimum:
@@ -325,18 +457,56 @@ def validate(data, root, allow_pending=False):
     if not cues:
         pending("subtitleCues: timed subtitles are required for final delivery")
     if cues and data.get("subtitlesVerified") is not True:
-        pending("subtitleCues must be verified against actual narration")
-    previous_end = 0
+        fail("subtitleCues must be verified against actual narration before rendering")
+    previous_end_frame = -1
     for i, raw in enumerate(cues):
-        cue = obj(raw, f"subtitleCues[{i}]")
+        label = f"subtitleCues[{i}]"
+        cue = obj(raw, label)
         start, end = cue.get("start"), cue.get("end")
+        cue_start_frame = cue_end_frame = None
         if not number(start) or not number(end) or not 0 <= start < end <= duration:
-            fail(f"subtitleCues[{i}]: invalid timing")
-        elif start < previous_end - 1e-6:
-            fail(f"subtitleCues[{i}]: overlap or unordered cues")
+            fail(f"{label}: invalid timing")
         else:
-            previous_end = end
-        text_field(cue.get("text"), f"subtitleCues[{i}].text")
+            cue_start_frame, cue_end_frame = frame_of(start), frame_of(end)
+            if cue_end_frame <= cue_start_frame or cue_start_frame < previous_end_frame:
+                fail(f"{label}: cues must be ordered, non-overlapping and at least one frame long")
+            previous_end_frame = cue_end_frame
+        cue_text = cue.get("text")
+        if not isinstance(cue_text, str) or not js_trim(cue_text) or utf16_length(cue_text) > 85:
+            fail(f"{label}.text must be nonempty text of at most 85 characters")
+        words = cue.get("words")
+        if words is not None:
+            if not isinstance(words, list) or not words:
+                fail(f"{label}.words must be a nonempty array of verified word timings")
+                words = []
+            if data.get("wordTimestampsVerified") is not True:
+                fail(f"{label}.words requires wordTimestampsVerified true")
+            normalized_words = []
+            previous_word_end = cue_start_frame
+            for j, raw_word in enumerate(words):
+                word_label = f"{label}.words[{j}]"
+                if not isinstance(raw_word, dict):
+                    fail(f"{word_label}: expected object")
+                    continue
+                word_text = raw_word.get("text")
+                if not isinstance(word_text, str) or not js_trim(word_text) or utf16_length(word_text) > 40:
+                    fail(f"{word_label}.text must be nonempty text of at most 40 characters")
+                else:
+                    normalized_words.append(word_text)
+                word_start, word_end = raw_word.get("start"), raw_word.get("end")
+                if (not number(word_start) or not number(word_end) or
+                        not number(start) or not number(end) or
+                        word_start < start or word_end > end or word_end <= word_start):
+                    fail(f"{word_label}: word timing must stay inside its cue")
+                    continue
+                word_start_frame, word_end_frame = frame_of(word_start), frame_of(word_end)
+                if (previous_word_end is not None and
+                        (word_start_frame < previous_word_end or word_end_frame <= word_start_frame)):
+                    fail(f"{word_label}: words must be ordered, non-overlapping and at least one frame long")
+                previous_word_end = word_end_frame
+            if isinstance(cue_text, str):
+                if normalize_js_text(" ".join(normalized_words)) != normalize_js_text(cue_text):
+                    fail(f"{label}.words must reproduce the cue text exactly")
     audio = obj(data.get("audio"), "audio")
     for key in ("voice", "music"):
         aid = audio.get(key)
@@ -360,12 +530,21 @@ def validate(data, root, allow_pending=False):
     for i, raw in enumerate(array(audio.get("sfx", []), "audio.sfx")):
         sfx = obj(raw, f"audio.sfx[{i}]")
         aid = sfx.get("asset_id")
-        if not isinstance(aid, str) or aid not in asset_map or asset_map[aid].get("kind") != "audio":
+        if (not isinstance(aid, str) or not js_trim(aid) or utf16_length(aid) > 100 or
+                aid not in asset_map or asset_map[aid].get("kind") != "audio"):
             fail(f"audio.sfx[{i}]: must reference an audio asset")
-        if not number(sfx.get("start")) or not 0 <= sfx["start"] < duration:
+        if (not number(sfx.get("start")) or not 0 <= sfx["start"] < duration or
+                (number(sfx.get("start")) and frame_of(sfx["start"]) >= total_frames)):
             fail(f"audio.sfx[{i}]: invalid start")
-        if not number(sfx.get("volume", 0.5)) or not 0 <= sfx.get("volume", 0.5) <= 1:
+        if not number(sfx.get("volume", 0.25)) or not 0 <= sfx.get("volume", 0.25) <= 1:
             fail(f"audio.sfx[{i}]: volume must be within 0..1")
+        effect_duration = sfx.get("duration")
+        if (effect_duration is not None and
+                (not number(effect_duration) or effect_duration <= 0 or
+                 (number(effect_duration) and frame_of(effect_duration) < 1))):
+            fail(f"audio.sfx[{i}]: duration must span at least one encoded frame")
+    if data.get("fontAssetId"):
+        fail("fontAssetId is not implemented by the base renderer")
     delivery = obj(data.get("delivery"), "delivery")
     check_path(delivery.get("video_path"), "delivery.video_path")
     return {"status": "invalid" if errors else ("draft" if warnings else "ready_for_review"),
@@ -393,11 +572,15 @@ def doctor():
 
 def init_project(destination, title):
     destination = Path(destination)
-    if destination.exists():
+    if destination.exists() or destination.is_symlink():
         raise ValueError("destination already exists; refusing to overwrite")
-    destination.mkdir(parents=True)
-    for name in ("assets", "audio", "research", "reviews", "out"):
-        (destination / name).mkdir()
+    template = Path(__file__).resolve().parent.parent / "assets" / "remotion-template"
+    if not template.is_dir():
+        raise ValueError("bundled Remotion template is missing")
+    shutil.copytree(template, destination,
+                    ignore=shutil.ignore_patterns("node_modules", "out", ".env*", "*.log"))
+    for path in ("public/assets", "public/audio", "research", "reviews", "out"):
+        (destination / path).mkdir(parents=True, exist_ok=True)
     write_json(destination / "project.json", project_template(title))
     write_json(destination / "state.json", {"schema_version": 1, "phase": "brief", "updated_at": now(),
                                           "completed": [], "pending": ["brief", "research", "voice_sample_approval", "assets", "storyboard", "render", "human_review"],
@@ -406,7 +589,7 @@ def init_project(destination, title):
         "checks": ["policy_and_provenance", "voice_sample_explicit_approval", "legal_source_review",
                    "watermark_and_logo_visual_review", "subtitle_audio_alignment", "transition_and_overlap_review",
                    "ffprobe_format", "loudness_and_peaks", "black_and_freeze_heuristics", "full_video_human_review"],
-        "reference_targets": {"integrated_lufs": -16, "true_peak_db_max": -1.5, "preferred_true_peak_dbtp": -2,
+        "reference_targets": {"integrated_lufs": -16, "true_peak_max_dbtp": -1.5, "preferred_true_peak_dbtp": -2,
                               "black_intervals": 0, "width": 1080, "height": 1920, "fps": 30},
         "note": "Measurements flag candidates; no universal luminance threshold proves absence of flashes."})
     (destination / "brief.md").write_text(f"# {title}\n\n- Tema:\n- Público:\n- Objetivo y CTA:\n- Duración aproximada:\n- Jurisdicción y fecha relevante:\n- Presupuesto máximo y proveedores autorizados:\n- Referencias y recursos disponibles:\n- Voz: muestra pendiente de aprobación; no reutilizar una rechazada.\n\nExplica el siguiente paso en 1–3 frases. Registra decisiones y evidencia en state.json.\n", encoding="utf-8")

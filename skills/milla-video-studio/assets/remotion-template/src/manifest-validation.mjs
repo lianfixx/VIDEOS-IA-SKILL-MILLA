@@ -8,7 +8,7 @@ const requiredText = (text, limit, label) => {
   if (typeof text !== 'string' || !text.trim() || text.length > limit) fail(`${label}: texto vacío o más de ${limit} caracteres.`);
 };
 export const isSafeAssetPath = (path) => typeof path === 'string' && path.length > 0 &&
-  !/^(?:[a-z]+:|\/|\\)/i.test(path) && !path.includes('\\') &&
+  !/^(?:[a-z][a-z0-9+.-]*:|\/|\\)/i.test(path) && !path.includes('\\') &&
   !path.split('/').some((part) => part === '..' || part === '.' || !part) &&
   !/[?#%\x00-\x1f]/.test(path);
 
@@ -18,6 +18,7 @@ export function validateManifest(m) {
   if (!finite(m.output.durationSeconds) || m.output.durationSeconds <= 0) fail('Duración total inválida.');
   const fps = m.output.fps;
   const total = frameOf(m.output.durationSeconds, fps);
+  if (!Number.isSafeInteger(total) || total < 1) fail('La duración debe producir una cantidad positiva y segura de frames.');
   if (m.quality?.particles_allowed !== false || m.quality?.watermarks_allowed !== false) fail('Prohibir partículas y marcas de agua explícitamente.');
   const transitionMinimum = m.quality?.minimum_transition_families;
   if (!Number.isInteger(transitionMinimum) || transitionMinimum < 1 || transitionMinimum > supportedFamilies.length) fail('minimum_transition_families debe ser entero entre 1 y las familias implementadas; el perfil usa 4.');
@@ -47,6 +48,8 @@ export function validateManifest(m) {
     requiredText(scene.title, 74, `${scene.id}.title`);
     if (scene.kicker != null) requiredText(scene.kicker, 48, `${scene.id}.kicker`);
     if (scene.body != null) requiredText(scene.body, 145, `${scene.id}.body`);
+    if (Object.prototype.hasOwnProperty.call(scene, 'theme') && !['ivory', 'navy'].includes(scene.theme)) fail(`${scene.id}.theme: usar ivory o navy.`);
+    if (Object.prototype.hasOwnProperty.call(scene, 'kind')) fail(`${scene.id}.kind no está implementado; usar asset_ids/body/diagram.`);
     if (ids.has(scene.id)) fail(`Escena duplicada: ${scene.id}.`);
     ids.add(scene.id);
     if (!finite(scene.start) || !finite(scene.end) || scene.start < 0 || scene.end <= scene.start) fail(`Tiempo inválido: ${scene.id}.`);
@@ -54,7 +57,8 @@ export function validateManifest(m) {
     const end = frameOf(scene.end, fps);
     if (end <= start || end > total) fail(`Escena fuera de composición: ${scene.id}.`);
     if (i === 0 && start !== 0) fail('La primera escena debe comenzar en frame 0.');
-    const overlap = frameOf(scene.transition?.durationSeconds ?? -1, fps);
+    if (!finite(scene.transition?.durationSeconds) || scene.transition.durationSeconds < 0) fail(`Solapamiento inválido: ${scene.id}.`);
+    const overlap = frameOf(scene.transition.durationSeconds, fps);
     if (!supportedFamilies.includes(scene.transition?.family)) fail(`Transición no implementada: ${scene.transition?.family}. No sustituir silenciosamente.`);
     if (!finite(overlap) || overlap < 0 || overlap >= end - start) fail(`Solapamiento inválido: ${scene.id}.`);
     if (i === 0 && overlap !== 0) fail('Primera escena: durationSeconds debe ser 0.');

@@ -71,9 +71,9 @@ Usar profundidad 2.5D/3D, parallax, capas, iluminación y cámara cuando refuerc
 
 Variar transiciones y entradas. El círculo/anillo no es el cambio predeterminado de cada imagen. Un círculo semántico dentro de un diagrama no está prohibido.
 
-Tomar **cuatro o más familias** como referencia para una pieza con suficientes cambios: barrido, empuje, máscara, profundidad, paneo, zoom, match cut o transformación de diagrama. Evitar repetir la misma familia en cambios consecutivos cuando haya una alternativa natural.
+Tomar **cuatro o más familias** como referencia para una pieza con suficientes cambios. La plantilla actual implementa barrido (`wipe`), empuje (`push`), máscara (`mask`), profundidad (`depth`), paneo (`pan`), zoom y fundido (`fade`). Evitar repetir la misma familia en cambios consecutivos cuando haya una alternativa natural.
 
-En una pieza breve con pocos cortes, reducir la cuota y registrar la razón; no alargar ni saturar el video para cumplir un número. Si el validador aún no admite esa excepción, reportar la limitación y corregirla sin falsear transiciones en el manifiesto.
+En una pieza breve con pocos cortes, reducir la cuota y registrar la razón; no alargar ni saturar el video para cumplir un número. `match-cut`, `diagram-morph` y `object-reveal` son ideas futuras que requieren coreografía e implementación propias: la base las rechaza y nunca debe declararlas para simular un efecto distinto.
 
 Sincronizar cambios con ideas, voz y música. El intervalo histórico de 1.2–1.8 segundos es orientación, no obligación. La legibilidad y la comprensión prevalecen.
 

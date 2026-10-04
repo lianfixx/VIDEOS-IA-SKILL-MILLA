@@ -1,0 +1,263 @@
+{
+  "status": "needs_human_review",
+  "created_at": "2026-10-04T22:01:52.715792+00:00",
+  "sha256": "27370f0b061f1762251c0dc2147a448f7300135d5054b3412993f57907dd427c",
+  "video": {
+    "file": "milla-abogados-5-beneficios-boutique-v3-final.mp4",
+    "duration_seconds": 55.1,
+    "width": 1080,
+    "height": 1920,
+    "fps": 30.0,
+    "video_codec": "h264",
+    "pixel_format": "yuvj420p",
+    "audio_codec": "aac",
+    "audio_channels": 2,
+    "audio_sample_rate_hz": 48000
+  },
+  "method": {
+    "tool_versions": {
+      "ffprobe": "ffprobe version 6.1.1-3ubuntu5 Copyright (c) 2007-2023 the FFmpeg developers",
+      "ffmpeg": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+    },
+    "video_filters": "blackdetect=d=0.03:pix_th=0.10:pic_th=0.98,freezedetect=n=-50dB:d=0.5,signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-",
+    "audio_filter": "loudnorm=I=-16:TP=-2:LRA=11:print_format=json",
+    "thresholds": {
+      "black_min_duration_seconds": 0.03,
+      "black_pixel_threshold": 0.1,
+      "black_picture_ratio": 0.98,
+      "freeze_noise_db": -50,
+      "freeze_min_duration_seconds": 0.5,
+      "target_lufs": -16,
+      "lufs_tolerance": 1,
+      "true_peak_max_dbtp": -1.5,
+      "preferred_true_peak_dbtp": -2
+    },
+    "luminance_enabled": true,
+    "modifies_input": false
+  },
+  "audio_measurements": {
+    "integrated_lufs": -16.14,
+    "true_peak_dbtp": -2.0,
+    "loudness_range_lu": 2.1
+  },
+  "black_intervals": [],
+  "freeze_events": [
+    {
+      "event": "freeze_start",
+      "seconds": 0.566667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.3
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 1.86667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 6.73333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.833333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 7.56667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 12.3
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.533333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 12.8333
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 17.7
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.666667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 18.3667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 20.8
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.7
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 21.5
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 29.0
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.633333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 29.6333
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 40.1667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.0
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 41.1667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 43.3333
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.26667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 44.6
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 46.6667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.13333
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 47.8
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 48.6
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 0.566667
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 49.1667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 49.8667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 1.2
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 51.0667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 51.0667
+    },
+    {
+      "event": "freeze_duration",
+      "seconds": 2.3
+    },
+    {
+      "event": "freeze_end",
+      "seconds": 53.3667
+    },
+    {
+      "event": "freeze_start",
+      "seconds": 53.5
+    }
+  ],
+  "luminance": {
+    "frames": 1650,
+    "largest_mean_luma_changes": [
+      {
+        "frame": 57,
+        "seconds_approx": 1.9,
+        "delta_yavg": 11.830999999999989
+      },
+      {
+        "frame": 237,
+        "seconds_approx": 7.9,
+        "delta_yavg": 10.393
+      },
+      {
+        "frame": 721,
+        "seconds_approx": 24.033333333333335,
+        "delta_yavg": 10.37899999999999
+      },
+      {
+        "frame": 239,
+        "seconds_approx": 7.966666666666667,
+        "delta_yavg": 7.484000000000009
+      },
+      {
+        "frame": 238,
+        "seconds_approx": 7.933333333333334,
+        "delta_yavg": 6.846000000000004
+      },
+      {
+        "frame": 133,
+        "seconds_approx": 4.433333333333334,
+        "delta_yavg": 6.533999999999992
+      },
+      {
+        "frame": 1191,
+        "seconds_approx": 39.7,
+        "delta_yavg": 6.422999999999988
+      },
+      {
+        "frame": 128,
+        "seconds_approx": 4.266666666666667,
+        "delta_yavg": 6.2660000000000196
+      },
+      {
+        "frame": 1190,
+        "seconds_approx": 39.666666666666664,
+        "delta_yavg": 6.193000000000012
+      },
+      {
+        "frame": 1192,
+        "seconds_approx": 39.733333333333334,
+        "delta_yavg": 6.036500000000004
+      }
+    ],
+    "note": "Candidate cuts only. Mean luma cannot certify flash safety or detect every local flash."
+  },
+  "flags": [
+    "pixel_format_differs_from_yuv420p",
+    "freeze_candidates_require_review_intentional_holds_may_be_valid"
+  ],
+  "human_checks_required": [
+    "watch_and_listen_to_complete_encoded_file",
+    "voice_intention_and_pronunciation",
+    "subtitles_and_timing",
+    "third_party_logos_watermarks_and_anatomy",
+    "centering_safe_areas_and_transitions",
+    "legal_claims_and_cta"
+  ],
+  "limitations": "Black/freeze detection is heuristic. No measurement here approves a voice, proves legal accuracy or certifies absence of flashes."
+}

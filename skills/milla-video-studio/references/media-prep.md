@@ -39,7 +39,7 @@ Las primeras instalaciones resuelven versiones actuales; después de probarlas, 
 
 ## Voz final y alineación
 
-1. Aprobar la muestra real de Fish antes de producir la toma completa. Conservar el motor, `reference_id`, texto, parámetros y WAV original en privado.
+1. Aprobar la muestra real de Fish antes de producir la toma completa. El adaptador incluido solicita WAV mono de 16 bits a 44.1 kHz y exige extensión `.wav`; conservar el motor, `reference_id`, texto, parámetros y WAV original en privado. Verificar con `ffprobe` el archivo realmente recibido: la extensión por sí sola no prueba su formato.
 2. Escuchar la toma completa. Corregir palabras, actuación o pausas antes de fijar tiempos. No compensar una voz rechazada acelerándola. Los cambios de velocidad o recortes posteriores obligan a alinear otra vez.
 3. Preparar una copia mono para reconocimiento; mantener el original de alta calidad para la mezcla:
 
@@ -165,7 +165,7 @@ Escuchar en auriculares y altavoz de teléfono. Bajar música o SFX que cubran c
 
 ## Normalización en dos pasadas y entrega
 
-Objetivo editorial MILLA: alrededor de −16 LUFS integrados y techo prudente de −2 dBTP. No es una obligación universal de redes. Medir la premezcla, usar sus valores en la segunda pasada y verificar nuevamente el AAC del MP4 final. `dBFS` de pico de muestra y `dBTP` de pico verdadero no son intercambiables.
+Objetivo editorial MILLA: alrededor de −16 LUFS integrados y techo prudente de −2 dBTP. No es una obligación universal de redes. Medir la premezcla, usar sus valores en la segunda pasada y verificar nuevamente el AAC del MP4 final. En el JSON de `loudnorm`, `input_tp` es true peak en dBTP; `volumedetect` informa pico de muestra en dBFS. No son intercambiables.
 
 Este bloque usa rutas como argumentos de `subprocess`, nunca `shell=True`, y exige números medidos finitos; no pegar resultados de otro video:
 
@@ -211,6 +211,7 @@ Comprobar duración de ambos flujos antes y después del mux. No usar `-shortest
 - [FFmpeg: filtros de audio](https://ffmpeg.org/ffmpeg-filters.html), particularmente `loudnorm`, `amix`, `sidechaincompress`, `afade` y `atrim`.
 - [FFmpeg: comandos y selección de flujos](https://ffmpeg.org/ffmpeg.html).
 - [ffprobe: inspección de medios](https://ffmpeg.org/ffprobe.html).
+- [Fish Audio: Text to Speech](https://docs.fish.audio/api-reference/endpoint/openapi-v1/text-to-speech), formatos, frecuencias de muestreo, header de modelo y `reference_id`.
 - [WhisperX: instalación, CPU y alineación](https://github.com/m-bain/whisperX), [ejemplos](https://github.com/m-bain/whisperX/blob/main/EXAMPLES.md) y [alineador](https://github.com/m-bain/whisperX/blob/main/whisperx/alignment.py).
 - [Faster Whisper: instalación y marcas por palabra](https://github.com/SYSTRAN/faster-whisper).
 - [rembg: instalación, CLI, modelos y licencias](https://github.com/danielgatis/rembg) y [U-2-Net](https://github.com/xuebinqin/U-2-Net).

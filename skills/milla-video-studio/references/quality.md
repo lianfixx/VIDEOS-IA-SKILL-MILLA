@@ -6,7 +6,7 @@ La aprobación combina mediciones, inspección visual completa y escucha. Ningú
 
 1. Medir con `loudnorm=I=-16:TP=-2:LRA=11:print_format=json` sin producir audio.
 2. Si requiere ajuste, usar mediciones de primera pasada para una segunda pasada de loudnorm. Conservar video con `-c:v copy` cuando solo cambia audio. Fijar AAC estéreo y frecuencia explícita.
-3. Volver a medir el AAC dentro del MP4. `input_i` son LUFS medidos e `input_tp` el true peak del archivo inspeccionado. `volumedetect` da otra medida; no etiquetarla dBTP.
+3. Volver a medir el AAC dentro del MP4. En la salida JSON de `loudnorm`, `input_i` expresa loudness integrado en LUFS e `input_tp` expresa true peak en dBTP. El `max_volume` de `volumedetect` es pico de muestra en dBFS: no renombrarlo como dBTP ni compararlo directamente con el límite de true peak.
 4. Escuchar con audífonos y altavoz pequeño: voz al frente, música con mesura, SFX sin sobresalto y final sin corte.
 
 Objetivo editorial: −16 ±1 LUFS; true peak ≤−1.5 dBTP, preferentemente cerca de −2. Son decisiones de MILLA, no norma universal de redes. Corregir mezcla antes de depender de limitador. Un silencio previsto no es un error.
@@ -34,4 +34,4 @@ La diferencia de luminancia media entre fotogramas localiza saltos; no tiene umb
 
 Separar `measured`, `human_review`, `user_approval` y `unverified`. El informe automático queda en `needs_human_review`. Solo una revisión efectuada puede cerrar ese estado. Expresar “no detectado con estos parámetros” cuando esa sea la evidencia; no declarar perfección.
 
-Fuente técnica consultada 2026-10-04: https://ffmpeg.org/ffmpeg-filters.html (loudnorm, blackdetect, freezedetect, signalstats). Los criterios editoriales son propios.
+Fuente técnica consultada 2026-10-04: https://ffmpeg.org/ffmpeg-filters.html (loudnorm, volumedetect, blackdetect, freezedetect, signalstats). El código fuente de `loudnorm` etiqueta su salida como dBTP; los criterios editoriales son propios.

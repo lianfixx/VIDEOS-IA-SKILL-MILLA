@@ -1,5 +1,14 @@
 # Cambios
 
+## 1.0.1 · 2026-10-04
+
+- Unificación de rutas: el mismo `public/<path>` se valida por hash y se renderiza con Remotion.
+- `init-project` crea una producción autocontenida y conserva la negativa a sobrescribir.
+- Paridad Python/Remotion para transiciones, escenas, diagramas, cues, palabras y SFX.
+- Fish alineado a WAV 44.1 kHz; unidades de true peak explícitas en dBTP.
+- Apify consolidado en una sola guía y endpoint vigente; requisitos de Python unificados.
+- Informes JSON con hash de los dos MP4 recuperados y suites ampliadas a 43 y 16 pruebas.
+
 ## 1.0.0 · 2026-10-04
 
 - Consolidación del estándar vigente y recapitulación con límites de evidencia.
