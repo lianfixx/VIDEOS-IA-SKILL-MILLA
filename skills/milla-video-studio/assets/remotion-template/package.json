@@ -1,6 +1,6 @@
 {
   "name": "milla-video-template",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Plantilla nueva y determinista; no es el código recuperado ni un render aprobado.",
@@ -11,11 +11,11 @@
     "render": "remotion render src/index.ts MillaVideo out/review.mp4 --codec=h264 --audio-codec=aac --pixel-format=yuv420p"
   },
   "dependencies": {
-    "@remotion/cli": "4.0.532",
-    "@remotion/media": "4.0.532",
-    "remotion": "4.0.532",
+    "@remotion/cli": "4.0.540",
+    "@remotion/media": "4.0.540",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "remotion": "4.0.540"
   },
   "devDependencies": {
     "@types/react": "19.1.10",

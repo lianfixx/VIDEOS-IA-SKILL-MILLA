@@ -1,6 +1,6 @@
-# Validación de la versión 1.0.1
+# Validación de la versión 1.0.2
 
-Fecha: 4 de octubre de 2026. Este informe separa pruebas locales, comprobaciones documentales, mediciones sobre referencias recuperadas y revisiones todavía pendientes.
+Fecha de revisión: 3 de noviembre de 2026. Este informe separa pruebas locales, comprobaciones documentales, mediciones sobre referencias recuperadas y revisiones todavía pendientes.
 
 ## Resultado de los controles
 
@@ -11,6 +11,7 @@ Fecha: 4 de octubre de 2026. Este informe separa pruebas locales, comprobaciones
 | Pruebas del compositor | 16/16 | Timeline, precisión por frame, transiciones, diagramas, medios, subtítulos, SFX y zonas seguras |
 | Prueba cruzada Python → Remotion | Aprobada | Un manifiesto final aceptado por Python pasa el validador JavaScript y ambos exponen las mismas siete familias |
 | TypeScript | Aprobado | `tsc --noEmit` sobre la plantilla Remotion |
+| Dependencias npm de producción | 0 avisos | `npm audit --omit=dev` después de actualizar Remotion y sus paquetes a `4.0.540` |
 | Inicialización real | Aprobada | `init-project` copió una producción autocontenida; sus pruebas npm y validación en borrador pasaron |
 | Escaneo preventivo de secretos | 0 hallazgos en 30 textos de la skill y 43 del repositorio | Excluye binarios, dependencias e historial y no prueba ausencia absoluta |
 | Llamadas pagadas | 0 | Kie/Fish se probaron con respuestas simuladas; no se comprobaron claves, saldo ni calidad remota |
@@ -63,4 +64,4 @@ Ambos informes permanecen en `needs_human_review`. `freezedetect` señaló 17 y 
 5. Confirmar licencias de música, imágenes reales, fuentes y logo usados en ese piloto.
 6. Comparar el piloto con la referencia aprobada en teléfono y registrar aprobación o correcciones.
 
-La versión 1.0.1 demuestra coherencia local entre inicialización, validadores y compositor. No demuestra aún calidad de proveedores externos, equivalencia exacta con el montaje histórico ni aprobación estética del compositor nuevo.
+La versión 1.0.2 demuestra coherencia local entre inicialización, validadores y compositor, además de una auditoría npm sin avisos al 3 de noviembre de 2026. No demuestra aún calidad de proveedores externos, equivalencia exacta con el montaje histórico ni aprobación estética del compositor nuevo.

@@ -5,7 +5,7 @@ Esta es una implementación original reutilizable, construida para este paquete.
 ## Preparación
 
 1. Crear una producción autocontenida con `python3 /ruta/a/milla-video-studio/scripts/milla.py init-project /ruta/produccion --title "Tema"`. El comando copia esta plantilla y crea el manifiesto sin sobrescribir destinos existentes. Mantener la plantilla instalada como fuente inmutable y la producción fuera de repositorios públicos.
-2. Entrar en `/ruta/produccion`, instalar Node.js 22 o posterior y ejecutar `npm ci`. Las dependencias quedan fijadas por `package-lock.json`; Remotion y sus paquetes usan la misma versión exacta, `4.0.532`.
+2. Entrar en `/ruta/produccion`, instalar Node.js 22 o posterior y ejecutar `npm ci`. Las dependencias quedan fijadas por `package-lock.json`; Remotion y sus paquetes usan la misma versión exacta, `4.0.540`.
 3. Ejecutar `npm run typecheck` y `npm test`. Revisar la licencia vigente de Remotion según tamaño de empresa y tipo de uso; instalar el paquete no otorga automáticamente derechos para cualquier operación comercial.
 4. Colocar cada medio aprobado bajo `public/`, conservando su ruta exacta de `project.json`. Si un asset declara `"path":"assets/casa.png"`, el único archivo válido es `/ruta/produccion/public/assets/casa.png`. El validador Python calcula el SHA-256 de ese archivo y Remotion lo carga mediante `staticFile("assets/casa.png")`.
 5. Validar desde cualquier directorio con `python3 /ruta/a/milla-video-studio/scripts/milla.py validate /ruta/produccion/project.json --allow-pending`; retirar `--allow-pending` antes del render completo. Después abrir `npm run studio` para inspeccionar. El demo predeterminado es silencioso, tipográfico y técnico, deliberadamente sin subtítulos inventados.

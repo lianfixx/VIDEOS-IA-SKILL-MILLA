@@ -1,9 +1,10 @@
 # Cambios
 
-## Mantenimiento Codex · 2026-11-03
+## 1.0.2 · 2026-11-03
 
 - Se añadieron metadatos explícitos de versión, fecha e idioma al frontmatter de la skill.
-- No cambian el método 1.0.1, los proveedores preferidos ni los criterios de aprobación.
+- Remotion y sus paquetes se actualizaron de `4.0.532` a `4.0.540`; `npm audit --omit=dev` quedó en cero avisos.
+- No cambian el método, los proveedores preferidos ni los criterios de aprobación.
 
 ## 1.0.1 · 2026-10-04
 
