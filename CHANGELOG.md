@@ -1,5 +1,10 @@
 # Cambios
 
+## Mantenimiento Codex · 2026-11-03
+
+- Se añadieron metadatos explícitos de versión, fecha e idioma al frontmatter de la skill.
+- No cambian el método 1.0.1, los proveedores preferidos ni los criterios de aprobación.
+
 ## 1.0.1 · 2026-10-04
 
 - Unificación de rutas: el mismo `public/<path>` se valida por hash y se renderiza con Remotion.
