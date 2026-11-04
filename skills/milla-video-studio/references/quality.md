@@ -29,6 +29,7 @@ La diferencia de luminancia media entre fotogramas localiza saltos; no tiene umb
 - Confirmar recursos únicos, transiciones variadas y cobertura al cambiar de claro a oscuro.
 - Comprobar subtítulos contra voz final; tiempos de palabra solo si existen y se revisaron.
 - Escuchar la actuación: un nivel correcto no convierte una voz mala en aprobada.
+- Revisar la portada o miniatura como imagen propia, también en tamaño pequeño: legible, sin texto inventado, logos ni marcas de agua. Sus imágenes siguen las mismas reglas: Kie Nano Banana, nunca ChatGPT Image.
 
 ## Informe
 

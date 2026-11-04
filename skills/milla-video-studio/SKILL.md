@@ -2,8 +2,8 @@
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.0.2"
-  release_date: "2026-11-03"
+  version: "1.1.0"
+  release_date: "2026-11-04"
   language: "es-MX"
 ---
 
@@ -44,7 +44,7 @@ Ejecutar `python3 scripts/milla.py doctor` desde la carpeta de la skill. Comprue
 5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela.
 6. Ejecutar `python3 scripts/milla.py validate RUTA/project.json`. `--allow-pending` solo revisa borradores; no convierte pendientes en aprobación. Renderizar storyboard y segmentos críticos antes del completo.
 7. Masterizar y medir con [QA](references/quality.md). Ejecutar `python3 scripts/milla.py inspect-video RUTA/video.mp4 --output RUTA/qa.json`. Corregir riesgos concretos, sin ciclos interminables.
-8. Entregar MP4, portada, subtítulos, fuentes y resumen breve de cambios/mediciones/limitaciones. Conservar composición, lockfile, audios separados, manifiesto y estado en destino durable autorizado. No inferir publicación en redes.
+8. Entregar MP4, portada, subtítulos, fuentes y resumen breve de cambios/mediciones/limitaciones. Conservar composición, lockfile, audios separados, manifiesto y estado en destino durable autorizado. No inferir publicación en redes. La portada es un entregable con revisión propia de píxeles: sin texto inventado, logos ni marcas de agua y legible en tamaño pequeño; sus imágenes siguen las reglas 1 y 3.
 9. Registrar retroalimentación en [mejora continua](references/improvement.md), probar cambios y versionar sin borrar restricciones ni inventar aprobaciones.
 
 ## Explicar a la par
@@ -56,3 +56,17 @@ Comunicar en dos o tres frases: **resultado comprobado → siguiente acción →
 Separar código reutilizable de `productions/`, claves y medios privados. Ejecutar `python3 scripts/milla.py secret-scan RUTA` antes de compartir; es ayuda, no prueba exhaustiva. No copiar el historial crudo a GitHub.
 
 Guardar preferencias explícitas y mantener experimentos candidatos. Las mejoras requieren otra ejecución autorizada o una automatización solicitada: instalar no crea aprendizaje autónomo. Consultar [evidencia y límites](references/evidence.md) antes de describir qué se recuperó y probó.
+
+## Terminado y trabajo en Claude Code
+
+Un video está terminado solo cuando consta todo esto:
+- `python3 scripts/milla.py validate RUTA/project.json` pasa sin `--allow-pending`.
+- `inspect-video` escribió un `RUTA/qa.json` nuevo y sus alertas se revisaron en contexto.
+- El MP4 completo se vio y escuchó con revisión registrada; subtítulos sincronizados al audio final; portada revisada como imagen.
+- `secret-scan` sin hallazgos sobre lo que se comparte y entregables en destino durable autorizado.
+
+Entrevista inicial solo al empezar un video nuevo y si faltan en el proyecto objetivo, audiencia, plataforma, jurisdicción, CTA o presupuesto autorizado: una pregunta a la vez, sin repetir lo registrado ni pedir de nuevo aprobaciones existentes; después, el plan. Voz y música se eligen con muestras ya preparadas (regla 6).
+
+Máxima profundidad (`ultrathink`): investigación jurídica del guion con su mapa de afirmaciones y revisión del MP4 completo.
+
+Para frenos activos, reparto en paralelo, `/goal`, `/loop` y navegador, leer [Claude Code](references/claude-code.md).

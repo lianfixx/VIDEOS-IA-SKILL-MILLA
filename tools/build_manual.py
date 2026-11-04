@@ -6,7 +6,8 @@ root = Path(__file__).resolve().parents[1]
 skill = root / 'skills' / 'milla-video-studio'
 files = [skill/'SKILL.md'] + [skill/'references'/name for name in (
     'standard.md','workflow.md','connections.md','media-prep.md','prompts.md',
-    'rendering.md','quality.md','improvement.md','portability.md','evidence.md')]
+    'rendering.md','quality.md','improvement.md','portability.md','evidence.md',
+    'claude-code.md')]
 text = ['# MILLA Video Studio · manual portable\n\nGenerado desde la skill; editar los originales y ejecutar tools/build_manual.py.\nEste archivo transmite instrucciones. Para ejecutar se necesita la carpeta de código completa.\n']
 for f in files:
     body = f.read_text(encoding='utf-8')

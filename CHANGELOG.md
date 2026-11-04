@@ -1,5 +1,13 @@
 # Cambios
 
+## 1.1.0 · 2026-11-04
+
+- SKILL.md añade la sección «Terminado y trabajo en Claude Code»: criterio de terminado verificable, entrevista inicial solo para un video nuevo con datos faltantes y pasos de máxima profundidad.
+- Nueva referencia `references/claude-code.md`: frenos activos del repositorio, plan y entrevista, reparto en paralelo con un único `project.json`, `/goal`, `/loop` para consultar tareas ya enviadas, navegador y atajos de sesión. Se incluye en `MANUAL_COMPLETO.md`.
+- La portada o miniatura queda explícita como entregable con revisión propia de píxeles (SKILL.md y `references/quality.md`), con las mismas reglas de imágenes.
+- Versión de la plantilla Remotion alineada a 1.1.0, sin cambios de código ni dependencias.
+- No cambian el método, los proveedores preferidos, los validadores ni los criterios de aprobación.
+
 ## 1.0.2 · 2026-11-03
 
 - Se añadieron metadatos explícitos de versión, fecha e idioma al frontmatter de la skill.
