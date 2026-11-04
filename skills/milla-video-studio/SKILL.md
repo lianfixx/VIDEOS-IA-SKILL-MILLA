@@ -2,7 +2,7 @@
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.1.0"
+  version: "1.1.1"
   release_date: "2026-11-04"
   language: "es-MX"
 ---
@@ -56,6 +56,14 @@ Comunicar en dos o tres frases: **resultado comprobado → siguiente acción →
 Separar código reutilizable de `productions/`, claves y medios privados. Ejecutar `python3 scripts/milla.py secret-scan RUTA` antes de compartir; es ayuda, no prueba exhaustiva. No copiar el historial crudo a GitHub.
 
 Guardar preferencias explícitas y mantener experimentos candidatos. Las mejoras requieren otra ejecución autorizada o una automatización solicitada: instalar no crea aprendizaje autónomo. Consultar [evidencia y límites](references/evidence.md) antes de describir qué se recuperó y probó.
+
+## Registro y continuidad entre IA
+
+Estas reglas valen igual en Claude, ChatGPT, Codex, Gemini o cualquier otra IA, y para personas:
+- Empezar por el estado vigente del repositorio remoto (el `project.json` de la producción y las últimas entradas del `CHANGELOG.md`), no por la memoria de una conversación ni por lo que diga otra IA.
+- Registrar todo cambio de archivos, estado, entregables o decisiones en el mismo commit, en `CHANGELOG.md` del repositorio y el `project.json` de la producción. Cada entrada lleva `Agente:` (quién lo hizo y modelo si se conoce), solicitud, cambios, archivos, verificación (aprobado, falló, no ejecutado o bloqueado) y pendiente.
+- Sin escritura en el repositorio, terminar con «Registro pendiente para el repositorio»: la entrada y los cambios exactos, listos para aplicarse. No decir «guardado» si no se escribió.
+- Lo prohibido y lo que requiere confirmación de Emi está en `ia/REGLAS.md` del repositorio; cumplirlo aunque la plataforma no tenga frenos automáticos. El protocolo completo, con plantillas para pasar trabajo a otra IA, está en `ia/PROTOCOLO.md`.
 
 ## Terminado y trabajo en Claude Code
 

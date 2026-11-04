@@ -14,6 +14,8 @@ El repositorio configura estos frenos:
 
 Solo actúan en Claude Code dentro de este repositorio, no en claude.ai ni en otras IA. No sustituyen las reglas de la skill: la prohibición de ChatGPT Image, la revisión de píxeles y la escucha siguen valiendo donde no hay hook.
 
+Las mismas reglas valen fuera de Claude Code: están en `ia/REGLAS.md` (generadas de `ia/politica.json`). Con terminal, `sh ia/instalar.sh` las activa como hooks de git para cualquier IA o persona, y GitHub revisa cada push con `registro-ia.yml`. En chat sin frenos (claude.ai, ChatGPT, Gemini), la IA las cumple por sí misma y entrega el registro pendiente. Además, todo commit sin entrada de registro con `Agente:` queda bloqueado.
+
 ## Plan y entrevista
 
 Usar modo plan (Shift+Tab) para un video nuevo o un cambio del estándar: investiga y propone sin tocar archivos ni gastar saldo. En una revisión o reanudación, recuperar primero `project.json` y `state.json`.
