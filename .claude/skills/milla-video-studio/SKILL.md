@@ -1,6 +1,6 @@
 ---
 name: milla-video-studio
-description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
+description: "Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT."
 ---
 
 # Entrada de milla-video-studio

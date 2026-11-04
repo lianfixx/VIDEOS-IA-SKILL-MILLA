@@ -117,8 +117,8 @@
       "type": "before_git",
       "git": "commit",
       "staged_regex": "(^|/)SKILL\\.md$",
-      "run": "python3 ia/check_skill.py skills/milla-video-studio",
-      "reason": "El SKILL.md dejaría de ser compatible con claude.ai."
+      "run": "python3 ia/check_skill.py skills/milla-video-studio .claude/skills/milla-video-studio .agents/skills/milla-video-studio",
+      "reason": "El SKILL.md o sus puentes dejarían de ser válidos."
     },
     {
       "type": "before_git",
