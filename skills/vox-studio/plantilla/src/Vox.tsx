@@ -14,12 +14,13 @@ loadFont({family: 'Gelasio', url: gelasioUrl, weight: '700'});
 export type Colores = {papel: string; tinta: string; acento: string; apoyo: string};
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
-  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string;
+  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
   fps: number; ancho: number; alto: number; frames: number; titulo: string;
-  perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string};
+  perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string; subtitulos?: string};
+  finVoz?: number; portada?: {texto: string; resaltar: string; imagen: string};
   voz: string; musica: string; sfx: boolean; escenas: Escena[]; palabras: Palabra[];
 };
 
@@ -204,6 +205,18 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
   );
 };
 
+/** Remate visual tipo meme: un sello de goma que cae a media escena, junto con su sonido. */
+const Remate: React.FC<{e: Escena; c: Colores; f: number}> = ({e, c, f}) => {
+  const {fps} = useVideoConfig();
+  if (!e.remate) return null;
+  const en = Math.round(e.dur * 0.55);
+  return (
+    <div style={{position: 'absolute', right: SEGURO.izq + 20, top: 1010, zIndex: 4, ...entrar('sello', f - en, fps)}}>
+      <div style={{fontFamily: 'Anton', fontSize: 92, lineHeight: 1, color: c.acento, border: `10px solid ${c.acento}`, borderRadius: 14, padding: '6px 26px 10px', transform: 'rotate(-9deg)', background: `${c.papel}E6`, letterSpacing: 2}}>{e.remate}</div>
+    </div>
+  );
+};
+
 const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = ({e, c, indice, f}) => {
   const {fps} = useVideoConfig();
   const finTitular = medidas(e.keyword, React.useContext(FuenteCtx)).fin;
@@ -216,6 +229,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
       )}
       <Titular e={e} c={c} f={f} indice={indice} />
       <Sticker e={e} c={c} f={f} indice={indice} arriba={finTitular + 62} />
+      <Remate e={e} c={c} f={f} />
       <div style={{position: 'absolute', inset: 0, zIndex: 3}}><Nota e={e} c={c} f={f} indice={indice} /></div>
       {e.fuente && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 30, maxWidth: 520, textAlign: 'right', fontFamily: 'Caveat', fontSize: 42, lineHeight: 1, color: c.tinta}}>Fuente: {e.fuente}</div>}
     </div>
@@ -223,7 +237,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
 };
 
 /** Subtítulos por palabra con los tiempos reales de la narración (nunca repartidos a mano). */
-const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) => {
+const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = ({palabras, c, fuente}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
@@ -233,7 +247,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) 
     for (const p of palabras) {
       const letras = actual.reduce((n, x) => n + x.t.length + 1, 0) + p.t.length;
       const pausa = actual.length > 0 && p.a - actual[actual.length - 1].b > 0.35;
-      if (actual.length > 0 && (actual.length >= 3 || letras > 18 || pausa)) {
+      if (actual.length > 0 && (actual.length >= 3 || letras > (fuente === 'Anton' ? 18 : 15) || pausa)) {
         g.push(actual);
         actual = [];
       }
@@ -245,7 +259,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) 
     }
     if (actual.length) g.push(actual);
     return g;
-  }, [palabras]);
+  }, [palabras, fuente]);
   const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < (grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : g[g.length - 1].b + 0.4));
   if (i < 0) return null;
   const grupo = grupos[i];
@@ -257,7 +271,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) 
           const activa = dicha && t < p.b + 0.06;
           const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 17, stiffness: 240, mass: 0.6}});
           return (
-            <span key={k} style={{fontFamily: 'Anton', fontSize: 74, lineHeight: 1.05, textTransform: 'uppercase', color: activa ? c.papel : dicha ? c.tinta : `${c.tinta}38`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
+            <span key={k} style={{fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: fuente === 'Anton' ? 74 : 62, lineHeight: fuente === 'Anton' ? 1.05 : 1.2, textTransform: 'uppercase', color: activa ? c.papel : dicha ? c.tinta : `${c.tinta}38`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
               {p.t}
             </span>
           );
@@ -323,22 +337,51 @@ export const Vox: React.FC<VideoVox> = (v) => {
           <div style={{width: '100%', height: '100%', background: c.apoyo, clipPath: `polygon(${Array.from({length: 25}).map((_, n) => `${n * 4.17}% ${n % 2 ? 0 : 2.2 + azar(n) * 1.6}%`).join(', ')}, 100% 100%, ${Array.from({length: 25}).map((_, n) => `${100 - n * 4.17}% ${n % 2 ? 100 : 97.8 - azar(n + 9) * 1.6}%`).join(', ')}, 0 100%)`}} />
         </div>
       )}
-      {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} />}
+      {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} />}
       {/* barra de avance y firma, dentro de la zona segura */}
       <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba - 8, width: SEGURO.der - SEGURO.izq, height: 10, background: `${c.tinta}22`}}>
         <div style={{width: `${avance * 100}%`, height: '100%', background: c.acento}} />
       </div>
       {v.perfil.handle && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba - 52, fontFamily: 'Anton', fontSize: 34, color: c.tinta, opacity: 0.7}}>{v.perfil.handle}</div>}
       {v.voz && <Audio src={staticFile(v.voz)} />}
-      {v.musica && <Audio src={staticFile(v.musica)} volume={0.1} loop />}
+      {v.musica && <Audio src={staticFile(v.musica)} volume={(fr) => interpolate(fr / fps, [0, 0.5, (v.finVoz ?? 9999), (v.finVoz ?? 9999) + 0.5], [0.3, 0.11, 0.11, 0.32], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
       {v.sfx && v.escenas.map((e, i) => (
         <React.Fragment key={e.id}>
           {i > 0 && <Audio src={staticFile(`sfx/${e.transicion === 'rasgado' ? 'rasgar' : e.transicion === 'barrido' ? 'deslizar' : SONIDOS[i % SONIDOS.length]}.wav`)} from={Math.max(0, e.desde - VIAJE)} volume={0.3} />}
-          {e.resaltar && i > 0 && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + 10} volume={0.22} />}
+          {e.sonido && <Audio src={staticFile(`sfx/${e.sonido}.wav`)} from={e.desde + (e.remate ? Math.round(e.dur * 0.55) - 14 : i === 0 ? 2 : 12)} volume={0.42} />}
+          {e.resaltar && i > 0 && !e.sonido && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + 10} volume={0.22} />}
         </React.Fragment>
       ))}
       
     </AbsoluteFill>
+    </FuenteCtx.Provider>
+  );
+};
+
+/** Portada: un solo cuadro con el titular y el mejor recorte, centrado para la rejilla del perfil. */
+export const Portada: React.FC<VideoVox> = (v) => {
+  const c = v.perfil.colores;
+  const fuente = v.perfil.titular && FUENTES[v.perfil.titular] ? v.perfil.titular : 'Anton';
+  const p = v.portada ?? {texto: v.escenas[0].keyword, resaltar: v.escenas[0].resaltar, imagen: v.escenas.find((e) => e.imagen)?.imagen ?? ''};
+  const e: Escena = {...v.escenas[0], keyword: p.texto, resaltar: p.resaltar, entrada: 'sello'};
+  const BAJA = 150; // el titular reutiliza el mismo componente del video, desplazado hacia el centro
+  const arriba = medidas(p.texto, fuente).fin + BAJA + 50;
+  const alto = 1620 - arriba;
+  return (
+    <FuenteCtx.Provider value={fuente}>
+      <AbsoluteFill style={{backgroundColor: c.papel}}>
+        <Papel c={c} cuadricula={v.perfil.cuadricula} />
+        <div style={{position: 'absolute', left: 0, top: BAJA, width: W, height: H}}>
+          <Titular e={e} c={c} f={999} indice={0} />
+        </div>
+        {p.imagen && (
+          <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <div style={{position: 'absolute', width: alto * 0.9, height: alto * 0.9, borderRadius: '50%', backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px'}} />
+            <Img src={staticFile(p.imagen)} style={{position: 'relative', height: alto * 0.98, maxWidth: 880, objectFit: 'contain', transform: 'rotate(-3deg)', filter: `${borde(8, '#fff')} drop-shadow(16px 16px 0 ${c.tinta})`}} />
+          </div>
+        )}
+        {v.perfil.handle && <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba + 40, fontFamily: 'Anton', fontSize: 44, color: c.papel, background: c.tinta, padding: '6px 22px'}}>{v.perfil.handle}</div>}
+      </AbsoluteFill>
     </FuenteCtx.Provider>
   );
 };

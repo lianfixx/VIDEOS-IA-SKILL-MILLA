@@ -11,8 +11,10 @@ def guion():
     g = {
         "perfil": "personal", "titulo": "Prueba", "cta_pregunta": "¿Tú qué opinas?",
         "opinion_emi": "Postura de prueba suficientemente larga para pasar.",
+        "musica": {"animo": "tension"},
         "escenas": [{"id": f"0{i}", "narracion": f"Frase número {i} de prueba.", "keyword": f"CLAVE {i}", "resaltar": "CLAVE"} for i in range(1, 5)],
     }
+    g["escenas"][0]["sonido"] = "boom"
     g["escenas"][-1]["narracion"] = "¿Tú qué opinas de esto?"
     return g
 
@@ -67,6 +69,49 @@ class Guion(unittest.TestCase):
             self.assertNotEqual(c["apoyo"], c["tinta"], nombre)
             self.assertTrue(p["voz"]["voice_id"], nombre)
             self.assertIn(p["titular"], {"Anton", "Gelasio"}, nombre)
+
+
+class Sonido(unittest.TestCase):
+    def test_exige_musica_y_un_efecto(self):
+        g = guion(); g.pop("musica"); g["escenas"][0].pop("sonido")
+        errores = " | ".join(vox.validar_guion(g))
+        self.assertIn("musica.animo", errores)
+        self.assertIn("ninguna escena tiene `sonido`", errores)
+        g = guion(); g["escenas"][1]["sonido"] = "risas"
+        self.assertIn("no existe", " | ".join(vox.validar_guion(g)))
+
+    def test_musica_original_a_la_medida(self):
+        import numpy as np
+        for animo in vox.SON.ANIMOS:
+            a = vox.SON.componer(animo, 6.0)
+            self.assertEqual(len(a), 6 * vox.SON.SR, animo)
+            self.assertLessEqual(float(np.abs(a).max()), 0.51, animo)
+            self.assertGreater(float(np.sqrt((a ** 2).mean())), 0.03, animo)
+            self.assertTrue(np.array_equal(a, vox.SON.componer(animo, 6.0)), animo)  # determinista
+
+    def test_efectos_se_sintetizan(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(vox.SON.sintetizar_efectos(Path(d)), sorted(vox.SON.EFECTOS))
+            self.assertTrue(all((Path(d) / f"{n}.wav").stat().st_size > 5000 for n in vox.SON.EFECTOS))
+
+    def test_propuesta_segun_contenido_y_espacio(self):
+        g = guion(); g["escenas"][1]["narracion"] = "Pero te mintieron: eso cuesta mucho dinero."
+        pr = vox.SON.proponer(g)
+        self.assertEqual(pr["musica"]["animo"], "tension")
+        self.assertEqual(pr["escenas"][0]["sonido"], "boom")
+        self.assertIn(pr["escenas"][1]["sonido"], {"caja", "scratch"})
+        g["perfil"] = "castorena"; g["escenas"][2]["narracion"] = "Fracasó y nadie lo vio."
+        pr = vox.SON.proponer(g)
+        self.assertNotIn("trombon", [x["sonido"] for x in pr["escenas"]])
+        self.assertTrue(all(not x["remate"] for x in pr["escenas"]))
+
+    def test_portada_y_remate_en_la_linea_de_tiempo(self):
+        g = guion(); g["escenas"][1]["remate"] = "plot twist"; palabras, fin = alinear(g)
+        v = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])
+        self.assertEqual(v["portada"]["texto"], "CLAVE 1")
+        self.assertEqual(v["escenas"][1]["remate"], "PLOT TWIST")
+        self.assertEqual(v["musica"], "audio/musica.wav")
+        self.assertAlmostEqual(v["finVoz"], palabras[-1]["b"], places=2)
 
 
 class Tiempos(unittest.TestCase):

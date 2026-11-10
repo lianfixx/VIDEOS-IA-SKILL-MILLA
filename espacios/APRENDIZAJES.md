@@ -12,3 +12,5 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Auditoría (demo 2): los huecos encerrados (perforaciones, asas) quedaban verdes. Regla: el recorte ya los quita; para sujetos verdes usar `--croma magenta`.
 - 2026-11-10 · Auditoría (demo 2): la normalización de una pasada dejó −12.7 LUFS y pico −0.4. Regla: master en dos pasadas (ya integrado en `render`); comprobar que diga cerca de −14 LUFS y pico ≤ −1.5 dBTP.
 - 2026-11-10 · Revisión de código: 15 fallas corregidas (salto de zoom, textos que desbordan, re-narración pagada, estado de imagen reutilizado). Regla: tras cada cambio de la plantilla, pruebas + render + hoja de fotogramas.
+- 2026-11-10 · Emi: en cada video analizar de qué va y proponer música, efectos y remates tipo meme, hechos con código. Regla: `vox.py sonido` + criterio propio; el guion no pasa sin `musica.animo` y al menos un `sonido`.
+- 2026-11-10 · Emi aprobó: subtítulos de Castorena en serif y portada automática por video (`out/portada.png`).

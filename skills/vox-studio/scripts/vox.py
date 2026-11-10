@@ -9,7 +9,8 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
   armar GUION --dir DIR                    reconstruye video.json sin volver a pagar la voz
   imagen --prompt-file F --out O --estado S [--estilo ilustracion|foto|sticker] [--modelo M] [--croma verde|magenta]
   recorte ENTRADA SALIDA                   quita el fondo uniforme conectado al borde -> PNG con alfa
-  render DIR                               render + master a -14 LUFS + hoja de fotogramas para auditar
+  sonido GUION                             analiza el guion y propone música, efectos y remates
+  render DIR                               render + portada + master a -14 LUFS + hoja de fotogramas para auditar
   cierre DIR                               tabla de gastado y restante del video (obligatoria al entregar)
   saldo                                    cuánto queda en Kie, ElevenLabs y Apify
   aprender "TEXTO" [--espacio E]           guarda una lección para los videos siguientes
@@ -61,7 +62,10 @@ ESTILOS = {
 CROMAS = {"verde": "pure green (#00FF00)", "magenta": "pure magenta (#FF00FF)"}
 SIGNOS = "¿¡?!.,;:"
 MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
-LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6}
+LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sonido as SON  # noqa: E402  (música y efectos hechos con código)
 
 
 class ErrorVox(Exception):
@@ -142,7 +146,19 @@ def validar_guion(g: dict) -> list[str]:
         e.append("falta titulo")
     if "?" not in str(g.get("cta_pregunta", "")):
         e.append("cta_pregunta debe ser una pregunta que invite a comentar")
+    mus = g.get("musica") or {}
+    if mus.get("animo") not in set(SON.ANIMOS) | {"ninguna"}:
+        e.append(f"falta musica.animo: analiza de qué va el video (`vox.py sonido GUION`) y elige uno de {sorted(SON.ANIMOS)} o 'ninguna'")
+    if mus.get("animo") == "ninguna" and len(str(mus.get("motivo", ""))) < 10:
+        e.append("musica 'ninguna' exige musica.motivo")
+    port = g.get("portada") or {}
+    if len(str(port.get("texto", ""))) > 34 or len(partir(str(port.get("texto", "")))) > 3:
+        e.append("portada.texto: máximo 34 caracteres y 3 líneas")
+    if port.get("imagen_archivo") and not ruta_segura(port["imagen_archivo"]):
+        e.append("portada.imagen_archivo debe ser relativa a public/")
     escenas = g.get("escenas") or []
+    if not any(s.get("sonido") for s in escenas):
+        e.append("ninguna escena tiene `sonido`: propone al menos un efecto que subraye el contenido")
     if not 4 <= len(escenas) <= 9:
         e.append(f"se esperan de 4 a 9 escenas; hay {len(escenas)}")
     vistos, ent_previa, tr_previa = set(), None, None
@@ -169,6 +185,8 @@ def validar_guion(g: dict) -> list[str]:
         for campo, tope in LIMITES.items():
             if len(str(s.get(campo, ""))) > tope:
                 e.append(f"{p}: {campo} pasa de {tope} caracteres")
+        if s.get("sonido") and s["sonido"] not in SON.EFECTOS:
+            e.append(f"{p}: sonido {s['sonido']!r} no existe; opciones {sorted(SON.EFECTOS)}")
         img = s.get("imagen_archivo", "")
         if img and not ruta_segura(img):
             e.append(f"{p}: imagen_archivo debe ser una ruta relativa a public/, sin '..'")
@@ -245,11 +263,23 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             "fuente": s.get("fuente", ""), "imagen": img, "foto": bool(s.get("foto_real", False)),
             "entrada": s.get("entrada") or ENTRADAS[i % len(ENTRADAS)],
             "transicion": s.get("transicion") or TRANSICIONES[i % len(TRANSICIONES)],
+            "sonido": s.get("sonido", ""), "remate": str(s.get("remate", "")).upper(),
         })
+    port = g.get("portada") or {}
+    con_imagen = next((x for x in escenas if x["imagen"]), None)
+    portada = {
+        "texto": " ".join(str(port.get("texto") or escenas[0]["keyword"]).split()).upper(),
+        "resaltar": limpia(port.get("resaltar") or escenas[0]["resaltar"]),
+        "imagen": port.get("imagen_archivo") or (con_imagen["imagen"] if con_imagen else ""),
+    }
+    if portada["imagen"] and publico is not None and not (publico / portada["imagen"]).is_file():
+        raise ErrorVox(f"la portada pide {portada['imagen']} y no existe en {publico}")
+    animo = (g.get("musica") or {}).get("animo", "ninguna")
     return {
         "fps": FPS, "ancho": 1080, "alto": 1920, "frames": total,
         "titulo": g["titulo"], "perfil": perfil, "voz": "audio/voz.mp3",
-        "musica": g.get("musica_archivo", ""), "sfx": True, "escenas": escenas,
+        "musica": "" if animo == "ninguna" else "audio/musica.wav", "animo": animo,
+        "finVoz": round(palabras[-1]["b"], 3), "portada": portada, "sfx": True, "escenas": escenas,
         "palabras": [{"t": p["t"], "a": round(p["a"], 3), "b": round(p["b"], 3)} for p in palabras],
     }
 
@@ -522,6 +552,8 @@ def rendir(d: Path) -> dict:
     if Path(navegador).exists():
         cmd.append(f"--browser-executable={navegador}")
     _correr(cmd, cwd=d)
+    foto = ["npx", "remotion", "still", "src/index.ts", "Portada", "out/portada.png", "--props=src/data/video.json", "--log=error"]
+    _correr(foto + [c for c in cmd if c.startswith("--browser-executable")], cwd=d)
     masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja.png")
     return medir(d / "out" / "final.mp4")
@@ -539,6 +571,9 @@ def _guion(ruta: str) -> dict:
 
 def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     video = armar_video(g, palabras, duracion_audio(d / "public" / "audio" / "voz.mp3"), perfiles()[g["perfil"]], d / "public")
+    SON.sintetizar_efectos(d / "public" / "sfx")
+    if video["musica"]:  # pista original compuesta con código, a la medida exacta del video
+        SON.guardar(d / "public" / video["musica"], SON.componer(video["animo"], video["frames"] / FPS), pico=0.5)
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
     (d / "src" / "data" / "video.json").write_text(json.dumps(video, ensure_ascii=False, indent=1), encoding="utf-8")
     return video
@@ -559,6 +594,7 @@ def main(argv=None) -> int:
     p.add_argument("--croma", choices=sorted(CROMAS) + ["ninguno"], default="verde")
     p = sub.add_parser("recorte"); p.add_argument("entrada"); p.add_argument("salida")
     p = sub.add_parser("render"); p.add_argument("dir")
+    p = sub.add_parser("sonido"); p.add_argument("guion")
     p = sub.add_parser("cierre"); p.add_argument("dir")
     p = sub.add_parser("aprender"); p.add_argument("texto"); p.add_argument("--espacio", default="")
     p = sub.add_parser("aprendizajes"); p.add_argument("--espacio", default="")
@@ -579,6 +615,7 @@ def main(argv=None) -> int:
                 raise ErrorVox(f"{d} ya existe; no se sobrescribe una producción")
             with tempfile.TemporaryDirectory() as tmp:  # los SFX se prueban antes de crear nada
                 sintetizar_sfx(Path(tmp) / "sfx")
+                SON.sintetizar_efectos(Path(tmp) / "sfx")
                 d.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copytree(PLANTILLA, d, ignore=shutil.ignore_patterns("node_modules", "out"))
                 shutil.copytree(Path(tmp) / "sfx", d / "public" / "sfx")
@@ -630,10 +667,20 @@ def main(argv=None) -> int:
             print(f"Imagen guardada en {a.out}")
         elif a.cmd == "recorte":
             print("Recorte", recortar_croma(Path(a.entrada), Path(a.salida)))
+        elif a.cmd == "sonido":
+            g = json.loads(Path(a.guion).read_text(encoding="utf-8"))
+            pr = SON.proponer(g)
+            m = pr["musica"]
+            print(f"Música propuesta: {m['animo']} ({m['bpm']} bpm) — {m['porque']}")
+            print("Opciones: " + "; ".join(f"{k}: {v[4]}" for k, v in SON.ANIMOS.items()))
+            for x in pr["escenas"]:
+                print(f"  escena {x['id']}: sonido={x['sonido'] or '—'}  remate={x['remate'] or '—'}")
+            print("Efectos disponibles: " + "; ".join(f"{k} ({v[1]})" for k, v in SON.EFECTOS.items()))
+            print("Es una propuesta: revísala contra el sentido de cada escena y escribe en el guion musica.animo, sonido y remate.")
         elif a.cmd == "render":
             m = rendir(Path(a.dir))
             print(f"Final en {a.dir}/out/final.mp4 · {m['duracion_s']} s · {m['lufs']} LUFS · pico {m['pico_dbtp']} dBTP")
-            print(f"Audita {a.dir}/out/hoja.png antes de entregar y termina con `cierre`.")
+            print(f"Audita {a.dir}/out/hoja.png y {a.dir}/out/portada.png antes de entregar y termina con `cierre`.")
         elif a.cmd == "cierre":
             d = Path(a.dir)
             ini = d / "estados" / "saldo-inicio.json"

@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -25,6 +25,21 @@ Cada marca vive en [su carpeta](../../espacios/README.md) y no se mezcla: `espac
 
 Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
 
+## Música, efectos y remates (siempre)
+
+En cada video, antes de producir: leer el guion completo, entender de qué va y a quién le habla, y decidir el diseño de sonido. `$V sonido $D/guion.json` da una propuesta de partida (ánimo de la música, efecto por escena y remates); revisarla con criterio contra el sentido de cada escena, no aceptarla a ciegas, y escribir la decisión en el guion:
+
+- `musica.animo`: `tension`, `energia`, `serio`, `ironia` o `motivacion`. La pista se **compone con código** (`scripts/sonido.py`), original y a la medida exacta del video: sin proveedor, sin costo y sin licencias de terceros. Baja bajo la voz y sube al terminar la narración.
+- `sonido` por escena: `boom`, `scratch`, `trombon`, `ding`, `redoble`, `suspenso`, `caja`, `error`. Son remates sintetizados aquí, no grabaciones ajenas. Uno por idea; repetido pierde la gracia.
+- `remate` por escena (opcional, hasta 14 letras): sello que cae a media escena con su sonido, por ejemplo «PLOT TWIST» o «ASÍ NO».
+- En `milla` y `castorena`: música `serio`, sin remates de chiste. En `personal` es donde cabe el humor sonoro.
+
+El validador rechaza un guion sin `musica.animo` o sin ningún `sonido`. Si hace falta un efecto, ánimo o remate visual que no existe, se programa en `sonido.py` o en `plantilla/src/Vox.tsx` con su prueba y se deja disponible para los videos siguientes. No usar audios ni imágenes de memes con derechos de terceros.
+
+## Portada
+
+`render` deja también `out/portada.png` con el titular y el mejor recorte, en los colores y la tipografía del espacio. Por defecto toma la primera escena; se ajusta con `portada: {texto, resaltar, imagen_archivo}` en el guion. Revisarla como imagen: legible en tamaño pequeño y sin texto cortado.
+
 ## Flujo
 
 Desde la raíz del repositorio:
@@ -39,7 +54,8 @@ $V imagen --prompt-file $D/prompts/01.txt --out $D/originales/01.jpg --estado $D
 $V recorte $D/originales/01.jpg $D/public/img/01.png
 $V voz $D/guion.json --dir $D --execute # narra una vez y guarda la alineación
 $V armar $D/guion.json --dir $D         # tras cambiar textos o imágenes: no vuelve a pagar la voz
-$V render $D                            # render + master + hoja de fotogramas
+$V sonido $D/guion.json                 # propuesta de música, efectos y remates (antes de validar)
+$V render $D                            # render + portada + master + hoja de fotogramas
 $V cierre $D                            # saldos: gastado y restante
 ```
 
@@ -53,7 +69,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 - Subtítulos: solo con los tiempos por palabra que devuelve el proveedor de voz.
 - **Nada tiembla**: flotación lenta, rebotes amortiguados. Sin fades. Entradas y transiciones (`viaje`, `barrido`, `rasgado`) variadas; el validador rechaza repetir la anterior.
 - Texto dentro de la zona segura de TikTok (x 90–960, y 230–1440).
-- Música: ninguna por defecto hasta documentar derechos; los SFX se sintetizan con FFmpeg.
+- Música y efectos: siempre, compuestos con código (ver arriba). Música de terceros solo con derechos documentados.
 
 ## Auditar y corregir
 
