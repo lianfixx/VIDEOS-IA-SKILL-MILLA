@@ -22,3 +22,6 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Auditoría: el guion de ejemplo no pasaba su propio validador. Regla: todo ejemplo documentado tiene una prueba que lo valida.
 - 2026-11-10 · Segunda revisión independiente: los efectos sonaban hasta 13 dB por encima de la voz y el master comprimía. Regla: la voz se normaliza a −16 LUFS y música y efectos se colocan respecto a ella; `render` avisa si algo se sale. Otras 13 fallas corregidas (rutas, biblioteca, licencias de miniaturas, sello sincronizado y sin tapar el contenido).
 - 2026-11-10 · Auditoría cuadro por cuadro: el video terminaba en seco y las escenas largas se quedaban quietas. Regla: cierre con llamado a comentar y pulso a media escena (ya automáticos); atender los avisos ⚠ de `validar` y revisar `hoja-tiktok.png`.
+- 2026-11-10 · Emi: el audio del demo está bien, «pero por video compruébalo». Regla: en cada video se le pide que escuche voz, música y efectos; los niveles automáticos no cuentan como aprobación.
+- 2026-11-10 · Auditoría de imagen (nueva): la nota, el sello y un recorte caían bajo los botones de TikTok. Regla: de y=760 hacia abajo el contenido termina en x=900; `render` lo mide y avisa.
+- 2026-11-10 · Emi aprobó que las pruebas de Vox Studio corran solas antes de cada commit.

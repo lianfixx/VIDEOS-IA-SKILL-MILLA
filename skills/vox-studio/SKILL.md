@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.7.0"
+  version: "0.8.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -46,7 +46,7 @@ Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --
 
 ## Biblioteca: reciclar solo lo que encaja
 
-Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con lo que muestran. Antes de generar una imagen, `$V biblioteca --buscar "..."`; se recicla (`$V reciclar ID --dir $D`) solo si, **al mirarla**, dice exactamente lo que la escena necesita. Ante la duda, imagen nueva. Lo que existe en código (ánimos, efectos, entradas, transiciones, estilos) está en [CATALOGO.md](CATALOGO.md).
+Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con lo que muestran. Antes de generar una imagen, `$V biblioteca --buscar "..."`; se recicla (`$V reciclar ID --dir $D`) solo si, **al mirarla**, dice exactamente lo que la escena necesita. Ante la duda, imagen nueva. Lo que existe en código (ánimos, efectos, entradas, transiciones, estilos) está en [CATALOGO.md](CATALOGO.md); los números exactos de montaje, audio y auditoría, en [TECNICA.md](TECNICA.md).
 
 ## Solo video
 
@@ -94,7 +94,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 ## Auditar y corregir
 
-`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena, y `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok sombreadas en rojo: ningún texto ni rostro debe quedar debajo. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. Leer los avisos de audio de `render`: sin avisos, el sonido está en rango. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
+`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena, y `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok sombreadas en rojo: ningún texto ni rostro debe quedar debajo. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. `render` imprime los avisos de `out/auditoria-audio.json` y `out/auditoria-video.json` (formato del archivo, contenido bajo la interfaz de TikTok, cuadros vacíos, niveles): se corrigen todos antes de entregar. Sin avisos significa en rango, no aprobado: **en cada video se le pide a Emi que escuche voz, música y efectos** y se guarda lo que diga. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
 
 ## Aprender de cada video (obligatorio)
 

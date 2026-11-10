@@ -687,10 +687,61 @@ def auditar_audio(d: Path, datos: dict, final: dict, ganancia_master: float = 0.
     return informe
 
 
+ZONAS_TIKTOK = {"barra superior": (0, 0, 1080, 215), "descripción inferior": (0, 1450, 1080, 1920), "botones de la derecha": (960, 760, 1080, 1450)}
+
+
+def auditar_video(d: Path, datos: dict) -> dict:
+    """Revisión medible de la imagen: formato del archivo, contenido en zonas tapadas y cuadros vacíos."""
+    import numpy as np
+    from PIL import Image
+    final = d / "out" / "final.mp4"
+    avisos = []
+    sonda = json.loads(_correr(["ffprobe", "-v", "error", "-show_streams", "-show_format", "-of", "json", str(final)],
+                               capture_output=True, text=True).stdout)
+    v = next(x for x in sonda["streams"] if x["codec_type"] == "video")
+    au = next((x for x in sonda["streams"] if x["codec_type"] == "audio"), {})
+    formato = {"codec": v["codec_name"], "ancho": v["width"], "alto": v["height"], "fps": v["r_frame_rate"], "pix_fmt": v["pix_fmt"],
+               "audio": au.get("codec_name"), "audio_hz": au.get("sample_rate"), "kbps": round(int(sonda["format"]["bit_rate"]) / 1000),
+               "duracion_s": round(float(sonda["format"]["duration"]), 2)}
+    esperado = {"codec": "h264", "ancho": 1080, "alto": 1920, "fps": "30/1", "pix_fmt": "yuv420p", "audio": "aac", "audio_hz": "48000"}
+    for k, val in esperado.items():
+        if formato[k] != val:
+            avisos.append(f"formato: {k} es {formato[k]} y debía ser {val}")
+    if abs(formato["duracion_s"] - datos["frames"] / FPS) > 0.15:
+        avisos.append(f"el archivo dura {formato['duracion_s']} s y la línea de tiempo {datos['frames'] / FPS:.2f} s")
+    papel = np.array([int(datos["perfil"]["colores"]["papel"][i:i + 2], 16) for i in (1, 3, 5)], dtype=np.float32)
+
+    def cuadro(n: int):
+        tmp = d / "out" / "_cuadro.png"
+        _correr(["ffmpeg", "-y", "-v", "error", "-i", str(final), "-vf", f"select='eq(n\\,{n})'", "-vsync", "0", "-frames:v", "1", str(tmp)])
+        with Image.open(tmp) as im:
+            a = np.asarray(im.convert("RGB")).astype(np.float32)
+        tmp.unlink(missing_ok=True)
+        return np.linalg.norm(a - papel, axis=2) > 90  # tinta: lo que no es papel (el grano y la viñeta no llegan a 90)
+
+    ocupacion = {}
+    for e in datos["escenas"]:  # a tres cuartos de cada escena ya entró todo y no hay transición encima
+        tinta = cuadro(min(datos["frames"] - 1, e["desde"] + int(e["dur"] * 0.75)))
+        for nombre, (x0, y0, x1, y1) in ZONAS_TIKTOK.items():
+            frac = float(tinta[y0:y1, x0:x1].mean())
+            ocupacion[f"{e['id']} · {nombre}"] = round(frac * 100, 2)
+            if frac > 0.004:
+                avisos.append(f"escena {e['id']}: hay contenido bajo la {nombre} de TikTok ({frac * 100:.1f} % de esa zona)")
+        util = float(tinta[230:1440, 90:960].mean())
+        if util < 0.06:
+            avisos.append(f"escena {e['id']}: el cuadro está casi vacío ({util * 100:.0f} % de tinta en la zona útil)")
+    if float(cuadro(0)[230:1440, 90:960].mean()) < 0.06:
+        avisos.append("el primer cuadro está casi vacío: no detiene el scroll")
+    informe = {"formato": formato, "ocupacion_zonas_tapadas_pct": ocupacion, "avisos": avisos}
+    (d / "out" / "auditoria-video.json").write_text(json.dumps(informe, ensure_ascii=False, indent=1))
+    return informe
+
+
 def rendir(d: Path) -> dict:
     datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
     cmd = ["npx", "remotion", "render", "src/index.ts", "Vox", "out/video.mp4", "--props=src/data/video.json",
-           "--codec=h264", "--audio-codec=aac", "--pixel-format=yuv420p", "--log=error"]
+           "--codec=h264", "--audio-codec=aac", "--pixel-format=yuv420p", "--log=error",
+           "--crf=16", "--jpeg-quality=95", "--color-space=bt709"]  # fuente limpia: TikTok vuelve a comprimir
     navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
     if Path(navegador).exists():
         cmd.append(f"--browser-executable={navegador}")
@@ -702,6 +753,7 @@ def rendir(d: Path) -> dict:
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja-tiktok.png", guia=True)
     m = medir(d / "out" / "final.mp4")
     m["audio"] = auditar_audio(d, datos, m, tipo)
+    m["video"] = auditar_video(d, datos)
     return m
 
 
@@ -1036,8 +1088,12 @@ def main(argv=None) -> int:
             print(f"Final en {a.dir}/out/final.mp4 · {m['duracion_s']} s · {m['lufs']} LUFS · pico {m['pico_dbtp']} dBTP")
             au = m["audio"]
             print(f"Audio: voz {au['voz_lufs']} LUFS · música {au.get('musica_bajo_voz_lu', '—')} LU bajo la voz · efectos respecto a la voz (dB) {au['efectos_respecto_a_voz_db']} · master {au['ganancia_master_db']:+.1f} dB")
-            for aviso in au["avisos"]:
+            fm = m["video"]["formato"]
+            print(f"Imagen: {fm['codec']} {fm['ancho']}x{fm['alto']} {fm['fps']} {fm['pix_fmt']} · {fm['kbps']} kbps")
+            for aviso in au["avisos"] + m["video"]["avisos"]:
                 print(f"  ⚠ {aviso}")
+            if not au["avisos"] and not m["video"]["avisos"]:
+                print("  Sin avisos automáticos de audio ni de imagen.")
             print(f"Audita {a.dir}/out/hoja.png, {a.dir}/out/hoja-tiktok.png (zonas que tapa TikTok en rojo) y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
         elif a.cmd == "cierre":
             d = Path(a.dir)

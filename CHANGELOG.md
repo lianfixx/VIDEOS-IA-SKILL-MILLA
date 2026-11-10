@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-10 · Vox Studio 0.8.0: auditoría de imagen, titular en bloque, referencia técnica y control previo al commit
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: fusionar a `main`; comprobar el audio en cada video; castorena.com.mx es su despacho; «Perfecto» a que las pruebas de Vox Studio corran antes de cada commit; seguir mejorando y documentar todo de forma técnica.
+- Cambios: (1) Reglas comunes, con confirmación expresa de Emi: `ia/politica.json` añade dos controles previos al commit (pruebas de Vox Studio al tocar `skills/vox-studio/` o `espacios/`, con comprobación de dependencias, y `check_skill` de su SKILL.md); `ia/REGLAS.md` regenerado. (2) `render` audita la imagen (`out/auditoria-video.json`): formato del archivo, contenido bajo la interfaz de TikTok y cuadros vacíos; al estrenarla detectó contenido bajo los botones de la derecha en tres escenas y se corrigió con un margen derecho de 900 px en esa franja. (3) Titular en bloque: cada línea llena el ancho útil. (4) Codificación con CRF 16, JPEG 95 y BT.709. (5) `skills/vox-studio/TECNICA.md` documenta formato, línea de tiempo, composición, cadena de audio, imágenes, auditorías y costos con los valores del código. (6) Castorena: despacho confirmado; regla de pedir la escucha de Emi en cada video.
+- Archivos: `ia/politica.json`, `ia/REGLAS.md`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,TECNICA.md}`, `espacios/castorena/{perfil.json,MARCA.md,aprendizajes.md}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: `python3 ia/test_guard.py` → aprobado; pruebas de vox-studio 43/43 → aprobado; pruebas de milla-video-studio → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto: 20.97 s, H.264 1080×1920 30 fps, −14.04 LUFS, pico −2.36 dBTP, 0 % de contenido en zonas tapadas, sin avisos de audio ni de imagen → aprobado técnicamente; hoja de fotogramas revisada por la IA → aprobado. Escucha de Emi del demo: «están bien» (10/11/2026).
+- Pendiente: primer video real (Emi lo pedirá en una sesión nueva); nombre y @ de TikTok.
+
 ## 2026-11-10 · Vox Studio 0.7.0: cierre, ritmo, oficio del guion y guía de TikTok
 
 - Agente: Claude Code (sesión en la nube)

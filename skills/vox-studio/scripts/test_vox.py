@@ -290,6 +290,27 @@ class Oficio(unittest.TestCase):
             self.assertTrue(0 < len(p["cierre"]) <= 16)
 
 
+class ImagenAuditada(unittest.TestCase):
+    def test_detecta_contenido_bajo_la_interfaz_de_tiktok(self):
+        import shutil, subprocess
+        if not shutil.which("ffmpeg"):
+            self.skipTest("sin ffmpeg")
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp); (d / "out").mkdir()
+            base = ["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "color=c=0xF4ECD6:s=1080x1920:r=30:d=2",
+                    "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac"]
+            centro = "drawbox=x=200:y=500:w=600:h=600:color=black:t=fill"
+            datos = {"frames": 60, "perfil": {"colores": {"papel": "#F4ECD6"}}, "escenas": [{"id": "01", "desde": 0, "dur": 60}]}
+            subprocess.run(base + ["-vf", centro, str(d / "out" / "final.mp4")], check=True)
+            limpio = vox.auditar_video(d, datos)
+            self.assertEqual(limpio["avisos"], [])
+            self.assertEqual(limpio["formato"]["ancho"], 1080)
+            subprocess.run(base + ["-vf", centro + ",drawbox=x=980:y=900:w=90:h=300:color=black:t=fill", str(d / "out" / "final.mp4")], check=True)
+            self.assertIn("botones de la derecha", " | ".join(vox.auditar_video(d, datos)["avisos"]))
+            subprocess.run(base + [str(d / "out" / "final.mp4")], check=True)
+            self.assertIn("casi vacío", " | ".join(vox.auditar_video(d, datos)["avisos"]))
+
+
 class Tiempos(unittest.TestCase):
     def test_escenas_salen_de_las_palabras(self):
         g = guion(); palabras, fin = alinear(g)

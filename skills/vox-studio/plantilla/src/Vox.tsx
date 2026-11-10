@@ -28,6 +28,9 @@ const W = 1080;
 const H = 1920;
 // Zona segura conservadora de TikTok: nada importante fuera de este marco.
 const SEGURO = {izq: 90, der: 960, arriba: 230, abajo: 1440};
+// De y=760 hacia abajo los botones de TikTok tapan la derecha: ahí el contenido termina antes,
+// con holgura para giros y sombras.
+const DER_BAJO = 900;
 const PASO_Y = 2400; // separación entre escenas en el lienzo (mayor que la pantalla)
 
 const azar = (n: number) => {
@@ -106,20 +109,24 @@ const FuenteCtx = React.createContext('Anton');
 const medidas = (keyword: string, fuente: string) => {
   const m = FUENTES[fuente] ?? FUENTES.Anton;
   const lineas = partir(keyword);
-  const largo = Math.max(...lineas.map((l) => l.length));
-  // Sin piso: una palabra larga se encoge hasta caber en la zona segura.
-  const tam = Math.min(lineas.length >= 3 ? m.tope * 0.82 : m.tope, (SEGURO.der - SEGURO.izq) / (largo * m.ancho));
-  return {lineas, tam, fin: 326 + lineas.length * tam * 1.06, espacio: m.espacio};
+  // Titular en bloque: cada línea crece hasta llenar el ancho útil (como una portada de revista),
+  // con tope por línea y sin que una línea corta supere 1.7 veces a la más pequeña.
+  const tope = (lineas.length >= 3 ? 0.9 : 1.05) * m.tope;
+  const libres = lineas.map((l) => Math.min(tope, (SEGURO.der - SEGURO.izq) / (Math.max(l.length, 3) * m.ancho)));
+  const menor = Math.min(...libres);
+  const tams = libres.map((v) => Math.min(v, menor * 1.7));
+  return {lineas, tams, fin: 326 + tams.reduce((a, b) => a + b * 1.06, 0), espacio: m.espacio};
 };
 
 const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, c, f, indice}) => {
   const {fps} = useVideoConfig();
   const fuente = React.useContext(FuenteCtx);
-  const {lineas, tam, espacio} = medidas(e.keyword, fuente);
+  const {lineas, tams, espacio} = medidas(e.keyword, fuente);
   const verbos = ['desliza-izq', 'cae', 'desliza-der', 'sello', 'mordidas', 'desdobla'];
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, top: 326, width: SEGURO.der - SEGURO.izq}}>
       {lineas.map((linea, j) => {
+        const tam = tams[j];
         const verbo = j === 0 ? e.entrada : verbos[(indice + j) % verbos.length];
         const temblor = `rotate(${(azar(indice * 7 + j) - 0.5) * 1.2}deg)`; // inclinación fija por línea; no vibra
         return (
@@ -162,7 +169,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   const golpe = e.dur > 150 ? spring({frame: f - Math.round(e.dur / 2), fps, config: {damping: 200, stiffness: 90}}) : 0;
   const pulso = 1 + 0.07 * Math.sin(Math.PI * golpe);
   return (
-    <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+    <div style={{position: 'absolute', left: SEGURO.izq, width: DER_BAJO - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
       {(e.imagen || e.dato) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
       {(e.imagen || e.dato) && <svg width={alto * 1.3} height={alto * 1.3} viewBox="-100 -100 200 200" style={{position: 'absolute'}}>
@@ -180,7 +187,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
                 <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: 'grayscale(1) contrast(1.25)'}} />
               </div>
             ) : (
-              <Img src={staticFile(e.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: 840, objectFit: 'contain', filter: `${borde(7, '#fff')} drop-shadow(14px 14px 0 ${c.tinta})`}} />
+              <Img src={staticFile(e.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain', filter: `${borde(7, '#fff')} drop-shadow(14px 14px 0 ${c.tinta})`}} />
             )
           ) : e.dato ? (
             <div style={{fontFamily: 'Anton', fontSize: Math.min(alto * 0.62, 900 / Math.max(2, e.dato.length)), color: c.papel, background: c.tinta, padding: '10px 46px', boxShadow: `14px 14px 0 ${c.acento}`, border: `8px solid ${c.papel}`, outline: `6px solid ${c.tinta}`}}>{e.dato}</div>
@@ -199,7 +206,7 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
   const t = spring({frame: f - 22, fps, config: {damping: 200, stiffness: 110}});
   const der = indice % 2 === 0;
   return (
-    <div style={{position: 'absolute', top: 1188, [der ? 'right' : 'left']: SEGURO.izq + 10, width: 560, transform: `rotate(${der ? -4 : 4}deg)`}}>
+    <div style={{position: 'absolute', top: 1188, [der ? 'right' : 'left']: der ? W - DER_BAJO + 20 : SEGURO.izq + 10, width: 540, transform: `rotate(${der ? -4 : 4}deg)`}}>
       <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
         <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
       </svg>
@@ -214,7 +221,7 @@ const Remate: React.FC<{e: Escena; c: Colores; f: number; arriba: number}> = ({e
   if (!e.remate) return null;
   const en = Math.round(e.dur * 0.55);
   return (
-    <div style={{position: 'absolute', right: W - SEGURO.der, top: arriba - 20, zIndex: 4, ...entrar('sello', f - en, fps)}}>
+    <div style={{position: 'absolute', right: W - DER_BAJO + 30, top: arriba - 20, zIndex: 4, ...entrar('sello', f - en, fps)}}>
       <div style={{fontFamily: 'Anton', fontSize: Math.min(84, 640 / Math.max(4, e.remate.length * 0.5)), lineHeight: 1, color: c.acento, border: `10px solid ${c.acento}`, borderRadius: 14, padding: '6px 26px 10px', transform: 'rotate(7deg)', transformOrigin: 'top right', background: `${c.papel}F2`, letterSpacing: 2}}>{e.remate}</div>
     </div>
   );

@@ -1,6 +1,6 @@
 # Marca · Castorena Abogados
 
-**Estado: candidato. Falta que Emi confirme que este es su despacho.** La investigación del 10/11/2026 solo encontró un despacho «Castorena» con identidad pública propia, y es fiscal-administrativo, no laboral-burocrático.
+**Estado: despacho confirmado por Emi el 10/11/2026** (castorena.com.mx es su despacho). El estilo visual sigue siendo candidato hasta que apruebe un primer video. El sitio público presenta práctica fiscal, administrativa y de amparo; la práctica laboral-burocrática que Emi lleva no aparece ahí.
 
 ## Fuente verificada
 
@@ -27,4 +27,4 @@
 
 ## Sin verificar
 
-Que sea el despacho de Emi; su práctica laboral-burocrática; si existe manual de marca; el aspecto real del logotipo.
+Si existe manual de marca; el aspecto real del logotipo; si el despacho quiere revisar cada video antes de publicarlo (preguntarlo a Emi en el primero).
