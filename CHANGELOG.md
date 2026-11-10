@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-10 · Vox Studio 0.8.1: paquete para claude.ai
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: tener la skill actualizada en Claude para solo llamarla.
+- Cambios: `tools/empaquetar_vox.py` genera `dist/vox-studio.zip` (fuera de git) con la skill y una copia de `espacios/` dentro, enlaces ajustados y validado con `ia/check_skill.py`; `vox.py` usa los espacios empaquetados cuando existen; la skill explica qué hace en claude.ai y qué solo en Claude Code.
+- Archivos: `tools/empaquetar_vox.py`, `skills/vox-studio/scripts/vox.py`, `skills/vox-studio/SKILL.md`, `.gitignore` y este registro.
+- Verificación: paquete generado (92 KB, 34 archivos), descomprimido en limpio: `vox.py espacios` y `validar` del ejemplo → aprobado; pruebas de vox-studio 43/43 → aprobado. Subida a claude.ai → no ejecutado: solo puede hacerla Emi desde la configuración de la app.
+- Pendiente: que Emi suba el .zip; fusionar este cambio a `main`.
+
 ## 2026-11-10 · Vox Studio 0.8.0: auditoría de imagen, titular en bloque, referencia técnica y control previo al commit
 
 - Agente: Claude Code (sesión en la nube)
