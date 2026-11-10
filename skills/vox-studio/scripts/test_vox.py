@@ -157,17 +157,23 @@ class Biblioteca(unittest.TestCase):
                 (d / "prompts" / "01.txt").write_text("Una pesa rusa roja")
                 g = guion(); g["escenas"][0]["imagen_archivo"] = "img/01.png"
                 (d / "guion.json").write_text(json.dumps(g))
-                self.assertEqual([x["id"] for x in vox.catalogar(d)], ["personal-tema-01"])
+                ident = vox.catalogar(d)[0]["id"]
+                self.assertTrue(ident.startswith("personal-tema-01-") and len(ident) == 25)
                 self.assertEqual(vox.catalogar(d), [])  # no duplica
                 self.assertEqual(len(vox.buscar_en_biblioteca("pesa roja")), 1)
                 self.assertEqual(vox.buscar_en_biblioteca("pesa", "milla"), [])
                 self.assertEqual(vox.buscar_en_biblioteca("bicicleta"), [])
-                with Image.open(Path(tmp) / "bib" / "personal" / "personal-tema-01.png") as im:
+                with Image.open(Path(tmp) / "bib" / "personal" / f"{ident}.png") as im:
                     self.assertLessEqual(max(im.size), 1200)
                 otro = Path(tmp) / "productions" / "personal" / "otro"
-                self.assertEqual(vox.main(["reciclar", "personal-tema-01", "--dir", str(otro)]), 0)
-                self.assertTrue((otro / "public" / "img" / "personal-tema-01.png").is_file())
+                self.assertEqual(vox.main(["reciclar", ident, "--dir", str(otro), "--como", "../../../FUERA.png"]), 0)
+                self.assertTrue((otro / "public" / "img" / "FUERA.png").is_file())  # --como no puede salir de la producción
+                self.assertFalse((Path(tmp) / "FUERA.png").exists())
                 self.assertEqual(vox.leer_catalogo()[0]["usos"], 2)
+                Image.new("RGBA", (300, 300), (20, 200, 30, 255)).save(d / "public" / "img" / "01.png")  # la imagen se regenera
+                otro_id = vox.catalogar(d)[0]["id"]
+                self.assertNotEqual(otro_id, ident)
+                self.assertEqual(len({c["archivo"] for c in vox.leer_catalogo()}), 2)
             finally:
                 del os.environ["VOX_BIBLIOTECA"]
 
@@ -207,6 +213,61 @@ class Fotos(unittest.TestCase):
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada"]), 0)
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--max", "50", "--execute"]), 2)
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--tope-usd", "0.05", "--execute"]), 2)  # tope que abortaría cobrando
+
+
+class Niveles(unittest.TestCase):
+    def test_todos_los_efectos_al_mismo_nivel(self):
+        with tempfile.TemporaryDirectory() as d:
+            vox.SON.sintetizar_efectos(Path(d), 5, 47)
+            for n in vox.SON.EFECTOS:
+                self.assertAlmostEqual(vox.SON.leer_nivel(Path(d) / f"{n}.wav"), vox.SON.NIVEL_EFECTO, delta=2.5, msg=n)
+
+    def test_la_musica_respira_con_las_escenas(self):
+        import numpy as np
+        for animo in ("serio", "ironia", "energia"):
+            a = vox.SON.componer(animo, 24.0, 3, [8.0, 16.0])
+            rms = [float(np.sqrt(np.mean(a[int(i * 8 * vox.SON.SR) + vox.SON.SR:int((i + 1) * 8 * vox.SON.SR) - vox.SON.SR] ** 2))) for i in range(3)]
+            self.assertLess(rms[1], rms[2] * 0.93, animo)  # la escena intermedia es más ligera que el cierre
+
+    def test_propuesta_no_confunde_palabras(self):
+        g = guion()
+        for s, txt in zip(g["escenas"], ["El decreto es secreto.", "Una leyenda de metal.", "Algo concreto pasó.", "¿Y luego?"]):
+            s["narracion"] = txt
+        self.assertEqual(sum(vox.SON.proponer(g)["musica"]["votos"].values()), 0)
+
+    def test_remate_exige_sonido_y_no_va_en_la_primera(self):
+        g = guion(); g["escenas"][2]["remate"] = "ASÍ NO"
+        self.assertIn("cae con su sonido", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["escenas"][0]["remate"] = "ZAS"
+        self.assertIn("primera escena", " | ".join(vox.validar_guion(g)))
+
+    def test_tipos_raros_no_rompen_el_validador(self):
+        g = guion(); g["escenas"][1]["transicion"] = ["x"]
+        self.assertIn("debe ser texto", " | ".join(vox.validar_guion(g)))
+
+    def test_commons_miniatura_y_archivo_local(self):
+        import json
+        real = vox._pedir
+        visto = {}
+        def falso(url, **kw):
+            visto["url"] = url
+            return json.dumps({"query": {"pages": {"1": {"imageinfo": [{"extmetadata": {"LicenseShortName": {"value": "CC0"}}}]}}}}).encode()
+        vox._pedir = falso
+        try:
+            vox.licencia_commons("https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Palacio_Nacional.jpg/1200px-Palacio_Nacional.jpg")
+            self.assertIn("File%3APalacio_Nacional.jpg", visto["url"])
+            self.assertIsNone(vox.licencia_commons("https://upload.wikimedia.org/wikipedia/en/a/ab/Logo.png"))
+        finally:
+            vox._pedir = real
+
+    def test_foto_bajar_valida_indice_y_destino(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp) / "p"; (d / "estados").mkdir(parents=True)
+            (d / "estados" / "fotos.json").write_text(json.dumps({"candidatas": [{"imagen": "https://ejemplo.org/a.jpg", "pagina": "x"}]}))
+            self.assertEqual(vox.main(["foto-bajar", "--dir", str(d), "--indice", "5", "--out", str(d / "a.jpg"), "--licencia", "CC0 de alguien"]), 2)
+            self.assertEqual(vox.main(["foto-bajar", "--dir", str(d), "--indice", "-1", "--out", str(d / "a.jpg"), "--licencia", "CC0 de alguien"]), 2)
+            self.assertEqual(vox.main(["foto-bajar", "--dir", str(d), "--indice", "0", "--out", str(Path(tmp) / "fuera.jpg"), "--licencia", "CC0 de alguien"]), 2)
 
 
 class Tiempos(unittest.TestCase):

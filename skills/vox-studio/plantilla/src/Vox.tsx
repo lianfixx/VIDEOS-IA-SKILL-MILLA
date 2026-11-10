@@ -20,7 +20,7 @@ export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
   fps: number; ancho: number; alto: number; frames: number; titulo: string;
   perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string; subtitulos?: string};
-  finVoz?: number; portada?: {texto: string; resaltar: string; imagen: string};
+  finVoz?: number; volMusica?: number; volEfecto?: number; portada?: {texto: string; resaltar: string; imagen: string};
   voz: string; musica: string; sfx: boolean; escenas: Escena[]; palabras: Palabra[];
 };
 
@@ -206,13 +206,13 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
 };
 
 /** Remate visual tipo meme: un sello de goma que cae a media escena, junto con su sonido. */
-const Remate: React.FC<{e: Escena; c: Colores; f: number}> = ({e, c, f}) => {
+const Remate: React.FC<{e: Escena; c: Colores; f: number; arriba: number}> = ({e, c, f, arriba}) => {
   const {fps} = useVideoConfig();
   if (!e.remate) return null;
   const en = Math.round(e.dur * 0.55);
   return (
-    <div style={{position: 'absolute', right: SEGURO.izq + 20, top: 1010, zIndex: 4, ...entrar('sello', f - en, fps)}}>
-      <div style={{fontFamily: 'Anton', fontSize: 92, lineHeight: 1, color: c.acento, border: `10px solid ${c.acento}`, borderRadius: 14, padding: '6px 26px 10px', transform: 'rotate(-9deg)', background: `${c.papel}E6`, letterSpacing: 2}}>{e.remate}</div>
+    <div style={{position: 'absolute', right: W - SEGURO.der, top: arriba - 20, zIndex: 4, ...entrar('sello', f - en, fps)}}>
+      <div style={{fontFamily: 'Anton', fontSize: Math.min(84, 640 / Math.max(4, e.remate.length * 0.5)), lineHeight: 1, color: c.acento, border: `10px solid ${c.acento}`, borderRadius: 14, padding: '6px 26px 10px', transform: 'rotate(7deg)', transformOrigin: 'top right', background: `${c.papel}F2`, letterSpacing: 2}}>{e.remate}</div>
     </div>
   );
 };
@@ -229,7 +229,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
       )}
       <Titular e={e} c={c} f={f} indice={indice} />
       <Sticker e={e} c={c} f={f} indice={indice} arriba={finTitular + 62} />
-      <Remate e={e} c={c} f={f} />
+      <Remate e={e} c={c} f={f} arriba={finTitular + 62} />
       <div style={{position: 'absolute', inset: 0, zIndex: 3}}><Nota e={e} c={c} f={f} indice={indice} /></div>
       {e.fuente && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 30, maxWidth: 520, textAlign: 'right', fontFamily: 'Caveat', fontSize: 42, lineHeight: 1, color: c.tinta}}>Fuente: {e.fuente}</div>}
     </div>
@@ -282,12 +282,14 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
 };
 
 const SONIDOS = ['papel', 'deslizar', 'golpe', 'pop'];
+const VIAJE = 9; // la cámara sale 9 frames antes del cambio de escena
+/** Adelanto del reloj interno de una escena: la primera arranca ya compuesta; las demás, al llegar la cámara. */
+const desfase = (e: Escena, i: number) => (i === 0 ? 60 : (e.transicion || 'viaje') === 'viaje' ? VIAJE + 3 : 14);
 
 export const Vox: React.FC<VideoVox> = (v) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const c = v.perfil.colores;
-  const VIAJE = 9; // la cámara sale 9 frames antes del cambio de escena
   let k = 0;
   for (let i = 0; i < v.escenas.length; i++) if (frame >= v.escenas[i].desde - VIAJE) k = i;
   const actual = v.escenas[k];
@@ -318,7 +320,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
           if (Math.abs(i - k) > 1) return null;
           const p = lugar(i);
           // La primera escena arranca ya compuesta: el frame 0 debe detener el scroll.
-          const f = frame - e.desde + (i === 0 ? 60 : (e.transicion || 'viaje') === 'viaje' ? VIAJE + 3 : 14);
+          const f = frame - e.desde + desfase(e, i);
           return (
             <div key={e.id} style={{position: 'absolute', left: p.x - W / 2, top: p.y - H / 2, width: W, height: H, transform: `rotate(${p.giro}deg)`}}>
               <EscenaVox e={e} c={c} indice={i} f={f} />
@@ -344,11 +346,11 @@ export const Vox: React.FC<VideoVox> = (v) => {
       </div>
       {v.perfil.handle && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba - 52, fontFamily: 'Anton', fontSize: 34, color: c.tinta, opacity: 0.7}}>{v.perfil.handle}</div>}
       {v.voz && <Audio src={staticFile(v.voz)} />}
-      {v.musica && <Audio src={staticFile(v.musica)} volume={(fr) => interpolate(fr / fps, [0, 0.5, (v.finVoz ?? 9999), (v.finVoz ?? 9999) + 0.5], [0.26, 0.09, 0.09, 0.3], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
+      {v.musica && <Audio src={staticFile(v.musica)} volume={(fr) => interpolate(fr / fps, [0, 0.5, (v.finVoz ?? 9999), (v.finVoz ?? 9999) + 0.5], [(v.volMusica ?? 0.09) * 2.6, v.volMusica ?? 0.09, v.volMusica ?? 0.09, (v.volMusica ?? 0.09) * 3], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
       {v.sfx && v.escenas.map((e, i) => (
         <React.Fragment key={e.id}>
           {i > 0 && <Audio src={staticFile(`sfx/${e.transicion === 'rasgado' ? 'rasgar' : e.transicion === 'barrido' ? 'deslizar' : SONIDOS[i % SONIDOS.length]}.wav`)} from={Math.max(0, e.desde - VIAJE)} volume={0.3} />}
-          {e.sonido && <Audio src={staticFile(`sfx/${e.sonido}.wav`)} from={e.desde + (e.remate ? Math.round(e.dur * 0.55) - 14 : i === 0 ? 2 : 12)} volume={0.42} />}
+          {e.sonido && <Audio src={staticFile(`sfx/${e.sonido}.wav`)} from={Math.max(0, e.desde + (e.remate ? Math.round(e.dur * 0.55) - desfase(e, i) - 1 : i === 0 ? 2 : 12))} volume={v.volEfecto ?? 0.42} />}
           {e.resaltar && i > 0 && !e.sonido && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + 10} volume={0.22} />}
         </React.Fragment>
       ))}

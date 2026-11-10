@@ -184,7 +184,10 @@ def validar_guion(g: dict) -> list[str]:
     if not 4 <= len(escenas) <= 9:
         e.append(f"se esperan de 4 a 9 escenas; hay {len(escenas)}")
     vistos = set()
-    ents, trs = efectivas(escenas, "entrada", ENTRADAS), efectivas(escenas, "transicion", TRANSICIONES)
+    if not isinstance(escenas, list) or not all(isinstance(x, dict) for x in escenas):
+        return e + ["escenas debe ser una lista de objetos"]
+    limpias = [{k: (v if isinstance(v, str) else "") for k, v in x.items() if k in ("entrada", "transicion")} for x in escenas]
+    ents, trs = efectivas(limpias, "entrada", ENTRADAS), efectivas(limpias, "transicion", TRANSICIONES)
     for i, s in enumerate(escenas):
         p = f"escena {i + 1}"
         if s.get("id") in vistos or not s.get("id"):
@@ -208,6 +211,14 @@ def validar_guion(g: dict) -> list[str]:
         for campo, tope in LIMITES.items():
             if len(str(s.get(campo, ""))) > tope:
                 e.append(f"{p}: {campo} pasa de {tope} caracteres")
+        for campo in ("entrada", "transicion", "sonido", "remate", "kicker", "nota", "dato", "fuente", "resaltar", "imagen_archivo"):
+            if not isinstance(s.get(campo, ""), str):
+                e.append(f"{p}: {campo} debe ser texto")
+                s[campo] = ""
+        if s.get("remate") and not s.get("sonido"):
+            e.append(f"{p}: un remate cae con su sonido; elige `sonido` para esta escena")
+        if s.get("remate") and i == 0:
+            e.append(f"{p}: la primera escena ya abre con el gancho; el remate va de la segunda en adelante")
         if s.get("sonido") and s["sonido"] not in SON.EFECTOS:
             e.append(f"{p}: sonido {s['sonido']!r} no existe; opciones {sorted(SON.EFECTOS)}")
         img = s.get("imagen_archivo", "")
@@ -305,7 +316,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
 
 # ---------- red ----------
 
-def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120) -> bytes:
+def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120, tope: int = 64 * 1024 * 1024) -> bytes:
     if urllib.parse.urlparse(url).scheme != "https":
         raise ErrorVox("solo se permiten URLs https")
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
@@ -315,7 +326,10 @@ def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120) -
     host = urllib.parse.urlparse(url).hostname
     try:
         with urllib.request.urlopen(req, timeout=espera) as r:
-            return r.read()
+            datos_r = r.read(tope + 1)
+            if len(datos_r) > tope:
+                raise ErrorVox(f"la respuesta de {host} pasa de {tope // (1024 * 1024)} MB; no se descargó")
+            return datos_r
     except urllib.error.HTTPError as exc:
         raise ErrorVox(f"{host} respondió HTTP {exc.code}: {exc.read()[:200]!r}") from exc
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -526,23 +540,39 @@ def sintetizar_sfx(destino: Path) -> list[str]:
     return sorted(SFX)
 
 
-def _loudnorm(video: Path) -> dict:
-    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(video), "-af", "loudnorm=I=-14:TP=-2:LRA=11:print_format=json", "-f", "null", "-"],
+def _loudnorm(audio: Path, objetivo: float = -14.0, extra: str = "") -> dict:
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(audio), "-af", f"loudnorm=I={objetivo}:TP=-2:LRA=11{extra}:print_format=json", "-f", "null", "-"],
                        capture_output=True, text=True)
     m = re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr)
     if not m:
-        raise ErrorVox("no se pudo medir la sonoridad del video")
+        raise ErrorVox(f"no se pudo medir la sonoridad de {audio.name}")
     return json.loads(m.group(0))
 
 
-def masterizar(entrada: Path, salida: Path) -> None:
-    """Dos pasadas: se mide y luego se aplica una ganancia lineal exacta a -14 LUFS con pico <= -2 dBTP."""
-    m = _loudnorm(entrada)
-    filtro = (f"loudnorm=I=-14:TP=-2:LRA=11:measured_I={m['input_i']}:measured_TP={m['input_tp']}:"
-              f"measured_LRA={m['input_lra']}:measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
+def normalizar(entrada: Path, salida: Path, objetivo: float, video: bool = False) -> str:
+    """Dos pasadas: se mide y se aplica una ganancia. Devuelve 'linear' si no hubo compresión."""
+    m = _loudnorm(entrada, objetivo)
+    medido = (f":measured_I={m['input_i']}:measured_TP={m['input_tp']}:measured_LRA={m['input_lra']}"
+              f":measured_thresh={m['input_thresh']}:offset={m['target_offset']}:linear=true")
+    tipo = _loudnorm(entrada, objetivo, medido).get("normalization_type", "")
     salida.parent.mkdir(parents=True, exist_ok=True)
-    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(entrada), "-c:v", "copy", "-af", filtro, "-ar", "48000",
+    codec = ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"] if video else ["-c:a", "pcm_s16le"]
+    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(entrada), "-af", f"loudnorm=I={objetivo}:TP=-2:LRA=11{medido}", "-ar", "48000", *codec, str(salida)])
+    return tipo
+
+
+def masterizar(entrada: Path, salida: Path) -> float:
+    """Lleva la mezcla a -14 LUFS con una ganancia fija y un limitador de picos; devuelve la ganancia en dB.
+
+    La voz ya entra nivelada, así que la ganancia debe ser pequeña. Una ganancia grande
+    significa que la mezcla venía mal balanceada y la auditoría lo avisa.
+    """
+    ganancia = round(-14.0 - float(_loudnorm(entrada)["input_i"]), 2)
+    salida.parent.mkdir(parents=True, exist_ok=True)
+    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(entrada), "-c:v", "copy",
+             "-af", f"volume={ganancia}dB,alimiter=limit=0.75:level=false:attack=3:release=60", "-ar", "48000",
              "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(salida)])
+    return ganancia
 
 
 def medir(video: Path) -> dict:
@@ -563,38 +593,54 @@ def hoja_de_fotogramas(video: Path, datos: dict, salida: Path) -> None:
              "-vsync", "0", "-frames:v", "1", str(salida)])
 
 
-VOL_MUSICA = 0.09  # ganancia de la música bajo la voz en Vox.tsx
+VOZ_LUFS = -16.0        # la narración se normaliza a este nivel antes del montaje
+MUSICA_BAJO_VOZ = 17.0  # LU que la música queda por debajo de la voz
+VOL_EFECTO = 0.8        # ganancia de los remates sonoros (salen a -20 dBFS RMS)
+LUFS_FINAL = (-15.0, -13.0)
+PICO_MAX = -1.5
 
 
-def auditar_audio(d: Path, datos: dict, final: dict) -> dict:
+def auditar_audio(d: Path, datos: dict, final: dict, ganancia_master: float = 0.0) -> dict:
     """Revisión medible del sonido. No sustituye al oído de Emi: no juzga si la música gusta."""
     import math
     avisos = []
-    voz = _loudnorm(d / "public" / "audio" / "voz.mp3")
-    informe = {"voz_lufs": float(voz["input_i"]), "final_lufs": float(final["lufs"]), "final_pico_dbtp": float(final["pico_dbtp"])}
+    voz = float(_loudnorm(d / "public" / datos["voz"])["input_i"])
+    informe = {"voz_lufs": voz, "final_lufs": float(final["lufs"]), "final_pico_dbtp": float(final["pico_dbtp"]), "ganancia_master_db": ganancia_master}
+    if abs(voz - VOZ_LUFS) > 1.5:
+        avisos.append(f"la voz mide {voz} LUFS y debía quedar en {VOZ_LUFS}: vuelve a ejecutar `armar`")
     if datos.get("musica"):
-        mus = _loudnorm(d / "public" / datos["musica"])
-        bajo_voz = float(voz["input_i"]) - (float(mus["input_i"]) + 20 * math.log10(VOL_MUSICA))
+        mus = float(_loudnorm(d / "public" / datos["musica"])["input_i"])
+        bajo_voz = voz - (mus + 20 * math.log10(datos.get("volMusica", 0.09)))
         informe["musica_bajo_voz_lu"] = round(bajo_voz, 1)
         if bajo_voz < 12:
             avisos.append(f"la música queda solo {bajo_voz:.1f} LU bajo la voz (mínimo 12): puede taparla")
-        if bajo_voz > 30:
+        if bajo_voz > 26:
             avisos.append(f"la música queda {bajo_voz:.1f} LU bajo la voz: casi no se oirá")
-    else:
+    elif datos.get("animo") != "ninguna":
         avisos.append("el video no lleva música")
-    if not -15.5 <= informe["final_lufs"] <= -13:
+    if not LUFS_FINAL[0] <= informe["final_lufs"] <= LUFS_FINAL[1]:
         avisos.append(f"sonoridad final {informe['final_lufs']} LUFS fuera de -14 ± 1")
-    if informe["final_pico_dbtp"] > -1.0:
-        avisos.append(f"pico {informe['final_pico_dbtp']} dBTP por encima de -1")
-    usados = {e["sonido"] for e in datos["escenas"] if e.get("sonido")}
-    faltan = sorted(x for x in usados if not (d / "public" / "sfx" / f"{x}.wav").is_file())
-    if faltan:
-        avisos.append(f"faltan efectos en public/sfx: {faltan}")
+    if informe["final_pico_dbtp"] > PICO_MAX:
+        avisos.append(f"pico {informe['final_pico_dbtp']} dBTP por encima de {PICO_MAX}")
+    if abs(ganancia_master) > 4:
+        avisos.append(f"el master tuvo que mover {ganancia_master:+.1f} dB: la mezcla venía desbalanceada respecto a la voz")
+    niveles = {}
+    for nombre in sorted({e["sonido"] for e in datos["escenas"] if e.get("sonido")}):
+        f = d / "public" / "sfx" / f"{nombre}.wav"
+        if not f.is_file():
+            avisos.append(f"falta el efecto {nombre} en public/sfx")
+            continue
+        sobre_voz = SON.leer_nivel(f) + 20 * math.log10(datos.get("volEfecto", VOL_EFECTO)) - voz
+        niveles[nombre] = round(sobre_voz, 1)
+        if sobre_voz > 0:
+            avisos.append(f"el efecto {nombre} suena {sobre_voz:.1f} dB por encima de la voz")
+        if sobre_voz < -16:
+            avisos.append(f"el efecto {nombre} queda {-sobre_voz:.1f} dB bajo la voz: apenas se oirá")
+    informe["efectos_respecto_a_voz_db"] = niveles
     silencio = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(d / "out" / "final.mp4"), "-af", "silencedetect=n=-45dB:d=1.2", "-f", "null", "-"],
                               capture_output=True, text=True).stderr.count("silence_start")
     if silencio:
         avisos.append(f"{silencio} silencio(s) de más de 1.2 s")
-    informe["efectos"] = sorted(usados)
     informe["avisos"] = avisos
     (d / "out" / "auditoria-audio.json").write_text(json.dumps(informe, ensure_ascii=False, indent=1))
     return informe
@@ -610,10 +656,10 @@ def rendir(d: Path) -> dict:
     _correr(cmd, cwd=d)
     foto = ["npx", "remotion", "still", "src/index.ts", "Portada", "out/portada.png", "--props=src/data/video.json", "--log=error"]
     _correr(foto + [c for c in cmd if c.startswith("--browser-executable")], cwd=d)
-    masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
+    tipo = masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja.png")
     m = medir(d / "out" / "final.mp4")
-    m["audio"] = auditar_audio(d, datos, m)
+    m["audio"] = auditar_audio(d, datos, m, tipo)
     return m
 
 
@@ -641,9 +687,11 @@ def buscar_fotos(consulta: str, maximo: int, tope_usd: float, derechos: str = "c
 def licencia_commons(url_imagen: str) -> dict | None:
     """Autor y licencia de un archivo de Wikimedia Commons, leídos de su propia ficha."""
     u = urllib.parse.urlparse(url_imagen)
-    if u.hostname != "upload.wikimedia.org":
-        return None
-    nombre = urllib.parse.unquote(u.path.rsplit("/", 1)[-1])
+    if u.hostname != "upload.wikimedia.org" or not u.path.startswith("/wikipedia/commons/"):
+        return None  # los archivos locales de cada Wikipedia (uso legítimo) no son de Commons
+    partes = u.path.split("/")
+    # En una miniatura (/thumb/a/ab/Nombre.jpg/1200px-Nombre.jpg) el archivo real es el penúltimo segmento.
+    nombre = urllib.parse.unquote(partes[-2] if "thumb" in partes else partes[-1])
     api = ("https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=extmetadata&titles="
            + urllib.parse.quote("File:" + nombre))
     paginas = (_json(_pedir(api, espera=30), "Wikimedia Commons").get("query") or {}).get("pages") or {}
@@ -669,7 +717,8 @@ def leer_catalogo() -> list[dict]:
 
 def catalogar(d: Path) -> list[dict]:
     """Copia a la biblioteca los recortes que el video usó, con lo que muestran y cómo se hicieron."""
-    g = json.loads((d / "guion.json").read_text(encoding="utf-8"))
+    g = _guion(str(d / "guion.json"))
+    dir_biblioteca().mkdir(parents=True, exist_ok=True)
     cat = leer_catalogo()
     conocidos = {x["sha256"] for x in cat}
     nuevos = []
@@ -682,7 +731,7 @@ def catalogar(d: Path) -> list[dict]:
         if sha in conocidos:
             continue
         prompt_f = d / "prompts" / (Path(img).stem + ".txt")
-        ident = f"{g['perfil']}-{d.name}-{Path(img).stem}"
+        ident = f"{g['perfil']}-{d.name}-{Path(img).stem}-{sha[:8]}"  # el sha evita choques si la imagen se regenera
         destino = dir_biblioteca() / g["perfil"] / f"{ident}{origen.suffix}"
         destino.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(origen, destino)
@@ -728,16 +777,28 @@ def _guion(ruta: str) -> dict:
 
 
 def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
-    video = armar_video(g, palabras, duracion_audio(d / "public" / "audio" / "voz.mp3"), perfiles()[g["perfil"]], d / "public")
+    import math
+    cruda = d / "public" / "audio" / "voz.mp3"
+    video = armar_video(g, palabras, duracion_audio(cruda), perfiles()[g["perfil"]], d / "public")
+    # La voz manda: se lleva a un nivel fijo y todo lo demás se coloca respecto a ella.
+    normalizar(cruda, d / "public" / "audio" / "voz-n.wav", VOZ_LUFS)
+    video["voz"] = "audio/voz-n.wav"
     # Sonido nuevo para cada video: la semilla sale de su propio texto.
     semilla = int(huella(g["titulo"], texto_completo(g))[:8], 16)
     plan = SON.plan_musica(video["animo"], semilla) if video["musica"] else {"tonica": 48}
     SON.sintetizar_efectos(d / "public" / "sfx", semilla, plan["tonica"])
+    video["volEfecto"] = VOL_EFECTO
+    pista, receta = d / "public" / "audio" / "musica.wav", d / "estados" / "musica.json"
     if video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
         cortes = [e["desde"] / FPS for e in video["escenas"][1:]]
-        SON.guardar(d / "public" / video["musica"], SON.componer(video["animo"], video["frames"] / FPS, semilla, cortes), pico=0.5)
-        (d / "estados").mkdir(exist_ok=True)
-        (d / "estados" / "musica.json").write_text(json.dumps(plan))
+        SON.guardar(pista, SON.componer(video["animo"], video["frames"] / FPS, semilla, cortes), nivel=-20.0)
+        mus = float(_loudnorm(pista)["input_i"])
+        video["volMusica"] = round(min(1.0, 10 ** ((VOZ_LUFS - MUSICA_BAJO_VOZ - mus) / 20)), 4)
+        receta.parent.mkdir(exist_ok=True)
+        receta.write_text(json.dumps(plan))
+    else:  # sin música: no dejar restos de un armado anterior
+        pista.unlink(missing_ok=True)
+        receta.unlink(missing_ok=True)
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
     (d / "src" / "data" / "video.json").write_text(json.dumps(video, ensure_ascii=False, indent=1), encoding="utf-8")
     return video
@@ -754,7 +815,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("armar"); p.add_argument("guion"); p.add_argument("--dir", required=True)
     p = sub.add_parser("imagen"); p.add_argument("--prompt-file", required=True); p.add_argument("--out", required=True)
     p.add_argument("--estado", required=True); p.add_argument("--aspecto", default="3:4"); p.add_argument("--execute", action="store_true")
-    p.add_argument("--estilo", choices=sorted(ESTILOS), default="ilustracion"); p.add_argument("--modelo", choices=sorted(MODELOS_KIE), default="nano-banana-2-lite")
+    p.add_argument("--estilo", choices=sorted(ESTILOS), default=None); p.add_argument("--perfil", default=""); p.add_argument("--modelo", choices=sorted(MODELOS_KIE), default="nano-banana-2-lite")
     p.add_argument("--croma", choices=sorted(CROMAS) + ["ninguno"], default="verde")
     p = sub.add_parser("recorte"); p.add_argument("entrada"); p.add_argument("salida")
     p = sub.add_parser("render"); p.add_argument("dir")
@@ -827,6 +888,11 @@ def main(argv=None) -> int:
                 video = _escribir_video(g, d, palabras)
                 print(f"Voz lista: {len(texto)} caracteres, {video['frames'] / FPS:.1f} s, {len(palabras)} palabras con tiempo real.")
         elif a.cmd == "imagen":
+            if a.perfil and a.perfil not in perfiles():
+                raise ErrorVox(f"espacio desconocido: {a.perfil}")
+            a.estilo = a.estilo or (perfiles()[a.perfil].get("estilo_imagen") if a.perfil else None) or "ilustracion"
+            if a.estilo not in ESTILOS:
+                raise ErrorVox(f"estilo_imagen {a.estilo!r} del espacio no existe")
             prompt = Path(a.prompt_file).read_text(encoding="utf-8").strip() + ". " + ESTILOS[a.estilo]
             if a.croma != "ninguno":
                 prompt += (f", single isolated subject, centered, full subject visible with margin, on a perfectly uniform solid "
@@ -868,7 +934,12 @@ def main(argv=None) -> int:
             print("Antes de usar una: abre su página, confirma qué muestra y su licencia. El filtro de derechos solo orienta.")
         elif a.cmd == "foto-bajar":
             est = json.loads((Path(a.dir) / "estados" / "fotos.json").read_text())
+            if not 0 <= a.indice < len(est["candidatas"]):
+                raise ErrorVox(f"--indice entre 0 y {len(est['candidatas']) - 1}")
             f = est["candidatas"][a.indice]
+            destino = Path(a.out)
+            if Path(a.dir).resolve() not in destino.resolve().parents:
+                raise ErrorVox("--out debe quedar dentro de la producción (--dir)")
             try:
                 oficial = licencia_commons(f["imagen"])  # en Commons la licencia se lee de la ficha
             except ErrorVox as exc:  # su API limita peticiones: se sigue con verificación manual de la ficha
@@ -883,9 +954,15 @@ def main(argv=None) -> int:
             if not a.execute:
                 print(f"En seco: bajaría {f['imagen']} (página {f['pagina']}). Añade --execute.")
                 return 0
-            destino = Path(a.out)
+            datos_img = _pedir(f["imagen"], espera=60, tope=15 * 1024 * 1024)
+            try:
+                import io
+                from PIL import Image
+                Image.open(io.BytesIO(datos_img)).verify()
+            except Exception as exc:  # noqa: BLE001 - lo bajado no es una imagen
+                raise ErrorVox("lo descargado no es una imagen válida; no se guardó") from exc
             destino.parent.mkdir(parents=True, exist_ok=True)
-            destino.write_bytes(_pedir(f["imagen"], espera=60))
+            destino.write_bytes(datos_img)
             f.update(licencia=a.licencia, archivo=str(destino), sha256=hashlib.sha256(destino.read_bytes()).hexdigest())
             (Path(a.dir) / "estados" / "fotos.json").write_text(json.dumps(est, ensure_ascii=False, indent=1))
             print(f"Foto guardada en {destino}. Si el host está bloqueado por la red del entorno, pide a Emi autorizar ese dominio.")
@@ -901,7 +978,7 @@ def main(argv=None) -> int:
             x = next((c for c in cat if c["id"] == a.id), None)
             if not x:
                 raise ErrorVox(f"no existe {a.id} en la biblioteca")
-            destino = Path(a.dir) / "public" / "img" / (a.como or Path(x["archivo"]).name)
+            destino = Path(a.dir) / "public" / "img" / Path(a.como or x["archivo"]).name  # solo el nombre: nunca fuera de la producción
             destino.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(dir_biblioteca() / x["archivo"], destino)
             x["usos"] += 1
@@ -911,7 +988,7 @@ def main(argv=None) -> int:
             m = rendir(Path(a.dir))
             print(f"Final en {a.dir}/out/final.mp4 · {m['duracion_s']} s · {m['lufs']} LUFS · pico {m['pico_dbtp']} dBTP")
             au = m["audio"]
-            print(f"Audio: voz {au['voz_lufs']} LUFS · música {au.get('musica_bajo_voz_lu', '—')} LU bajo la voz · efectos {au['efectos']}")
+            print(f"Audio: voz {au['voz_lufs']} LUFS · música {au.get('musica_bajo_voz_lu', '—')} LU bajo la voz · efectos respecto a la voz (dB) {au['efectos_respecto_a_voz_db']} · master {au['ganancia_master_db']:+.1f} dB")
             for aviso in au["avisos"]:
                 print(f"  ⚠ {aviso}")
             print(f"Audita {a.dir}/out/hoja.png y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
@@ -935,7 +1012,7 @@ def main(argv=None) -> int:
     except ErrorVox as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
-    except (KeyError, ValueError, OSError) as exc:
+    except (KeyError, ValueError, OSError, IndexError, TypeError) as exc:
         print(f"Error: dato inesperado ({type(exc).__name__}: {exc})", file=sys.stderr)
         return 2
     return 0

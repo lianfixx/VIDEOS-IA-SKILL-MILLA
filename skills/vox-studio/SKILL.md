@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.5.1"
+  version: "0.6.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -31,12 +31,12 @@ En cada video, antes de producir: leer el guion completo, entender de qué va y 
 
 - `musica.animo`: `tension`, `energia`, `serio`, `ironia` o `motivacion`. La pista se **compone con código** (`scripts/sonido.py`), original y a la medida exacta del video: sin proveedor, sin costo y sin licencias de terceros. Baja bajo la voz y sube al terminar la narración.
 - `sonido` por escena: `boom`, `scratch`, `trombon`, `ding`, `redoble`, `suspenso`, `caja`, `error`. Son remates sintetizados aquí, no grabaciones ajenas. Uno por idea; repetido pierde la gracia.
-- `remate` por escena (opcional, hasta 14 letras): sello que cae a media escena con su sonido, por ejemplo «PLOT TWIST» o «ASÍ NO».
+- `remate` por escena (opcional, hasta 14 letras): sello que cae a media escena con su sonido, por ejemplo «PLOT TWIST» o «ASÍ NO». Exige `sonido` en esa escena y no va en la primera.
 - En `milla` y `castorena`: música `serio`, sin remates de chiste. En `personal` es donde cabe el humor sonoro.
 
 El validador rechaza un guion sin `musica.animo` o sin ningún `sonido`. Si hace falta un efecto, ánimo o remate visual que no existe, se programa en `sonido.py` o en `plantilla/src/Vox.tsx` con su prueba y se deja disponible para los videos siguientes. No usar audios ni imágenes de memes con derechos de terceros.
 
-Cada video suena distinto: la pista y los efectos se **generan nuevos** con una semilla que sale de su propio texto (otra tonalidad, tempo, acordes y arreglo, siguiendo los cambios de escena). `render` audita el sonido y avisa si la música tapa la voz (menos de 12 LU por debajo), si la sonoridad o el pico se salen de rango, si falta un efecto o si hay silencios; el informe queda en `out/auditoria-audio.json`. Eso no sustituye al oído de Emi.
+Cada video suena distinto: la pista y los efectos se **generan nuevos** con una semilla que sale de su propio texto (otra tonalidad, tempo, acordes y arreglo, siguiendo los cambios de escena). La voz manda: se normaliza a −16 LUFS, la música se coloca 17 LU por debajo y los efectos salen todos al mismo nivel, unos 6 dB bajo la voz. `render` audita el resultado y avisa si la música tapa la voz (menos de 12 LU por debajo), si un efecto suena por encima de la voz, si la sonoridad final sale de −14 ± 1 LUFS o el pico pasa de −1.5 dBTP, si el master tuvo que mover más de 4 dB, si falta un efecto o si hay silencios; el informe queda en `out/auditoria-audio.json`. Eso no sustituye al oído de Emi.
 
 ## Fotos reales con Apify
 
@@ -63,12 +63,12 @@ V="python3 skills/vox-studio/scripts/vox.py"
 D=productions/personal/TEMA
 $V proyecto $D --perfil personal        # copia la plantilla, guarda el saldo inicial y muestra los aprendizajes
 (cd $D && npm ci)
+$V sonido $D/guion.json                 # propuesta de música, efectos y remates; decidir y escribirla en el guion
 $V validar $D/guion.json
-$V imagen --prompt-file $D/prompts/01.txt --out $D/originales/01.jpg --estado $D/estados/img-01.json --execute
+$V imagen --perfil personal --prompt-file $D/prompts/01.txt --out $D/originales/01.jpg --estado $D/estados/img-01.json --execute
 $V recorte $D/originales/01.jpg $D/public/img/01.png
 $V voz $D/guion.json --dir $D --execute # narra una vez y guarda la alineación
 $V armar $D/guion.json --dir $D         # tras cambiar textos o imágenes: no vuelve a pagar la voz
-$V sonido $D/guion.json                 # propuesta de música, efectos y remates (antes de validar)
 $V render $D                            # render + portada + master + hoja de fotogramas
 $V cierre $D                            # saldos: gastado y restante
 $V catalogar $D                         # guarda los recortes en la biblioteca
@@ -78,7 +78,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 ## Reglas
 
-- **Imágenes naturales**: estilo `ilustracion` (editorial pintada) o `foto`; `sticker` (cartoon) solo si Emi lo pide. Modelo `nano-banana-2-lite` primero; Seedream 5 Lite para lo más realista. Cualquier otro modelo exige añadir su esquema comprobado a `MODELOS_KIE`. GPT Image solo como último recurso documentado, nunca en `milla`, y hoy lo bloquea el freno de `ia/politica.json`: cambiarlo requiere confirmación expresa de Emi.
+- **Imágenes naturales**: `--perfil E` toma el estilo del espacio (`estilo_imagen`: ilustración en personal y MILLA, foto en Castorena y PAN); también `--estilo ilustracion` (editorial pintada) o `foto`; `sticker` (cartoon) solo si Emi lo pide. Modelo `nano-banana-2-lite` primero; Seedream 5 Lite para lo más realista. Cualquier otro modelo exige añadir su esquema comprobado a `MODELOS_KIE`. GPT Image solo como último recurso documentado, nunca en `milla`, y hoy lo bloquea el freno de `ia/politica.json`: cambiarlo requiere confirmación expresa de Emi.
 - El prompt describe solo el sujeto, sin mesas ni suelos; se genera sobre verde (o `--croma magenta` si el sujeto es verde) y se recorta en local. Revisar cada PNG antes de montar.
 - Fotos reales (Apify) solo para personas, logos o hechos que no se pueden ilustrar, con derechos verificados; pedir el token a Emi cuando haga falta.
 - Subtítulos: solo con los tiempos por palabra que devuelve el proveedor de voz.
@@ -88,7 +88,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 ## Auditar y corregir
 
-`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. Comprobar que el master diga cerca de −14 LUFS y pico ≤ −1.5 dBTP. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
+`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. Leer los avisos de audio de `render`: sin avisos, el sonido está en rango. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
 
 ## Aprender de cada video (obligatorio)
 

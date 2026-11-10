@@ -6,8 +6,8 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 
 | Qué | Cómo cambia de un video a otro |
 |---|---|
-| Música | La semilla sale del título y la narración: cambian tonalidad (±3 semitonos), tempo (±6 %), progresión de acordes (5 por modo) y patrón del arpegio. El arreglo sigue los cambios de escena: escenas alternas más ligeras, barrido y golpe en cada corte, final a pleno. Queda registrada en `estados/musica.json`. |
-| Efectos | Mismo carácter, afinados a la tonalidad de la música de ese video. |
+| Música | La semilla sale del título y la narración: cambian tonalidad (±3 semitonos), tempo (±6 %), progresión de acordes (5 por modo) y patrón del arpegio. El arreglo sigue los cambios de escena: escenas alternas más ligeras y final a pleno en todos los ánimos; barrido en cada corte y, salvo en `serio`, un golpe. Queda registrada en `estados/musica.json`. |
+| Efectos | Mismo carácter, los ocho afinados a la tonalidad de la música de ese video y todos al mismo nivel (−20 dBFS RMS). |
 | Voz, subtítulos | De la narración de ese guion, con tiempos reales. |
 | Portada | Del titular y el recorte de ese video. |
 
@@ -17,7 +17,7 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 |---|---|---|
 | `tension` | 92 bpm, menor | denuncia, misterio, dato incómodo |
 | `energia` | 122 bpm, mayor | gym, retos, listas rápidas |
-| `serio` | 78 bpm, menor, sin batería | jurídico, institucional |
+| `serio` | 78 bpm, menor, sin batería ni golpes | jurídico, institucional |
 | `ironia` | 104 bpm, mayor, pizzicato | sarcasmo, absurdo, humor |
 | `motivacion` | 110 bpm, mayor | superación, cierre con llamado |
 

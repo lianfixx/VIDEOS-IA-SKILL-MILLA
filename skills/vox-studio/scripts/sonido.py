@@ -124,17 +124,18 @@ def componer(animo: str, segundos: float, semilla: int = 7, cortes: list[float] 
             return 1.0  # última escena: todo
         return 0.85 if i == 0 else (0.6 if i % 2 else 1.0)
 
-    for c in cortes:  # cada cambio de escena se marca: barrido que sube y golpe
+    for c in cortes:  # cada cambio de escena se marca: barrido que sube y, salvo en `serio`, un golpe
         sube = int(0.35 * SR)
         _poner(m, rng.standard_normal(sube) * np.linspace(0, 1, sube) ** 2, max(0.0, c - 0.35), 0.035)
-        _poner(m, _bombo(0.35), c, 0.35)
+        if animo != "serio":
+            _poner(m, _bombo(0.35), c, 0.35)
     compas, t = 0, 0.0
     while t < segundos:
         notas = _acorde(tonica, modo, prog[compas % len(prog)])
         crece = min(1.0, 0.55 + 0.45 * t / max(segundos, 1)) * fuerza(t)  # crece hacia el cierre y respira por escena
         # colchón
         for nota in notas:
-            _poner(m, _tono(nota + 12, negra * 4, "seno", ataque=0.4, caida=negra * 3), t, 0.10)
+            _poner(m, _tono(nota + 12, negra * 4, "seno", ataque=0.4, caida=negra * 3), t, 0.10 * (0.5 + 0.5 * fuerza(t)))
         for paso in range(8):  # corcheas
             tp = t + paso * negra / 2
             if animo in {"tension", "serio"}:
@@ -146,7 +147,7 @@ def componer(animo: str, segundos: float, semilla: int = 7, cortes: list[float] 
                     _poner(m, _tono(notas[0] - 12, negra, "sierra", caida=0.22), tp, 0.18)
             if animo == "ironia":
                 swing = (negra / 6) if paso % 2 else 0.0
-                _poner(m, _tono(notas[[0, 2, 1, 2][paso % 4]] + 12, 0.2, "pluck", caida=0.07), tp + swing, 0.22)
+                _poner(m, _tono(notas[[0, 2, 1, 2][paso % 4]] + 12, 0.2, "pluck", caida=0.07), tp + swing, 0.22 * crece)
                 if paso in (2, 6):
                     _poner(m, _tono(84, 0.08, "seno", caida=0.02), tp, 0.16)  # bloque de madera
             # batería
@@ -159,7 +160,7 @@ def componer(animo: str, segundos: float, semilla: int = 7, cortes: list[float] 
             if animo == "energia" and paso in (2, 6):
                 _poner(m, _ruido(0.2, rng, caida=0.06), tp, 0.10)  # palmada
         if animo == "serio" and compas % 2 == 0:  # nota de piano espaciada
-            _poner(m, _tono(notas[2] + 24, negra * 3, "pluck", caida=0.9), t + negra, 0.14)
+            _poner(m, _tono(notas[2] + 24, negra * 3, "pluck", caida=0.9), t + negra, 0.14 * crece)
         t += negra * 4
         compas += 1
     m = m[: int(segundos * SR)]
@@ -173,12 +174,14 @@ def componer(animo: str, segundos: float, semilla: int = 7, cortes: list[float] 
 
 def _boom(rng, ton=48):
     n = int(0.9 * SR); t = np.arange(n) / SR
-    return np.sin(2 * np.pi * (38 * t + 70 * (1 - np.exp(-t * 9)) / 9)) * np.exp(-t / 0.32)
+    base = _hz(ton - 24)  # el golpe cae sobre la tónica de la música del video
+    caida = float(rng.uniform(0.28, 0.36))
+    return np.sin(2 * np.pi * (base * t + 70 * (1 - np.exp(-t * 9)) / 9)) * np.exp(-t / caida)
 
 
 def _scratch(rng, ton=48):
     n = int(0.45 * SR); t = np.arange(n) / SR
-    barrido = np.sin(2 * np.pi * np.cumsum(900 - 1500 * t + 700 * np.sin(2 * np.pi * 9 * t)) / SR)
+    barrido = np.sin(2 * np.pi * np.cumsum(_hz(ton + 33) - 1500 * t + 700 * np.sin(2 * np.pi * 9 * t)) / SR)
     return (barrido * 0.6 + rng.standard_normal(n) * 0.25) * _env(n, 0.005, 0.2)
 
 
@@ -199,8 +202,8 @@ def _ding(rng, ton=48):
 
 def _redoble(rng, ton=48):
     m = np.zeros(int(1.1 * SR))
-    _poner(m, _ruido(0.12, rng, caida=0.04, agudo=False) + _tono(50, 0.12, "seno", caida=0.05), 0.0, 1.0)
-    _poner(m, _ruido(0.12, rng, caida=0.04, agudo=False) + _tono(47, 0.12, "seno", caida=0.05), 0.18, 1.0)
+    _poner(m, _ruido(0.12, rng, caida=0.04, agudo=False) + _tono(ton + 2, 0.12, "seno", caida=0.05), 0.0, 1.0)
+    _poner(m, _ruido(0.12, rng, caida=0.04, agudo=False) + _tono(ton - 1, 0.12, "seno", caida=0.05), 0.18, 1.0)
     _poner(m, _ruido(0.7, rng, caida=0.25), 0.42, 0.5)
     return m
 
@@ -221,7 +224,7 @@ def _caja(rng, ton=48):
 
 
 def _error(rng, ton=48):
-    return np.concatenate([_tono(52, 0.16, "sierra", caida=0.3), np.zeros(int(0.05 * SR)), _tono(47, 0.3, "sierra", caida=0.3)])
+    return np.concatenate([_tono(ton + 4, 0.16, "sierra", caida=0.3), np.zeros(int(0.05 * SR)), _tono(ton - 1, 0.3, "sierra", caida=0.3)])
 
 
 EFECTOS = {
@@ -236,8 +239,31 @@ EFECTOS = {
 }
 
 
-def guardar(ruta: Path, onda: np.ndarray, pico: float = 0.7) -> None:
-    onda = onda / (np.max(np.abs(onda)) + 1e-9) * pico
+def nivel_dbfs(onda: np.ndarray) -> float:
+    """Nivel RMS de la parte que suena (ignora el silencio), en dBFS."""
+    activa = onda[np.abs(onda) > 10 ** (-50 / 20)]
+    if activa.size == 0:
+        return -120.0
+    return float(20 * np.log10(np.sqrt(np.mean(activa ** 2)) + 1e-12))
+
+
+def leer_nivel(ruta: Path) -> float:
+    with wave.open(str(ruta), "rb") as w:
+        datos = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2").astype(np.float64) / 32768.0
+    return nivel_dbfs(datos)
+
+
+NIVEL_EFECTO = -20.0  # dBFS RMS: todos los efectos salen al mismo nivel, comparable con la voz
+
+
+def guardar(ruta: Path, onda: np.ndarray, pico: float = 0.7, nivel: float | None = None) -> None:
+    """Escribe un WAV. Con `nivel` iguala la sonoridad (RMS) en vez del pico, sin saturar."""
+    onda = onda / (np.max(np.abs(onda)) + 1e-9)
+    if nivel is not None:
+        onda = onda * 10 ** ((nivel - nivel_dbfs(onda)) / 20)
+        onda = onda / max(1.0, float(np.max(np.abs(onda))) / 0.95)
+    else:
+        onda = onda * pico
     datos = (np.clip(onda, -1, 1) * 32767).astype("<i2")
     ruta.parent.mkdir(parents=True, exist_ok=True)
     with wave.open(str(ruta), "wb") as w:
@@ -250,7 +276,7 @@ def guardar(ruta: Path, onda: np.ndarray, pico: float = 0.7) -> None:
 def sintetizar_efectos(destino: Path, semilla: int = 0, tonica: int = 48) -> list[str]:
     """Efectos nuevos para cada video: mismo carácter, afinados a la tonalidad de su música."""
     for i, (nombre, (fn, _)) in enumerate(EFECTOS.items()):
-        guardar(destino / f"{nombre}.wav", fn(np.random.default_rng(semilla + 100 + i), tonica))
+        guardar(destino / f"{nombre}.wav", fn(np.random.default_rng(semilla + 100 + i), tonica), nivel=NIVEL_EFECTO)
     return sorted(EFECTOS)
 
 
@@ -258,10 +284,10 @@ def sintetizar_efectos(destino: Path, semilla: int = 0, tonica: int = 48) -> lis
 
 PISTAS_ANIMO = {
     "tension": r"mentir|mintier|engañ|fraude|robo|corrup|peligro|nadie te dice|oculta|verdad|trampa|estafa|miedo|crisis",
-    "energia": r"gym|entren|músculo|rutina|reto|rápido|hack|truco|energ|cardio|proteína|levant",
-    "serio": r"ley|contrato|demanda|juicio|derecho|tribunal|amparo|fiscal|laboral|despido|finiquito|pensión|artículo|código",
+    "energia": r"\bgym\b|\bentren|músculo|rutina|\bretos?\b|rápido|\bhack|\btrucos?\b|\benerg|cardio|proteína|\blevant",
+    "serio": r"\bley(es)?\b|contrato|\bdemanda|\bjuicio|\bderechos?\b|tribunal|\bamparo|\bfiscal|laboral|despido|finiquito|pensión|\bartículo|\bcódigo (civil|penal|fiscal)",
     "ironia": r"obvio|claro que|spoiler|plot twist|sorpresa|ajá|según|supuestamente|qué raro|casualidad",
-    "motivacion": r"puedes|lograr|empieza|cambia|disciplina|sueño|meta|hazlo|vale la pena|crece",
+    "motivacion": r"\bpuedes\b|\blograr|\bempieza|\bcambia\b|disciplina|\bsueños?\b|\bmetas?\b|\bhazlo\b|vale la pena|\bcrece",
 }
 PISTAS_EFECTO = [
     ("caja", r"dinero|pesos|\$|pagar|multa|costo|precio|quincena|sueldo|cobr|deuda|impuesto"),
