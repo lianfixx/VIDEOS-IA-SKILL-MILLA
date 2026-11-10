@@ -34,13 +34,26 @@ class Guion(unittest.TestCase):
     def test_valido(self):
         self.assertEqual(vox.validar_guion(guion()), [])
 
+    def test_el_ejemplo_de_la_plantilla_es_valido(self):
+        import json
+        ej = json.loads((vox.PLANTILLA / "guion.ejemplo.json").read_text(encoding="utf-8"))
+        self.assertEqual(vox.validar_guion(ej), [])
+
     def test_exige_opinion_y_pregunta_narrada(self):
         g = guion(); g["opinion_emi"] = ""; g["escenas"][-1]["narracion"] = "Fin."
         self.assertIn("opinion_emi", self.errores(g))
         self.assertIn("pregunta de cierre", self.errores(g))
 
-    def test_entrada_efectiva_repetida(self):
-        g = guion(); g["escenas"][2]["entrada"] = vox.ENTRADAS[1]  # la 2 usa esa por defecto
+    def test_lo_automatico_se_aparta_de_lo_elegido(self):
+        g = guion(); g["escenas"][2]["entrada"] = vox.ENTRADAS[1]; g["escenas"][2]["transicion"] = "rasgado"
+        self.assertEqual(vox.validar_guion(g), [])
+        for campo, ciclo in (("entrada", vox.ENTRADAS), ("transicion", vox.TRANSICIONES)):
+            ef = vox.efectivas(g["escenas"], campo, ciclo)
+            self.assertEqual(ef[2], g["escenas"][2][campo])
+            self.assertTrue(all(a != b for a, b in zip(ef, ef[1:])), ef)
+
+    def test_dos_elegidas_iguales_seguidas_se_rechazan(self):
+        g = guion(); g["escenas"][1]["entrada"] = g["escenas"][2]["entrada"] = "cae"
         self.assertIn("repite la entrada", self.errores(g))
 
     def test_resaltar_ignora_signos(self):

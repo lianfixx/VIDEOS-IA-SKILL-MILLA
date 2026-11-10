@@ -137,6 +137,23 @@ def ruta_segura(rel: str) -> bool:
     return bool(rel) and not p.is_absolute() and ".." not in p.parts and "\\" not in rel
 
 
+def efectivas(escenas: list[dict], campo: str, ciclo: list[str]) -> list[str]:
+    """Valor final de `entrada` o `transicion` por escena.
+
+    Lo que el guion fija se respeta; lo automático sigue el ciclo y, si coincidiría con la
+    escena anterior o con la que el guion fijó para la siguiente, salta a otra opción. Así elegir una a mano nunca
+    provoca una repetición con las automáticas de alrededor.
+    """
+    out: list[str] = []
+    for i, s in enumerate(escenas):
+        v = s.get(campo)
+        if not v:
+            vecinas = {out[-1] if out else None, escenas[i + 1].get(campo) if i + 1 < len(escenas) else None}
+            v = next((ciclo[(i + k) % len(ciclo)] for k in range(len(ciclo)) if ciclo[(i + k) % len(ciclo)] not in vecinas), ciclo[i % len(ciclo)])
+        out.append(v)
+    return out
+
+
 def validar_guion(g: dict) -> list[str]:
     e: list[str] = []
     try:
@@ -166,7 +183,8 @@ def validar_guion(g: dict) -> list[str]:
         e.append("ninguna escena tiene `sonido`: propone al menos un efecto que subraye el contenido")
     if not 4 <= len(escenas) <= 9:
         e.append(f"se esperan de 4 a 9 escenas; hay {len(escenas)}")
-    vistos, ent_previa, tr_previa = set(), None, None
+    vistos = set()
+    ents, trs = efectivas(escenas, "entrada", ENTRADAS), efectivas(escenas, "transicion", TRANSICIONES)
     for i, s in enumerate(escenas):
         p = f"escena {i + 1}"
         if s.get("id") in vistos or not s.get("id"):
@@ -198,17 +216,13 @@ def validar_guion(g: dict) -> list[str]:
         ent = s.get("entrada")
         if ent and ent not in ENTRADAS:
             e.append(f"{p}: entrada {ent!r} no existe; opciones {ENTRADAS}")
-        ent = ent or ENTRADAS[i % len(ENTRADAS)]  # se compara la entrada efectiva, incluida la automática
-        if ent == ent_previa:
-            e.append(f"{p}: repite la entrada de la escena anterior ({ent})")
-        ent_previa = ent
+        if i > 0 and ents[i] == ents[i - 1]:  # solo puede pasar si el guion fijó las dos
+            e.append(f"{p}: repite la entrada de la escena anterior ({ents[i]})")
         tr = s.get("transicion")
         if tr and tr not in set(TRANSICIONES):
             e.append(f"{p}: transicion {tr!r} no existe; opciones {sorted(set(TRANSICIONES))}")
-        tr = tr or TRANSICIONES[i % len(TRANSICIONES)]
-        if i > 1 and tr == tr_previa:
-            e.append(f"{p}: repite la transición de la escena anterior ({tr})")
-        tr_previa = tr
+        if i > 1 and trs[i] == trs[i - 1]:
+            e.append(f"{p}: repite la transición de la escena anterior ({trs[i]})")
     if escenas and "?" not in str(escenas[-1].get("narracion", "")):
         e.append("la última escena debe narrar la pregunta de cierre (cta_pregunta)")
     return e
@@ -254,6 +268,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
     total = int(round((duracion + 0.7) * FPS))
     cortes = [0] + [max(0, int(round((t - 0.12) * FPS))) for t in inicios[1:]] + [total]
     escenas = []
+    ents, trs = efectivas(g["escenas"], "entrada", ENTRADAS), efectivas(g["escenas"], "transicion", TRANSICIONES)
     for i, s in enumerate(g["escenas"]):
         desde, dur = cortes[i], cortes[i + 1] - cortes[i]
         if dur < MIN_ESCENA:
@@ -266,8 +281,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             "keyword": " ".join(str(s["keyword"]).split()).upper(), "resaltar": limpia(s.get("resaltar") or ""),
             "kicker": s.get("kicker", ""), "nota": s.get("nota", ""), "dato": s.get("dato", ""),
             "fuente": s.get("fuente", ""), "imagen": img, "foto": bool(s.get("foto_real", False)),
-            "entrada": s.get("entrada") or ENTRADAS[i % len(ENTRADAS)],
-            "transicion": s.get("transicion") or TRANSICIONES[i % len(TRANSICIONES)],
+            "entrada": ents[i], "transicion": trs[i],
             "sonido": s.get("sonido", ""), "remate": str(s.get("remate", "")).upper(),
         })
     port = g.get("portada") or {}

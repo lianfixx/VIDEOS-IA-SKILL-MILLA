@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-10 · Vox Studio 0.5.1: auditoría de fondo, solo video y cuentas por red
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: fusionar a `main`; `@emilianomilla_` es de X y la cuenta de TikTok aún no existe; «no combinar cosas, aquí es puro video»; auditar de fondo y corregir errores.
+- Cambios: (1) El guion de ejemplo no pasaba su validador: las entradas y transiciones automáticas ahora se apartan de las que el guion fija (antes y después), y el ejemplo tiene su prueba. (2) La sección «Puente con x-viral» se sustituye por «Solo video»: esta skill no redacta ni programa publicaciones. (3) Espacio personal: `handle` vacío (no hay TikTok) y `cuentas.x` con `@emilianomilla_`; el @ de X no se muestra en los videos. (4) `README.md` presenta Vox Studio y `docs/VALIDACION.md` registra el render ya comprobado y los controles de la skill.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `skills/vox-studio/plantilla/guion.ejemplo.json`, `espacios/personal/{perfil.json,MARCA.md}`, `espacios/APRENDIZAJES.md`, `README.md`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de vox-studio 33/33 → aprobado; flujo desde un proyecto nuevo (`proyecto`, `npm ci`, `tsc`, cuadro del video y portada) sin gasto → aprobado; `validar` del ejemplo → aprobado.
+- Pendiente: integrar la segunda revisión independiente del código (en curso); las pruebas de vox-studio no corren en el control previo al commit porque añadirlas cambia `ia/politica.json`, que requiere confirmación de Emi.
+
 ## 2026-11-10 · Vox Studio 0.5.0: Apify de punta a punta y puente con x-viral
 
 - Agente: Claude Code (sesión en la nube)

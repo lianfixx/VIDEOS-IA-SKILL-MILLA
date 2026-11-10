@@ -15,7 +15,7 @@ Fecha de revisión: 3 de noviembre de 2026. Este informe separa pruebas locales,
 | Inicialización real | Aprobada | `init-project` copió una producción autocontenida; sus pruebas npm y validación en borrador pasaron |
 | Escaneo preventivo de secretos | 0 hallazgos en 30 textos de la skill y 43 del repositorio | Excluye binarios, dependencias e historial y no prueba ausencia absoluta |
 | Llamadas pagadas | 0 | Kie/Fish se probaron con respuestas simuladas; no se comprobaron claves, saldo ni calidad remota |
-| Render del compositor nuevo | Bloqueado por el entorno | El bundle compiló; Chrome no pudo descargarse por timeout del proxy y falló la consulta de interfaces. No existe un render estético aprobado de esta plantilla |
+| Render del compositor nuevo | Aprobado técnicamente (10/11/2026) | En el entorno en la nube `videos-ia-skill-milla` el demo de la plantilla rindió completo (10.4 s, 1080×1920, H.264/AAC) con el Chromium preinstalado: `--browser-executable=/usr/local/bin/chrome-headless-shell`. Sigue sin existir un render estético aprobado de esta plantilla |
 
 Comandos reproducibles desde la raíz del repositorio:
 
@@ -60,8 +60,20 @@ Ambos informes permanecen en `needs_human_review`. `freezedetect` señaló 17 y 
 1. Elegir y aprobar una muestra real de Fish por `reference_id` y motor; la V3 no resuelve este punto.
 2. Probar una llamada real y acotada de Kie y Fish con claves nuevas, saldo revisado y gasto autorizado.
 3. Producir un piloto desde `init-project` hasta la entrega con activos y derechos trazables.
-4. Renderizar en un entorno con navegador autorizado y revisar todos los frames críticos, voz, música, SFX y subtítulos.
+4. Revisar todos los frames críticos, voz, música, SFX y subtítulos de un piloto real (el render técnico ya funciona en la nube desde el 10/11/2026).
 5. Confirmar licencias de música, imágenes reales, fuentes y logo usados en ese piloto.
 6. Comparar el piloto con la referencia aprobada en teléfono y registrar aprobación o correcciones.
 
 La versión 1.0.2 demuestra coherencia local entre inicialización, validadores y compositor, además de una auditoría npm sin avisos al 3 de noviembre de 2026. No demuestra aún calidad de proveedores externos, equivalencia exacta con el montaje histórico ni aprobación estética del compositor nuevo.
+
+## Vox Studio (10 de noviembre de 2026)
+
+Skill independiente en `skills/vox-studio/`. Controles reproducibles desde la raíz:
+
+```bash
+python3 -m unittest discover -s skills/vox-studio/scripts -p 'test_*.py'
+python3 ia/check_skill.py skills/vox-studio .claude/skills/vox-studio .agents/skills/vox-studio
+cd skills/vox-studio/plantilla && npm ci && npm run typecheck
+```
+
+Comprobado con servicios reales (no simulados): narración ElevenLabs con alineación por palabra, imágenes Kie (`nano-banana-2-lite` y `seedream/5-lite-text-to-image`), búsqueda Apify y descarga de una foto de Wikimedia Commons con su licencia, y render completo de dos demos técnicos. No comprobado: escucha humana de voz, música y efectos; aprobación estética; publicación.

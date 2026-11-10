@@ -1,6 +1,6 @@
 {
   "nombre": "Emi · personal",
-  "handle": "@emilianomilla_",
+  "handle": "",
   "estado": "candidato",
   "colores": {
     "papel": "#F4ECD6",
@@ -18,5 +18,9 @@
   "cuadricula": false,
   "titular": "Anton",
   "estilo_imagen": "ilustracion",
-  "subtitulos": "Anton"
+  "subtitulos": "Anton",
+  "cuentas": {
+    "x": "@emilianomilla_",
+    "tiktok": ""
+  }
 }

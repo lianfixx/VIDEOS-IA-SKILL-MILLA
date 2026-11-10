@@ -18,3 +18,5 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Emi autorizó usar Apify para fotos reales. Regla: pocas candidatas, tope de gasto, fuente y licencia comprobadas antes de bajar.
 - 2026-11-10 · Auditoría (Apify): un tope de 0.05 USD abortó la búsqueda y cobró igual. Regla: cada búsqueda cuesta ~0.06 USD; la herramienta ya exige un tope suficiente. Con 5 USD al mes alcanzan unas 80 búsquedas.
 - 2026-11-10 · Auditoría (Apify): la primera foto real bajada es CC BY-SA 3.0 (Wikimedia Commons). Regla: comprobar la ficha siempre; BY-SA exige crédito y compartir igual, así que se avisa a Emi antes de usarla en un video.
+- 2026-11-10 · Emi: «no combinar cosas, aquí es puro video». Regla: esta skill solo hace video; nada de publicaciones ni instrucciones de otras skills. El @ de X no se muestra en videos que irán a TikTok.
+- 2026-11-10 · Auditoría: el guion de ejemplo no pasaba su propio validador. Regla: todo ejemplo documentado tiene una prueba que lo valida.

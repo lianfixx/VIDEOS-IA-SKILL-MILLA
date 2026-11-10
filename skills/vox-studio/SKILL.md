@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.5.0"
+  version: "0.5.1"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -46,9 +46,9 @@ Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --
 
 Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con lo que muestran. Antes de generar una imagen, `$V biblioteca --buscar "..."`; se recicla (`$V reciclar ID --dir $D`) solo si, **al mirarla**, dice exactamente lo que la escena necesita. Ante la duda, imagen nueva. Lo que existe en código (ánimos, efectos, entradas, transiciones, estilos) está en [CATALOGO.md](CATALOGO.md).
 
-## Puente con x-viral
+## Solo video
 
-La skill de X de Emi (repositorio `lianfixx/X`) y Vox Studio trabajan juntas pero cada una con sus instrucciones. Antes de elegir tema para el espacio `personal`, leer las ideas que x-viral deja en `lianfixx/X/puente/para-vox.md`: son propuestas, y se sigue preguntando a Emi su postura. Vox Studio no publica en X: el post que acompaña a un video lo escribe y lo programa x-viral con el visto bueno de Emi. x-viral lee de este repositorio `espacios/APRENDIZAJES.md` y la carpeta `espacios/personal/`.
+Esta skill hace video y nada más: guion, imagen, voz, sonido, montaje, portada y su auditoría. No redacta ni programa publicaciones en X ni en ninguna red, y no mezcla instrucciones de otras skills. La skill de X de Emi (`lianfixx/X`) es independiente: puede dejar ideas de video en su propio repositorio (`puente/para-vox.md`) y aquí se toman solo como propuestas de tema para el espacio `personal`, preguntando igual la postura de Emi. El `handle` de un espacio es el @ de la red donde se publica el video; un @ de otra red va en `cuentas` y no se muestra en pantalla.
 
 ## Portada
 
