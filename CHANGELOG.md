@@ -1,5 +1,104 @@
 # Cambios
 
+## 2026-11-10 · Vox Studio 0.8.0: auditoría de imagen, titular en bloque, referencia técnica y control previo al commit
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: fusionar a `main`; comprobar el audio en cada video; castorena.com.mx es su despacho; «Perfecto» a que las pruebas de Vox Studio corran antes de cada commit; seguir mejorando y documentar todo de forma técnica.
+- Cambios: (1) Reglas comunes, con confirmación expresa de Emi: `ia/politica.json` añade dos controles previos al commit (pruebas de Vox Studio al tocar `skills/vox-studio/` o `espacios/`, con comprobación de dependencias, y `check_skill` de su SKILL.md); `ia/REGLAS.md` regenerado. (2) `render` audita la imagen (`out/auditoria-video.json`): formato del archivo, contenido bajo la interfaz de TikTok y cuadros vacíos; al estrenarla detectó contenido bajo los botones de la derecha en tres escenas y se corrigió con un margen derecho de 900 px en esa franja. (3) Titular en bloque: cada línea llena el ancho útil. (4) Codificación con CRF 16, JPEG 95 y BT.709. (5) `skills/vox-studio/TECNICA.md` documenta formato, línea de tiempo, composición, cadena de audio, imágenes, auditorías y costos con los valores del código. (6) Castorena: despacho confirmado; regla de pedir la escucha de Emi en cada video.
+- Archivos: `ia/politica.json`, `ia/REGLAS.md`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,TECNICA.md}`, `espacios/castorena/{perfil.json,MARCA.md,aprendizajes.md}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: `python3 ia/test_guard.py` → aprobado; pruebas de vox-studio 43/43 → aprobado; pruebas de milla-video-studio → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto: 20.97 s, H.264 1080×1920 30 fps, −14.04 LUFS, pico −2.36 dBTP, 0 % de contenido en zonas tapadas, sin avisos de audio ni de imagen → aprobado técnicamente; hoja de fotogramas revisada por la IA → aprobado. Escucha de Emi del demo: «están bien» (10/11/2026).
+- Pendiente: primer video real (Emi lo pedirá en una sesión nueva); nombre y @ de TikTok.
+
+## 2026-11-10 · Vox Studio 0.7.0: cierre, ritmo, oficio del guion y guía de TikTok
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: confirmar que las mejoras están documentadas y en la skill; auditar y mejorarla para que los videos queden bien.
+- Cambios: cierre automático al terminar la voz (sello con el llamado del espacio y flecha a comentarios; 1.5 s de cola); pulso del recorte a media escena en escenas de más de 5 s; `validar` emite avisos de oficio no bloqueantes (gancho, escenas largas, duración total, escenas sin imagen, cifras sin fuente, keywords repetidos) y `armar` avisa de escenas de más de 7 s en la voz real; `render` entrega `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok. `cierre` añadido a los cuatro perfiles.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,CATALOGO.md}`, `espacios/*/perfil.json`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: se comprobó que `plantilla/src/` es idéntica a la del demo (todas las mejoras viven en la skill); pruebas 42/42 → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto: 20.97 s, −14.04 LUFS, pico −2.36 dBTP, sin avisos de audio; transiciones revisadas cuadro por cuadro y hoja con guía de TikTok revisada: todo el contenido dentro de la zona visible → aprobado. Escucha de Emi → no ejecutado.
+- Pendiente: los mismos de la versión 0.6.0.
+
+## 2026-11-10 · Vox Studio 0.6.0: segunda auditoría independiente (15 fallas) y niveles de audio
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: «audita de fondo, corrige errores».
+- Cambios: Audio: la narración se normaliza a −16 LUFS, la música se coloca 17 LU por debajo con ganancia calculada, los ocho efectos salen al mismo nivel (−20 dBFS RMS) y afinados a la tonalidad, y el master pasa a ganancia fija con limitador; la auditoría mide cada efecto respecto a la voz y la ganancia del master. Música: todos los ánimos respiran por escena y `serio` ya no recibe golpes. Sello: sincronizado con su sonido, anclado a la esquina del recorte, exige `sonido` y no va en la primera escena. Seguridad y robustez: `reciclar --como` y `foto-bajar --out` no salen de la producción; índice validado; descarga con tope de 15 MB y comprobación de que es imagen; tipos inesperados en el guion ya no rompen el validador. Biblioteca: el id incluye el sha, `catalogar` valida el guion y crea la carpeta. Commons: miniaturas resueltas al archivo real y solo `/wikipedia/commons/`. Propuesta de sonido con límites de palabra («decreto» ya no vota gimnasio). `imagen --perfil E` aplica el estilo del espacio. Documentación alineada con el código.
+- Archivos: `skills/vox-studio/scripts/{vox.py,sonido.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,CATALOGO.md}`, `biblioteca/**`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas 40/40 → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto y rendido: −14.04 LUFS, pico −2.41 dBTP, voz −16.12 LUFS, música 16.9 LU bajo la voz, efectos −5.7 dB respecto a la voz, master −1.1 dB, sin avisos → aprobado técnicamente; sellos revisados como imagen → aprobado. Escucha de Emi → no ejecutado.
+- Pendiente: añadir las pruebas de vox-studio al control previo al commit (cambia `ia/politica.json`; requiere confirmación de Emi).
+
+## 2026-11-10 · Vox Studio 0.5.1: auditoría de fondo, solo video y cuentas por red
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: fusionar a `main`; `@emilianomilla_` es de X y la cuenta de TikTok aún no existe; «no combinar cosas, aquí es puro video»; auditar de fondo y corregir errores.
+- Cambios: (1) El guion de ejemplo no pasaba su validador: las entradas y transiciones automáticas ahora se apartan de las que el guion fija (antes y después), y el ejemplo tiene su prueba. (2) La sección «Puente con x-viral» se sustituye por «Solo video»: esta skill no redacta ni programa publicaciones. (3) Espacio personal: `handle` vacío (no hay TikTok) y `cuentas.x` con `@emilianomilla_`; el @ de X no se muestra en los videos. (4) `README.md` presenta Vox Studio y `docs/VALIDACION.md` registra el render ya comprobado y los controles de la skill.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `skills/vox-studio/plantilla/guion.ejemplo.json`, `espacios/personal/{perfil.json,MARCA.md}`, `espacios/APRENDIZAJES.md`, `README.md`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de vox-studio 33/33 → aprobado; flujo desde un proyecto nuevo (`proyecto`, `npm ci`, `tsc`, cuadro del video y portada) sin gasto → aprobado; `validar` del ejemplo → aprobado.
+- Pendiente: integrar la segunda revisión independiente del código (en curso); las pruebas de vox-studio no corren en el control previo al commit porque añadirlas cambia `ia/politica.json`, que requiere confirmación de Emi.
+
+## 2026-11-10 · Vox Studio 0.5.0: Apify de punta a punta y puente con x-viral
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: «ya tengo el token de Apify, continúa con todo» (tras consultarle la petición de la sesión de x-viral).
+- Cambios: `foto-bajar` lee autor y licencia de la ficha de Wikimedia Commons y, si su API limita, sigue con `--licencia` manual; cabecera de cliente genérica en las peticiones. Skill: preferencia de licencias (dominio público, CC0, CC BY; BY-SA con aviso a Emi) y sección «Puente con x-viral». Espacio personal: `handle` `@emilianomilla_`. Entorno `videos-ia-skill-milla`: se autorizaron `upload.wikimedia.org` y `commons.wikimedia.org`.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/personal/{perfil.json,MARCA.md}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas 31/31 → aprobado. Descarga real de una foto de Commons (4140×2760, CC BY-SA 3.0, autor comprobado en su ficha y vista como imagen) → aprobado. Lectura automática de la licencia: falló dos veces por límite de peticiones (HTTP 429) y funcionó a la tercera; por eso el respaldo manual.
+- Pendiente: confirmar que `@emilianomilla_` es también el @ de TikTok; fusionar esta rama a `main` para que el puente de x-viral lea Vox Studio (requiere que Emi lo pida).
+
+## 2026-11-10 · Apify conectado y probado en real
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: usar Apify (entregó el token por el formulario seguro).
+- Cambios: `foto` exige un tope de gasto acorde al precio real del actor (0.005 de arranque + 0.05 por página + 0.0023 por foto) y su valor por defecto sube a 0.12 USD; se leen `imageWidth` e `imageHeight` del resultado. Aprendizaje y skill actualizados con el costo medido.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas 30/30 → aprobado. Llamadas reales a Apify: la primera, con tope 0.05 USD, falló (abortada por el tope, cobró 0.05); la segunda, con tope 0.12, devolvió 3 candidatas con su página de origen → aprobado. Saldo según Apify tras ambas: 4.895 de 5 USD. Descarga real de una foto (`foto-bajar`) → no ejecutado: el dominio de cada foto debe autorizarse en la red del entorno.
+- Pendiente: probar `foto-bajar` en el primer video que necesite una foto real.
+
+## 2026-11-10 · Vox Studio 0.4.0: sonido nuevo por video, auditoría de audio, Apify y biblioteca
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: generar con Apify; que la música se audite y que todo se genere nuevo acorde a cada video; documentar lo que ya existe para reciclarlo solo si de verdad queda.
+- Cambios: la música y los efectos se generan con una semilla que sale del texto de cada guion (tonalidad, tempo, progresión, patrón y arreglo por escena distintos; efectos afinados a la tonalidad) y se registran en `estados/musica.json`. `render` audita el audio (música respecto a la voz, sonoridad, pico, efectos faltantes, silencios) y deja `out/auditoria-audio.json`; la música baja a 0.09 para quedar 13.9 LU bajo la voz en el demo. Comandos `foto` y `foto-bajar` para fotos reales con Apify (token en cabecera, tope de gasto, filtro Creative Commons, licencia obligatoria al bajar). Biblioteca: `catalogar`, `biblioteca` y `reciclar`, con `biblioteca/catalogo.json`. Nuevo `skills/vox-studio/CATALOGO.md` con todo lo programado.
+- Archivos: `skills/vox-studio/scripts/{vox.py,sonido.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,CATALOGO.md}`, `biblioteca/**` (3 recortes del demo 2), `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 30/30 → aprobado; demo 2 reconstruido sin gasto y rendido: −14.15 LUFS, pico −1.87 dBTP, música 13.9 LU bajo la voz, sin avisos → aprobado técnicamente. Apify: probado con respuesta simulada y en seco; llamada real → no ejecutado (falta el token). Escucha de Emi → no ejecutado.
+- Pendiente: token de Apify y una búsqueda real acotada; opinión de Emi sobre cómo suena; petición de la sesión de x-viral (sección «Puente con x-viral» en la skill y @ del espacio personal) sin aplicar hasta que Emi la confirme.
+
+## 2026-11-10 · Vox Studio 0.3.0: música y efectos por código, portada y subtítulos por espacio
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: en cada video analizar de qué va y proponer música, efectos y remates tipo meme creados con código; subtítulos serif para Castorena; portada automática. Sin producir un video nuevo.
+- Cambios: `scripts/sonido.py` compone con numpy una pista original por ánimo (`tension`, `energia`, `serio`, `ironia`, `motivacion`) a la medida del video y sintetiza ocho remates sonoros (`boom`, `scratch`, `trombon`, `ding`, `redoble`, `suspenso`, `caja`, `error`); `vox.py sonido GUION` analiza el guion y propone ánimo, efecto por escena y remates, con límites por espacio (los jurídicos no llevan chiste). El guion exige `musica.animo` y al menos un `sonido`. Compositor: remate visual tipo sello, música que baja bajo la voz y sube al final, tipografía de subtítulos por espacio (Gelasio en Castorena) y composición `Portada`; `render` entrega también `out/portada.png`.
+- Archivos: `skills/vox-studio/scripts/{sonido.py,vox.py,test_vox.py}`, `skills/vox-studio/plantilla/src/{Vox.tsx,Root.tsx}`, `skills/vox-studio/plantilla/guion.ejemplo.json`, `skills/vox-studio/SKILL.md`, `espacios/*/perfil.json`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 25/25 → aprobado; `tsc --noEmit` → aprobado; el demo 2 existente se reconstruyó con `armar` (sin gastar saldo) y se rindió con música, efectos, remate y portada: 20.2 s, −14.22 LUFS, pico −1.90 dBTP → aprobado técnicamente; portadas de personal y Castorena revisadas como imagen → aprobado. Escucha de la música y los efectos → no ejecutado (la IA no oye audio; la juzga Emi).
+- Pendiente: opinión de Emi sobre cómo suenan los cinco ánimos y los ocho efectos; confirmar el despacho Castorena; nombres y @ de los canales.
+
+## 2026-11-10 · Vox Studio 0.2.0: auditoría completa, marca investigada y aprendizaje continuo
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: auditar y corregir todo; «las cosas tiemblan mucho»; imágenes más naturales, más efectos y transiciones; que la skill aprenda de todos los videos; investigar el estilo del PAN y de Castorena en sus sitios y redes oficiales; razonar por espacio.
+- Cambios: (1) Movimiento: se eliminó la vibración a 12 fps; flotación lenta, rebotes amortiguados y grano discreto. (2) Transiciones nuevas `barrido` y `rasgado` además del viaje de cámara, con su efecto de sonido; rayos dibujados tras el recorte. (3) Imágenes: estilos `ilustracion` (por defecto), `foto` y `sticker`; modelo `seedream/5-lite-text-to-image` con esquema comprobado; recorte que mide el color real del fondo, quita lo conectado al borde y los huecos idénticos al fondo, con opción magenta. (4) Las 15 fallas de la revisión independiente: zoom continuo entre escenas, textos largos que ya no desbordan, límites de líneas y de notas, fuente en pantalla dentro de zona segura, `armar` para no volver a pagar la voz, estado de imagen ligado a su prompt, errores de red y de ffmpeg con mensaje claro, entrada y transición efectivas validadas, pregunta de cierre narrada, escenas mínimas de 24 frames. (5) Master en dos pasadas y comando `render` (render + master + hoja de fotogramas). (6) Aprendizaje: `espacios/APRENDIZAJES.md` y `espacios/<espacio>/aprendizajes.md`, comandos `aprender` y `aprendizajes`, lectura obligatoria antes de cada guion. (7) Marca por espacio en `MARCA.md`: PAN con colores leídos de pan.org.mx y accionjuvenil.com; Castorena con los de castorena.com.mx y titulares en Gelasio; tipografía de titular por espacio.
+- Archivos: `skills/vox-studio/**`, `espacios/**`, puentes de la skill y este registro.
+- Verificación: pruebas de vox-studio 20/20 → aprobado; `tsc --noEmit` → aprobado; render real del demo 2 (20.2 s, −14.09 LUFS, pico −1.80 dBTP) con 3 imágenes naturales (dos modelos) → aprobado técnicamente; hoja de fotogramas y un cuadro por espacio revisados por la IA → sin encimados; escucha y aprobación estética de Emi → no ejecutado. Gasto del demo 2: 17.5 créditos de Kie y 132 caracteres de ElevenLabs según los propios proveedores.
+- Pendiente: que Emi confirme que castorena.com.mx es su despacho (la investigación no halló práctica laboral-burocrática pública); manual oficial del PAN no localizado; nombres y @ de los canales; música con derechos; token de Apify cuando haga falta una foto real.
+
+## 2026-11-10 · espacios separados y reporte de saldos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: que cada espacio (personal, MILLA, Castorena, PAN) esté por separado y que en cada video se le diga cuánto queda en ElevenLabs, Kie y Apify; auditar y corregir lo construido.
+- Cambios: los perfiles pasan de `skills/vox-studio/perfiles.json` a `espacios/<espacio>/perfil.json`, con `ideas.md` por espacio; `vox.py proyecto` solo crea producciones en `productions/<espacio>/`. Nuevos `vox.py saldo` y `vox.py cierre DIR` (gastado y restante por proveedor; Apify se informa como no conectado si falta el token). Correcciones visuales tras auditar el demo cuadro por cuadro: subtítulos sin hueco vacío (palabras por decir atenuadas), nota manuscrita que ya no pisa el recorte, recortes más grandes y viñeta más ligera.
+- Archivos: `espacios/**`, `skills/vox-studio/scripts/vox.py`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/SKILL.md` y este registro.
+- Verificación: pruebas de vox-studio 9/9 → aprobado; `vox.py saldo` contra los proveedores reales → aprobado (Kie 232 créditos; ElevenLabs 39,608 de 40,000; Apify no conectado). Render con las correcciones visuales → no ejecutado todavía en este commit.
+- Pendiente: integrar la revisión de código independiente y la investigación de marca de PAN y Castorena (en curso); volver a rendir y auditar el demo.
+
+## 2026-11-10 · Vox Studio 0.1.0 (candidato) y entorno en la nube
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: configurar el entorno en la nube, instalar y mejorar el sistema del video «video-vox», crear shorts estilo Vox con su opinión y humor, con Daniel y Laura como voces y un perfil por espacio (personal, MILLA, Castorena, PAN).
+- Cambios: nueva skill `skills/vox-studio/` con compositor Remotion propio (cámara continua sin fades, seis entradas, stickers a 12 fps, resaltador, subtítulos por palabra con tiempos reales del proveedor, fuentes empaquetadas), `scripts/vox.py` (guion con opinión obligatoria, voz ElevenLabs con alineación, imagen Kie nano-banana-2-lite, recorte por croma, SFX sintetizados, master) y cuatro perfiles candidatos. Puentes en `.claude/skills/` y `.agents/skills/`. No se copió código de `santmun/video-vox` (no tiene licencia). Preferencia nueva de Emi registrada: GPT Image solo si es necesario; el freno de `ia/politica.json` no se tocó.
+- Archivos: `skills/vox-studio/**`, `.claude/skills/vox-studio/SKILL.md`, `.agents/skills/vox-studio/SKILL.md` y este registro.
+- Verificación: `python3 -m unittest discover -s skills/vox-studio/scripts -p 'test_*.py'` → 9/9 aprobado; `tsc --noEmit` → aprobado; render real de un demo de 20.3 s (1080×1920, H.264/AAC, −14.3 LUFS) con 2 imágenes Kie (8 créditos) y 331 caracteres de voz → aprobado técnicamente, hoja de fotogramas revisada por la IA; escucha y aprobación estética de Emi → no ejecutado. El compositor de MILLA también rindió aquí con el Chromium preinstalado (`--browser-executable=/usr/local/bin/chrome-headless-shell`), lo que resuelve el bloqueo de render anotado en `docs/VALIDACION.md`. Entorno `videos-ia-skill-milla` creado con script de configuración; el script se probó a mano, no en un arranque nuevo.
+- Pendiente: aprobación de Emi del demo; nombres y @ de cada canal; cotejar colores de PAN y Castorena con sus manuales; esquema de Seedream; música con derechos; el true peak del master quedó en −0.9 dBTP (objetivo −1.5).
+
 ## 2026-11-04 · corrección: puentes de skill con YAML válido
 
 - Agente: Claude Code (sesión en la nube)

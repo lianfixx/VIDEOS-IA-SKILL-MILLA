@@ -1,0 +1,23 @@
+{
+  "nombre": "Castorena Abogados",
+  "handle": "",
+  "estado": "candidato",
+  "colores": {
+    "papel": "#F7F5F0",
+    "tinta": "#0D1B2A",
+    "acento": "#8A6D3B",
+    "apoyo": "#C8A96B"
+  },
+  "voz": {
+    "proveedor": "elevenlabs",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
+    "modelo": "eleven_multilingual_v2"
+  },
+  "tono": "Muy formal e institucional, de usted, frases cortas y sentenciosas. Explica; no opina sobre asuntos en curso, sin humor, sin promesas de resultado.",
+  "cuadricula": false,
+  "titular": "Gelasio",
+  "estilo_imagen": "foto",
+  "subtitulos": "Gelasio",
+  "cierre": "SU OPINIÓN"
+}

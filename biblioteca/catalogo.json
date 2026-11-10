@@ -1,0 +1,38 @@
+[
+ {
+  "id": "personal-demo-2-01-4b042094",
+  "espacio": "personal",
+  "archivo": "personal/personal-demo-2-01-4b042094.png",
+  "sha256": "4b04209465cd63c319972936ac6c0abdea9e24a43dac172e9b41b85341e76848",
+  "muestra": "A pair of human hands typing on a laptop, a strip of 35mm film coming out of the screen",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/personal/demo-2",
+  "fecha": "2026-11-10",
+  "usos": 1
+ },
+ {
+  "id": "personal-demo-2-02-4f5774b9",
+  "espacio": "personal",
+  "archivo": "personal/personal-demo-2-02-4f5774b9.png",
+  "sha256": "4f5774b9aeeb53263430b9dc621192700e5eb299829bfbfd27b899ed734e6307",
+  "muestra": "A vintage metal film splicer and a pair of old scissors with a small cobweb between them, product shot, floating",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/personal/demo-2",
+  "fecha": "2026-11-10",
+  "usos": 1
+ },
+ {
+  "id": "personal-demo-2-03-ebade92b",
+  "espacio": "personal",
+  "archivo": "personal/personal-demo-2-03-ebade92b.png",
+  "sha256": "ebade92b7a1f0376b49f3f7724f0dfaa616d55cb0fb2bc90589ee0a9c4c0a100",
+  "muestra": "A classic mechanical metronome next to a studio microphone",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/personal/demo-2",
+  "fecha": "2026-11-10",
+  "usos": 1
+ }
+]

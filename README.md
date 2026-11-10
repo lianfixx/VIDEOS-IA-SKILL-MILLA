@@ -51,3 +51,7 @@ Registrar el problema, su evidencia y el alcance; proponer cambio; probar regres
 ## Procedencia y derechos
 
 Recapitulación de material disponible, no certificación de que se recuperó cada palabra del historial original. `video-vox` de santmun fue un antecedente; no se copió su código. Las marcas y contenidos audiovisuales de terceros conservan sus derechos. La publicación del método no transfiere licencias de voces, música, imágenes o marca MILLA. No se asigna una licencia general de código abierto sin decisión del titular.
+
+## Vox Studio (shorts estilo documental-collage)
+
+Segunda skill del repositorio, independiente de MILLA Video Studio: `skills/vox-studio/` produce shorts 9:16 con compositor propio, música y efectos generados por código, portada y auditoría. Cada marca de Emi tiene su espacio en `espacios/` (personal, MILLA, Castorena, PAN) y sus producciones privadas en `productions/<espacio>/`. Es candidata: ningún video suyo tiene aún aprobación estética. Empieza por `skills/vox-studio/SKILL.md` y `skills/vox-studio/CATALOGO.md`.

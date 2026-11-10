@@ -1,0 +1,27 @@
+{
+  "nombre": "Emi · personal",
+  "handle": "",
+  "estado": "candidato",
+  "colores": {
+    "papel": "#F4ECD6",
+    "tinta": "#20180F",
+    "acento": "#FF5A1F",
+    "apoyo": "#FFD23F"
+  },
+  "voz": {
+    "proveedor": "elevenlabs",
+    "voice_id": "7QXA3lh7d25G1SzsIJdv",
+    "nombre": "Daniel Virgen - Hyped",
+    "modelo": "eleven_multilingual_v2"
+  },
+  "tono": "Suelto, crítico y con humor; gym, vlogs y estilo de vida. Un chiste cada 2 o 3 escenas, nunca a costa del dato.",
+  "cuadricula": false,
+  "titular": "Anton",
+  "estilo_imagen": "ilustracion",
+  "subtitulos": "Anton",
+  "cuentas": {
+    "x": "@emilianomilla_",
+    "tiktok": ""
+  },
+  "cierre": "COMENTA"
+}

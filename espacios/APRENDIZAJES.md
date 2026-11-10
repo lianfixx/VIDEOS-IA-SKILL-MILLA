@@ -1,0 +1,27 @@
+# Aprendizajes de todos los videos
+
+Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender "..."`). Cada línea: fecha, qué pasó o qué dijo Emi, y la regla que queda. No se borran lecciones; si una cambia, se añade la nueva debajo.
+
+- 2026-11-10 · Emi (demo 1): «las cosas tiemblan mucho». Regla: nada vibra; solo flotación lenta y continua, grano de papel discreto y rebotes amortiguados.
+- 2026-11-10 · Emi (demo 1): quiere imágenes más naturales. Regla: estilo por defecto `ilustracion` (editorial pintada, proporciones reales) o `foto`; el cartoon de contorno grueso solo si él lo pide.
+- 2026-11-10 · Emi (demo 1): pide más efectos y transiciones. Regla: alternar viaje de cámara, barrido de color y papel rasgado; nunca la misma transición dos veces seguidas.
+- 2026-11-10 · Auditoría (demo 1): el audio salió a −27 LUFS. Regla: masterizar siempre a −14 LUFS antes de entregar.
+- 2026-11-10 · Auditoría (demo 1): recortes pequeños y nota manuscrita encimada. Regla: revisar una hoja de fotogramas de cada escena antes de entregar.
+- 2026-11-10 · Emi: en cada entrega, tabla de lo gastado y lo que queda en Kie, ElevenLabs y Apify (`vox.py cierre`).
+- 2026-11-10 · Auditoría (demo 2): un prompt que menciona una superficie («sobre un escritorio») rompe el fondo plano y el recorte lo rechaza. Regla: describir solo el sujeto, «floating, product shot», sin mesas ni suelos.
+- 2026-11-10 · Auditoría (demo 2): los huecos encerrados (perforaciones, asas) quedaban verdes. Regla: el recorte ya los quita; para sujetos verdes usar `--croma magenta`.
+- 2026-11-10 · Auditoría (demo 2): la normalización de una pasada dejó −12.7 LUFS y pico −0.4. Regla: master en dos pasadas (ya integrado en `render`); comprobar que diga cerca de −14 LUFS y pico ≤ −1.5 dBTP.
+- 2026-11-10 · Revisión de código: 15 fallas corregidas (salto de zoom, textos que desbordan, re-narración pagada, estado de imagen reutilizado). Regla: tras cada cambio de la plantilla, pruebas + render + hoja de fotogramas.
+- 2026-11-10 · Emi: en cada video analizar de qué va y proponer música, efectos y remates tipo meme, hechos con código. Regla: `vox.py sonido` + criterio propio; el guion no pasa sin `musica.animo` y al menos un `sonido`.
+- 2026-11-10 · Emi aprobó: subtítulos de Castorena en serif y portada automática por video (`out/portada.png`).
+- 2026-11-10 · Emi: música, efectos y demás se generan nuevos y acordes a cada video; lo ya hecho se documenta para reciclar solo si de verdad queda. Regla: sonido con semilla propia por video; imágenes en `biblioteca/` y reciclaje únicamente tras mirarlas; piezas de código en `CATALOGO.md`.
+- 2026-11-10 · Emi autorizó usar Apify para fotos reales. Regla: pocas candidatas, tope de gasto, fuente y licencia comprobadas antes de bajar.
+- 2026-11-10 · Auditoría (Apify): un tope de 0.05 USD abortó la búsqueda y cobró igual. Regla: cada búsqueda cuesta ~0.06 USD; la herramienta ya exige un tope suficiente. Con 5 USD al mes alcanzan unas 80 búsquedas.
+- 2026-11-10 · Auditoría (Apify): la primera foto real bajada es CC BY-SA 3.0 (Wikimedia Commons). Regla: comprobar la ficha siempre; BY-SA exige crédito y compartir igual, así que se avisa a Emi antes de usarla en un video.
+- 2026-11-10 · Emi: «no combinar cosas, aquí es puro video». Regla: esta skill solo hace video; nada de publicaciones ni instrucciones de otras skills. El @ de X no se muestra en videos que irán a TikTok.
+- 2026-11-10 · Auditoría: el guion de ejemplo no pasaba su propio validador. Regla: todo ejemplo documentado tiene una prueba que lo valida.
+- 2026-11-10 · Segunda revisión independiente: los efectos sonaban hasta 13 dB por encima de la voz y el master comprimía. Regla: la voz se normaliza a −16 LUFS y música y efectos se colocan respecto a ella; `render` avisa si algo se sale. Otras 13 fallas corregidas (rutas, biblioteca, licencias de miniaturas, sello sincronizado y sin tapar el contenido).
+- 2026-11-10 · Auditoría cuadro por cuadro: el video terminaba en seco y las escenas largas se quedaban quietas. Regla: cierre con llamado a comentar y pulso a media escena (ya automáticos); atender los avisos ⚠ de `validar` y revisar `hoja-tiktok.png`.
+- 2026-11-10 · Emi: el audio del demo está bien, «pero por video compruébalo». Regla: en cada video se le pide que escuche voz, música y efectos; los niveles automáticos no cuentan como aprobación.
+- 2026-11-10 · Auditoría de imagen (nueva): la nota, el sello y un recorte caían bajo los botones de TikTok. Regla: de y=760 hacia abajo el contenido termina en x=900; `render` lo mide y avisa.
+- 2026-11-10 · Emi aprobó que las pruebas de Vox Studio corran solas antes de cada commit.

@@ -1,0 +1,32 @@
+{
+  "name": "vox-studio-plantilla",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compositor original estilo documental-collage para shorts 9:16. Candidato: sin aprobación estética todavía.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "still": "remotion still src/index.ts Vox out/still.png",
+    "render": "remotion render src/index.ts Vox out/video.mp4 --codec=h264 --audio-codec=aac --pixel-format=yuv420p"
+  },
+  "dependencies": {
+    "@fontsource/anton": "5.3.0",
+    "@fontsource/caveat": "5.3.0",
+    "@fontsource/gelasio": "5.3.0",
+    "@remotion/cli": "4.0.540",
+    "@remotion/fonts": "4.0.540",
+    "@remotion/media": "4.0.540",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.540"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.10",
+    "@types/react-dom": "19.1.9",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
