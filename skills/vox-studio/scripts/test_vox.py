@@ -177,6 +177,19 @@ class Fotos(unittest.TestCase):
         self.assertNotIn("token=", visto["url"])  # el token va en cabecera, nunca en la URL
         self.assertEqual(visto["cuerpo"]["usageRights"], "creative_commons")
 
+    def test_licencia_de_commons(self):
+        import json
+        real = vox._pedir
+        vox._pedir = lambda url, **kw: json.dumps({"query": {"pages": {"1": {"imageinfo": [{"extmetadata": {
+            "LicenseShortName": {"value": "CC BY-SA 3.0"}, "Artist": {"value": "<a href='x'>Autora</a>"}, "AttributionRequired": {"value": "true"}}}]}}}}).encode()
+        try:
+            lic = vox.licencia_commons("https://upload.wikimedia.org/wikipedia/commons/9/97/Foto_01.jpg?utm=1")
+            self.assertEqual((lic["licencia"], lic["autor"]), ("CC BY-SA 3.0", "Autora"))
+            self.assertTrue(lic["ficha"].endswith("File:Foto_01.jpg"))
+            self.assertIsNone(vox.licencia_commons("https://otro.sitio/foto.jpg"))
+        finally:
+            vox._pedir = real
+
     def test_en_seco_no_llama(self):
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada"]), 0)
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--max", "50", "--execute"]), 2)

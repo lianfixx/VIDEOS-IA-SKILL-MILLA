@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.4.0"
+  version: "0.5.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -40,11 +40,15 @@ Cada video suena distinto: la pista y los efectos se **generan nuevos** con una 
 
 ## Fotos reales con Apify
 
-Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --consulta "..." --dir $D --execute` trae hasta 10 candidatas con su página de origen (cada búsqueda cuesta unos 0.06 USD: 0.005 de arranque, 0.05 por página de resultados y 0.0023 por foto, medido el 10/11/2026; tope 0.12 USD por defecto y la herramienta rechaza un tope que abortaría cobrando; filtro Creative Commons por defecto). Antes de usar una: abrir la página, confirmar qué muestra, autor y licencia; luego `$V foto-bajar --dir $D --indice N --out ... --licencia "licencia y autor" --execute`. El filtro de derechos solo orienta. Nunca rostros que parezcan testimonio de cliente. Si la red del entorno bloquea el dominio de la foto, pedir a Emi que lo autorice.
+Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --consulta "..." --dir $D --execute` trae hasta 10 candidatas con su página de origen (cada búsqueda cuesta unos 0.06 USD: 0.005 de arranque, 0.05 por página de resultados y 0.0023 por foto, medido el 10/11/2026; tope 0.12 USD por defecto y la herramienta rechaza un tope que abortaría cobrando; filtro Creative Commons por defecto). Antes de usar una: abrir la página, confirmar qué muestra, autor y licencia; luego `$V foto-bajar --dir $D --indice N --out ... --licencia "licencia y autor" --execute`. El filtro de derechos solo orienta. En Wikimedia Commons la herramienta lee autor y licencia de la ficha (si su API limita, se abre la ficha y se pasa `--licencia`). Preferir dominio público, CC0 o CC BY; una CC BY-SA obliga a dar crédito en pantalla o en la descripción y a compartir igual la obra derivada: avisar a Emi antes de usarla. Nunca rostros que parezcan testimonio de cliente. Si la red del entorno bloquea el dominio de la foto, pedir a Emi que lo autorice.
 
 ## Biblioteca: reciclar solo lo que encaja
 
 Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con lo que muestran. Antes de generar una imagen, `$V biblioteca --buscar "..."`; se recicla (`$V reciclar ID --dir $D`) solo si, **al mirarla**, dice exactamente lo que la escena necesita. Ante la duda, imagen nueva. Lo que existe en código (ánimos, efectos, entradas, transiciones, estilos) está en [CATALOGO.md](CATALOGO.md).
+
+## Puente con x-viral
+
+La skill de X de Emi (repositorio `lianfixx/X`) y Vox Studio trabajan juntas pero cada una con sus instrucciones. Antes de elegir tema para el espacio `personal`, leer las ideas que x-viral deja en `lianfixx/X/puente/para-vox.md`: son propuestas, y se sigue preguntando a Emi su postura. Vox Studio no publica en X: el post que acompaña a un video lo escribe y lo programa x-viral con el visto bueno de Emi. x-viral lee de este repositorio `espacios/APRENDIZAJES.md` y la carpeta `espacios/personal/`.
 
 ## Portada
 

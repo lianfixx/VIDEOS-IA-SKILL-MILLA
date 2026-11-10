@@ -295,7 +295,7 @@ def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120) -
     if urllib.parse.urlparse(url).scheme != "https":
         raise ErrorVox("solo se permiten URLs https")
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
-    req = urllib.request.Request(url, data=datos, method=metodo, headers=cabeceras or {})
+    req = urllib.request.Request(url, data=datos, method=metodo, headers={"User-Agent": "vox-studio/0.4 (video tool; python-urllib)", **(cabeceras or {})})
     if datos is not None:
         req.add_header("Content-Type", "application/json")
     host = urllib.parse.urlparse(url).hostname
@@ -624,6 +624,24 @@ def buscar_fotos(consulta: str, maximo: int, tope_usd: float, derechos: str = "c
             for x in datos if (x.get("imageUrl") or x.get("url"))][:maximo]
 
 
+def licencia_commons(url_imagen: str) -> dict | None:
+    """Autor y licencia de un archivo de Wikimedia Commons, leídos de su propia ficha."""
+    u = urllib.parse.urlparse(url_imagen)
+    if u.hostname != "upload.wikimedia.org":
+        return None
+    nombre = urllib.parse.unquote(u.path.rsplit("/", 1)[-1])
+    api = ("https://commons.wikimedia.org/w/api.php?action=query&format=json&prop=imageinfo&iiprop=extmetadata&titles="
+           + urllib.parse.quote("File:" + nombre))
+    paginas = (_json(_pedir(api, espera=30), "Wikimedia Commons").get("query") or {}).get("pages") or {}
+    info = next(iter(paginas.values()), {}).get("imageinfo") or [{}]
+    meta = info[0].get("extmetadata") or {}
+    limpio = lambda k: re.sub(r"<[^>]+>", "", str((meta.get(k) or {}).get("value", ""))).strip()
+    if not limpio("LicenseShortName"):
+        return None
+    return {"licencia": limpio("LicenseShortName"), "autor": limpio("Artist"), "atribucion_requerida": limpio("AttributionRequired"),
+            "ficha": "https://commons.wikimedia.org/wiki/File:" + urllib.parse.quote(nombre)}
+
+
 # ---------- biblioteca para reciclar ----------
 
 def dir_biblioteca() -> Path:
@@ -731,7 +749,7 @@ def main(argv=None) -> int:
     p.add_argument("--max", type=int, default=5); p.add_argument("--tope-usd", type=float, default=0.12)
     p.add_argument("--derechos", choices=["creative_commons", "commercial", "cualquiera"], default="creative_commons"); p.add_argument("--execute", action="store_true")
     p = sub.add_parser("foto-bajar"); p.add_argument("--dir", required=True); p.add_argument("--indice", type=int, required=True)
-    p.add_argument("--out", required=True); p.add_argument("--licencia", required=True); p.add_argument("--execute", action="store_true")
+    p.add_argument("--out", required=True); p.add_argument("--licencia", default=""); p.add_argument("--execute", action="store_true")
     p = sub.add_parser("catalogar"); p.add_argument("dir")
     p = sub.add_parser("biblioteca"); p.add_argument("--buscar", default=""); p.add_argument("--espacio", default="")
     p = sub.add_parser("reciclar"); p.add_argument("id"); p.add_argument("--dir", required=True); p.add_argument("--como", default="")
@@ -837,6 +855,15 @@ def main(argv=None) -> int:
         elif a.cmd == "foto-bajar":
             est = json.loads((Path(a.dir) / "estados" / "fotos.json").read_text())
             f = est["candidatas"][a.indice]
+            try:
+                oficial = licencia_commons(f["imagen"])  # en Commons la licencia se lee de la ficha
+            except ErrorVox as exc:  # su API limita peticiones: se sigue con verificación manual de la ficha
+                oficial = None
+                print(f"No se pudo leer la ficha automáticamente ({str(exc)[:60]}); usa --licencia tras abrirla.")
+            if oficial:
+                f["commons"] = oficial
+                a.licencia = f"{oficial['licencia']} · {oficial['autor']}"
+                print(f"Wikimedia Commons: {a.licencia}\n  ficha: {oficial['ficha']}")
             if len(a.licencia.strip()) < 8:
                 raise ErrorVox("--licencia: escribe la licencia y el autor comprobados en la página de origen")
             if not a.execute:
