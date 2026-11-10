@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.0"
+  version: "0.8.1"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -103,6 +103,10 @@ Después de cada entrega y de cada comentario de Emi, guardar la lección: `$V a
 ## Saldos (obligatorio en cada entrega)
 
 Pegar a Emi la tabla completa de `$V cierre`: lo gastado en ese video y lo que queda en Kie, ElevenLabs y Apify. Un proveedor sin conexión se informa como «no conectado», nunca se estima. El consumo de Claude no se puede consultar desde aquí; decirlo así.
+
+## Dónde funciona
+
+En Claude Code con este repositorio la skill produce el video completo. Como skill personal de claude.ai (paquete de `python3 tools/empaquetar_vox.py`, que lleva los espacios dentro) sirve para guion, método y consulta: ahí no hay llaves ni render, así que se avanza el guion y se entrega para producirlo en Claude Code. No fingir un render ni un saldo que no se pudo consultar.
 
 ## Terminado
 

@@ -85,6 +85,8 @@ def dir_espacios() -> Path:
     """Cada espacio (marca) vive en su propia carpeta: espacios/<nombre>/perfil.json."""
     if os.environ.get("VOX_ESPACIOS"):
         return Path(os.environ["VOX_ESPACIOS"])
+    if (RAIZ / "espacios").is_dir():  # skill empaquetada para claude.ai: los espacios viajan dentro
+        return RAIZ / "espacios"
     return RAIZ.parent.parent / "espacios"
 
 
