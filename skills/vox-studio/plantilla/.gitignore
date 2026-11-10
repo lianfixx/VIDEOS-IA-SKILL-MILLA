@@ -1,0 +1,9 @@
+node_modules/
+out/
+public/*
+!public/.gitkeep
+guion.json
+estados/
+src/data/video.json
+.env*
+*.log
