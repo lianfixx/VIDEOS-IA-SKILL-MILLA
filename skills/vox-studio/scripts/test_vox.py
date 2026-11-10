@@ -166,7 +166,7 @@ class Fotos(unittest.TestCase):
         visto = {}
         def falso(url, **kw):
             visto.update(url=url, **kw)
-            return json.dumps([{"imageUrl": "https://ejemplo.org/a.jpg", "sourceUrl": "https://ejemplo.org/p", "sourceDomain": "ejemplo.org", "title": "A", "width": 1200, "height": 800}, {"title": "sin imagen"}]).encode()
+            return json.dumps([{"imageUrl": "https://ejemplo.org/a.jpg", "sourceUrl": "https://ejemplo.org/p", "sourceDomain": "ejemplo.org", "title": "A", "imageWidth": 1200, "imageHeight": 800}, {"title": "sin imagen"}]).encode()
         vox._pedir = falso
         try:
             fotos = vox.buscar_fotos("Palacio de Bellas Artes", 5, 0.1)
@@ -180,6 +180,7 @@ class Fotos(unittest.TestCase):
     def test_en_seco_no_llama(self):
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada"]), 0)
         self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--max", "50", "--execute"]), 2)
+        self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--tope-usd", "0.05", "--execute"]), 2)  # tope que abortaría cobrando
 
 
 class Tiempos(unittest.TestCase):

@@ -40,7 +40,7 @@ Cada video suena distinto: la pista y los efectos se **generan nuevos** con una 
 
 ## Fotos reales con Apify
 
-Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --consulta "..." --dir $D --execute` trae hasta 10 candidatas con su página de origen (tope de gasto por búsqueda, 0.10 USD por defecto; filtro Creative Commons por defecto). Antes de usar una: abrir la página, confirmar qué muestra, autor y licencia; luego `$V foto-bajar --dir $D --indice N --out ... --licencia "licencia y autor" --execute`. El filtro de derechos solo orienta. Nunca rostros que parezcan testimonio de cliente. Si la red del entorno bloquea el dominio de la foto, pedir a Emi que lo autorice.
+Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --consulta "..." --dir $D --execute` trae hasta 10 candidatas con su página de origen (cada búsqueda cuesta unos 0.06 USD: 0.005 de arranque, 0.05 por página de resultados y 0.0023 por foto, medido el 10/11/2026; tope 0.12 USD por defecto y la herramienta rechaza un tope que abortaría cobrando; filtro Creative Commons por defecto). Antes de usar una: abrir la página, confirmar qué muestra, autor y licencia; luego `$V foto-bajar --dir $D --indice N --out ... --licencia "licencia y autor" --execute`. El filtro de derechos solo orienta. Nunca rostros que parezcan testimonio de cliente. Si la red del entorno bloquea el dominio de la foto, pedir a Emi que lo autorice.
 
 ## Biblioteca: reciclar solo lo que encaja
 

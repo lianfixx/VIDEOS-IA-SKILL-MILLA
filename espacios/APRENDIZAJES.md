@@ -16,3 +16,4 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Emi aprobó: subtítulos de Castorena en serif y portada automática por video (`out/portada.png`).
 - 2026-11-10 · Emi: música, efectos y demás se generan nuevos y acordes a cada video; lo ya hecho se documenta para reciclar solo si de verdad queda. Regla: sonido con semilla propia por video; imágenes en `biblioteca/` y reciclaje únicamente tras mirarlas; piezas de código en `CATALOGO.md`.
 - 2026-11-10 · Emi autorizó usar Apify para fotos reales. Regla: pocas candidatas, tope de gasto, fuente y licencia comprobadas antes de bajar.
+- 2026-11-10 · Auditoría (Apify): un tope de 0.05 USD abortó la búsqueda y cobró igual. Regla: cada búsqueda cuesta ~0.06 USD; la herramienta ya exige un tope suficiente. Con 5 USD al mes alcanzan unas 80 búsquedas.

@@ -620,7 +620,7 @@ def buscar_fotos(consulta: str, maximo: int, tope_usd: float, derechos: str = "c
     if not isinstance(datos, list):
         raise ErrorVox(f"Apify devolvió algo inesperado: {str(datos)[:160]}")
     return [{"imagen": x.get("imageUrl") or x.get("url"), "pagina": x.get("sourceUrl"), "dominio": x.get("sourceDomain"),
-             "titulo": x.get("title"), "ancho": x.get("width"), "alto": x.get("height")}
+             "titulo": x.get("title"), "ancho": x.get("imageWidth") or x.get("width"), "alto": x.get("imageHeight") or x.get("height")}
             for x in datos if (x.get("imageUrl") or x.get("url"))][:maximo]
 
 
@@ -728,7 +728,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("render"); p.add_argument("dir")
     p = sub.add_parser("sonido"); p.add_argument("guion")
     p = sub.add_parser("foto"); p.add_argument("--consulta", required=True); p.add_argument("--dir", required=True)
-    p.add_argument("--max", type=int, default=5); p.add_argument("--tope-usd", type=float, default=0.10)
+    p.add_argument("--max", type=int, default=5); p.add_argument("--tope-usd", type=float, default=0.12)
     p.add_argument("--derechos", choices=["creative_commons", "commercial", "cualquiera"], default="creative_commons"); p.add_argument("--execute", action="store_true")
     p = sub.add_parser("foto-bajar"); p.add_argument("--dir", required=True); p.add_argument("--indice", type=int, required=True)
     p.add_argument("--out", required=True); p.add_argument("--licencia", required=True); p.add_argument("--execute", action="store_true")
@@ -820,6 +820,10 @@ def main(argv=None) -> int:
         elif a.cmd == "foto":
             if not 1 <= a.max <= 10:
                 raise ErrorVox("--max entre 1 y 10: se buscan pocas candidatas, no un banco de imágenes")
+            # Precio del actor medido el 2026-11-10: 0.005 por arranque + 0.05 por página de resultados + 0.0023 por imagen.
+            minimo = round(0.005 + 0.05 + 0.0023 * a.max + 0.005, 3)
+            if a.tope_usd < minimo:
+                raise ErrorVox(f"--tope-usd {a.tope_usd} no alcanza: una búsqueda de {a.max} fotos cuesta cerca de {minimo} USD y un tope menor la aborta cobrando igual")
             if not a.execute:
                 print(f"En seco: hasta {a.max} fotos de «{a.consulta}», derechos {a.derechos}, tope {a.tope_usd} USD. Añade --execute.")
                 return 0
