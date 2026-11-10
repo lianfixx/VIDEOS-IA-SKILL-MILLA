@@ -14,7 +14,7 @@ Compositor propio, **candidato**: rinde y está probado técnicamente, pero ning
 ## Antes de escribir un guion
 
 1. Preguntar a Emi, en cada video y sea cual sea el tema: **¿cuál es tu postura?**, qué quiere criticar o defender y qué chiste o referencia le gustaría. Se guarda en `opinion_emi`; el validador rechaza un guion sin ella.
-2. Elegir perfil en [perfiles.json](perfiles.json): `personal`, `milla`, `castorena` o `pan`. Cada uno tiene colores, voz y tono propios; no mezclarlos.
+2. Elegir perfil en `espacios/<espacio>/perfil.json` (ver [espacios](../../espacios/README.md)): `personal`, `milla`, `castorena` o `pan`. Cada uno tiene colores, voz y tono propios; no mezclarlos.
 3. Investigar el tema en fuentes verificables y poner la fuente en pantalla (`fuente`) cuando haya un dato.
 
 ## Voz del guion
@@ -27,14 +27,14 @@ Desde la raíz del repositorio; las producciones viven en `productions/` (privad
 
 ```bash
 V="python3 skills/vox-studio/scripts/vox.py"
-$V proyecto productions/TEMA --perfil personal     # copia la plantilla y sintetiza los SFX
-cd productions/TEMA && npm ci && cd -
-$V validar productions/TEMA/guion.json
-$V imagen --prompt-file P.txt --out productions/TEMA/originales/01.jpg --estado productions/TEMA/estados/img-01.json --execute
-$V recorte productions/TEMA/originales/01.jpg productions/TEMA/public/img/01.png
-$V voz productions/TEMA/guion.json --dir productions/TEMA --execute
-cd productions/TEMA && npm run render -- --props=src/data/video.json && cd -
-$V master productions/TEMA/out/video.mp4 productions/TEMA/out/final.mp4
+$V proyecto productions/personal/TEMA --perfil personal     # copia la plantilla y sintetiza los SFX
+cd productions/personal/TEMA && npm ci && cd -
+$V validar productions/personal/TEMA/guion.json
+$V imagen --prompt-file P.txt --out productions/personal/TEMA/originales/01.jpg --estado productions/personal/TEMA/estados/img-01.json --execute
+$V recorte productions/personal/TEMA/originales/01.jpg productions/personal/TEMA/public/img/01.png
+$V voz productions/personal/TEMA/guion.json --dir productions/personal/TEMA --execute
+cd productions/personal/TEMA && npm run render -- --props=src/data/video.json && cd -
+$V master productions/personal/TEMA/out/video.mp4 productions/personal/TEMA/out/final.mp4
 ```
 
 Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de Kie por imagen; la voz consume los caracteres de la narración. Consultar `$V saldo` antes y después.
@@ -52,6 +52,10 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 ## Auditar y corregir
 
 Después de cada render: sacar una hoja de fotogramas (inicio, mitad de cada escena y cada cambio), mirarla y corregir en `src/Vox.tsx` de la producción; medir sonoridad. Las mejoras que sirvan para todos los videos se pasan a `plantilla/` con su prueba. Lo que una IA no puede juzgar (naturalidad de la voz, ritmo, gracia del chiste) se le pregunta a Emi con el MP4 delante.
+
+## Saldos (obligatorio en cada entrega)
+
+Al entregar cualquier video, ejecutar `$V cierre productions/ESPACIO/TEMA` y pegar a Emi la tabla completa: lo gastado en ese video y lo que queda en Kie, ElevenLabs y Apify. Un proveedor sin conexión se informa como «no conectado», nunca se estima. El uso de Claude no se puede consultar desde aquí; decirlo así.
 
 ## Terminado
 

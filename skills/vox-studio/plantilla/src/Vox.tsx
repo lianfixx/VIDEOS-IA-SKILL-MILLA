@@ -50,7 +50,7 @@ const Papel: React.FC<{c: Colores; cuadricula: boolean}> = ({c, cuadricula}) => 
         </filter>
         <rect width={W} height={H} filter="url(#grano)" />
       </svg>
-      <AbsoluteFill style={{background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.16) 100%)'}} />
+      <AbsoluteFill style={{background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.09) 100%)'}} />
     </AbsoluteFill>
   );
 };
@@ -99,7 +99,7 @@ const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({
   const {fps} = useVideoConfig();
   const lineas = partir(e.keyword);
   const largo = Math.max(...lineas.map((l) => l.length));
-  const tope = lineas.length >= 3 ? 170 : 215;
+  const tope = lineas.length >= 3 ? 160 : 195;
   const tam = Math.max(110, Math.min(tope, (SEGURO.der - SEGURO.izq) / (largo * 0.47)));
   const verbos = ['desliza-izq', 'cae', 'desliza-der', 'sello', 'mordidas', 'desdobla'];
   return (
@@ -138,7 +138,7 @@ const borde = (px: number, color: string) =>
 
 const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arriba: number}> = ({e, c, f, indice, arriba}) => {
   const {fps} = useVideoConfig();
-  const alto = 1215 - arriba;
+  const alto = (e.nota ? 1165 : 1235) - arriba;
   const q = doses(f);
   const vaiven = `translate(${(azar(q + indice) - 0.5) * 5}px, ${(azar(q * 1.7 + indice) - 0.5) * 5}px) rotate(${(indice % 2 ? 3 : -3) + (azar(q * 0.6 + indice) - 0.5) * 1.6}deg)`;
   const verbos = ['cae', 'desliza-der', 'sello', 'desliza-izq'];
@@ -175,11 +175,11 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
   const t = spring({frame: f - 22, fps, config: {damping: 200, stiffness: 110}});
   const der = indice % 2 === 0;
   return (
-    <div style={{position: 'absolute', top: 1195, [der ? 'right' : 'left']: SEGURO.izq + 10, width: 560, transform: `rotate(${der ? -4 : 4}deg)`}}>
+    <div style={{position: 'absolute', top: 1188, [der ? 'right' : 'left']: SEGURO.izq + 10, width: 560, transform: `rotate(${der ? -4 : 4}deg)`}}>
       <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
         <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
       </svg>
-      <div style={{fontFamily: 'Caveat', fontSize: 64, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(0 ${(1 - t) * 100}% 0 0)`}}>{e.nota}</div>
+      <div style={{fontFamily: 'Caveat', fontSize: 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(0 ${(1 - t) * 100}% 0 0)`}}>{e.nota}</div>
     </div>
   );
 };
@@ -188,7 +188,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
   const {fps} = useVideoConfig();
   const lineas = partir(e.keyword);
   const largo = Math.max(...lineas.map((l) => l.length));
-  const tam = Math.max(110, Math.min(lineas.length >= 3 ? 170 : 215, (SEGURO.der - SEGURO.izq) / (largo * 0.47)));
+  const tam = Math.max(110, Math.min(lineas.length >= 3 ? 160 : 195, (SEGURO.der - SEGURO.izq) / (largo * 0.47)));
   const finTitular = 350 + lineas.length * tam * 1.06;
   return (
     <div style={{position: 'absolute', width: W, height: H}}>
@@ -240,7 +240,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) 
           const activa = dicha && t < p.b + 0.06;
           const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 11, stiffness: 260, mass: 0.5}});
           return (
-            <span key={k} style={{fontFamily: 'Anton', fontSize: 74, lineHeight: 1.05, textTransform: 'uppercase', color: activa ? c.papel : c.tinta, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${dicha ? interpolate(golpe, [0, 1], [0.55, 1]) : 0})`, display: 'inline-block'}}>
+            <span key={k} style={{fontFamily: 'Anton', fontSize: 74, lineHeight: 1.05, textTransform: 'uppercase', color: activa ? c.papel : dicha ? c.tinta : `${c.tinta}38`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
               {p.t}
             </span>
           );

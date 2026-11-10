@@ -1,0 +1,19 @@
+{
+  "nombre": "Castorena Abogados",
+  "handle": "",
+  "estado": "candidato",
+  "colores": {
+    "papel": "#ECE8DF",
+    "tinta": "#101A2E",
+    "acento": "#14284B",
+    "apoyo": "#B08D57"
+  },
+  "voz": {
+    "proveedor": "elevenlabs",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
+    "modelo": "eleven_multilingual_v2"
+  },
+  "tono": "Sobrio e institucional. Explica, no opina sobre asuntos en curso. Requiere visto bueno del despacho antes de publicar.",
+  "cuadricula": true
+}

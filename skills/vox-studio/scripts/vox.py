@@ -3,14 +3,15 @@
 
 Subcomandos (sin --execute nada llama a un proveedor ni gasta saldo):
   perfiles                         lista los perfiles de marca
-  proyecto DIR --perfil P          copia la plantilla Remotion a una producción privada
+  proyecto productions/P/TEMA --perfil P   crea la producción dentro de su espacio
   validar GUION                    comprueba el guion (exige la opinión de Emi)
   voz GUION --dir DIR [--execute]  narra con ElevenLabs y arma src/data/video.json
   imagen --prompt-file F --out O   genera una imagen con Kie (nano-banana-2-lite)
   recorte ENTRADA SALIDA           quita el fondo verde (croma) -> PNG con alfa
   sfx DIR                          sintetiza el kit de efectos con FFmpeg (sin proveedor)
   master ENTRADA SALIDA            normaliza el audio a -14 LUFS / -1.5 dBTP sin recodificar video
-  saldo                            consulta créditos de Kie y caracteres de ElevenLabs
+  saldo                            cuánto queda en Kie, ElevenLabs y Apify
+  cierre DIR                       tabla de gastado y restante del video (obligatoria al entregar)
 
 Las claves nunca se escriben aquí. En la nube el proxy las inyecta (se envía un
 marcador); en local se leen de KIE_API_KEY y ELEVENLABS_API_KEY.
@@ -51,9 +52,20 @@ class ErrorVox(Exception):
     pass
 
 
+def dir_espacios() -> Path:
+    """Cada espacio (marca) vive en su propia carpeta: espacios/<nombre>/perfil.json."""
+    if os.environ.get("VOX_ESPACIOS"):
+        return Path(os.environ["VOX_ESPACIOS"])
+    return RAIZ.parent.parent / "espacios"
+
+
 def perfiles() -> dict:
-    datos = json.loads((RAIZ / "perfiles.json").read_text(encoding="utf-8"))
-    return {k: v for k, v in datos.items() if not k.startswith("_")}
+    out = {}
+    for f in sorted(dir_espacios().glob("*/perfil.json")):
+        out[f.parent.name] = json.loads(f.read_text(encoding="utf-8"))
+    if not out:
+        raise ErrorVox(f"no hay espacios en {dir_espacios()}")
+    return out
 
 
 # ---------- guion ----------
@@ -179,9 +191,54 @@ def _eleven() -> dict:
 
 
 def saldo() -> dict:
-    kie = json.loads(_pedir(f"{KIE}/chat/credit", cabeceras=_kie())).get("data")
-    sub = json.loads(_pedir(f"{ELEVEN}/user/subscription", cabeceras=_eleven()))
-    return {"kie_creditos": kie, "elevenlabs_usados": sub.get("character_count"), "elevenlabs_limite": sub.get("character_limit")}
+    """Saldo real de cada proveedor. Un proveedor sin conexión se informa como tal, nunca se estima."""
+    out: dict = {}
+    try:
+        out["kie_creditos"] = json.loads(_pedir(f"{KIE}/chat/credit", cabeceras=_kie(), espera=30)).get("data")
+    except Exception as exc:  # noqa: BLE001 - se informa, no se oculta
+        out["kie_error"] = str(exc)[:120]
+    try:
+        sub = json.loads(_pedir(f"{ELEVEN}/user/subscription", cabeceras=_eleven(), espera=30))
+        out["elevenlabs_usados"] = sub.get("character_count")
+        out["elevenlabs_limite"] = sub.get("character_limit")
+        out["elevenlabs_restantes"] = (sub.get("character_limit") or 0) - (sub.get("character_count") or 0)
+        out["elevenlabs_renueva_unix"] = sub.get("next_character_count_reset_unix")
+    except Exception as exc:  # noqa: BLE001
+        out["elevenlabs_error"] = str(exc)[:120]
+    try:
+        cab = {"Authorization": "Bearer " + os.environ.get("APIFY_TOKEN", MARCADOR)}
+        lim = json.loads(_pedir("https://api.apify.com/v2/users/me/limits", cabeceras=cab, espera=30)).get("data") or {}
+        uso = (lim.get("current") or {}).get("monthlyUsageUsd")
+        tope = (lim.get("limits") or {}).get("maxMonthlyUsageUsd")
+        out["apify_usado_usd"], out["apify_tope_usd"] = uso, tope
+        if uso is not None and tope is not None:
+            out["apify_restante_usd"] = round(tope - uso, 4)
+    except Exception:  # noqa: BLE001
+        out["apify"] = "no conectado (falta el token)"
+    out["fecha"] = time.strftime("%Y-%m-%d %H:%M:%S")
+    return out
+
+
+def tabla_saldo(antes: dict | None, ahora: dict) -> str:
+    def gasto(clave, invertido=False):
+        if not antes or antes.get(clave) is None or ahora.get(clave) is None:
+            return "—"
+        d = ahora[clave] - antes[clave] if invertido else antes[clave] - ahora[clave]
+        return f"{d:g}"
+    filas = ["Proveedor   | Gastado en este video | Queda"]
+    if "kie_creditos" in ahora:
+        filas.append(f"Kie         | {gasto('kie_creditos')} créditos | {ahora['kie_creditos']:g} créditos")
+    else:
+        filas.append(f"Kie         | — | sin dato: {ahora.get('kie_error')}")
+    if "elevenlabs_restantes" in ahora:
+        filas.append(f"ElevenLabs  | {gasto('elevenlabs_usados', True)} caracteres | {ahora['elevenlabs_restantes']} de {ahora['elevenlabs_limite']} caracteres")
+    else:
+        filas.append(f"ElevenLabs  | — | sin dato: {ahora.get('elevenlabs_error')}")
+    if "apify_restante_usd" in ahora:
+        filas.append(f"Apify       | {gasto('apify_usado_usd', True)} USD | {ahora['apify_restante_usd']} de {ahora['apify_tope_usd']} USD este mes")
+    else:
+        filas.append(f"Apify       | — | {ahora.get('apify', 'sin dato')}")
+    return "\n".join(filas)
 
 
 def narrar(texto: str, voz: dict) -> tuple[bytes, list[dict]]:
@@ -291,6 +348,7 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("perfiles")
     sub.add_parser("saldo")
+    p = sub.add_parser("cierre"); p.add_argument("dir")
     p = sub.add_parser("proyecto"); p.add_argument("dir"); p.add_argument("--perfil", required=True)
     p = sub.add_parser("validar"); p.add_argument("guion")
     p = sub.add_parser("voz"); p.add_argument("guion"); p.add_argument("--dir", required=True); p.add_argument("--execute", action="store_true")
@@ -305,15 +363,28 @@ def main(argv=None) -> int:
             for k, v in perfiles().items():
                 print(f"{k:10} {v['nombre']:22} acento {v['colores']['acento']}  voz {v['voz']['nombre']}  [{v['estado']}]")
         elif a.cmd == "saldo":
-            print(json.dumps(saldo()))
+            print(tabla_saldo(None, saldo()))
+        elif a.cmd == "cierre":
+            d = Path(a.dir)
+            ini = d / "estados" / "saldo-inicio.json"
+            antes = json.loads(ini.read_text()) if ini.exists() else None
+            ahora = saldo()
+            (d / "estados").mkdir(exist_ok=True)
+            (d / "estados" / "saldo-cierre.json").write_text(json.dumps(ahora))
+            print(tabla_saldo(antes, ahora))
         elif a.cmd == "proyecto":
             if a.perfil not in perfiles():
                 raise ErrorVox(f"perfil desconocido: {a.perfil}")
             d = Path(a.dir)
             if d.exists():
                 raise ErrorVox(f"{d} ya existe; no se sobrescribe una producción")
+            if d.parent.name != a.perfil:
+                raise ErrorVox(f"cada espacio va por separado: usa productions/{a.perfil}/{d.name}")
+            d.parent.mkdir(parents=True, exist_ok=True)
             shutil.copytree(PLANTILLA, d, ignore=shutil.ignore_patterns("node_modules", "out"))
             sintetizar_sfx(d / "public" / "sfx")
+            (d / "estados").mkdir(exist_ok=True)
+            (d / "estados" / "saldo-inicio.json").write_text(json.dumps(saldo()))
             print(f"Producción creada en {d}. Sigue: npm ci, escribir guion.json, validar, voz.")
         elif a.cmd == "validar":
             errores = validar_guion(json.loads(Path(a.guion).read_text(encoding="utf-8")))

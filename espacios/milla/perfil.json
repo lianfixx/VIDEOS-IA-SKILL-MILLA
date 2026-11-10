@@ -1,0 +1,19 @@
+{
+  "nombre": "MILLA ABOGADOS",
+  "handle": "",
+  "estado": "candidato",
+  "colores": {
+    "papel": "#F6F0E4",
+    "tinta": "#172636",
+    "acento": "#D6A72C",
+    "apoyo": "#172636"
+  },
+  "voz": {
+    "proveedor": "elevenlabs",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
+    "modelo": "eleven_multilingual_v2"
+  },
+  "tono": "Serio y cercano. Contenido jurídico solo con fuentes oficiales vigentes; sin prometer resultados. Humor mínimo y nunca sobre el problema del cliente.",
+  "cuadricula": false
+}
