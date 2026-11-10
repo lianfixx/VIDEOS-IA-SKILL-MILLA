@@ -14,3 +14,5 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Revisión de código: 15 fallas corregidas (salto de zoom, textos que desbordan, re-narración pagada, estado de imagen reutilizado). Regla: tras cada cambio de la plantilla, pruebas + render + hoja de fotogramas.
 - 2026-11-10 · Emi: en cada video analizar de qué va y proponer música, efectos y remates tipo meme, hechos con código. Regla: `vox.py sonido` + criterio propio; el guion no pasa sin `musica.animo` y al menos un `sonido`.
 - 2026-11-10 · Emi aprobó: subtítulos de Castorena en serif y portada automática por video (`out/portada.png`).
+- 2026-11-10 · Emi: música, efectos y demás se generan nuevos y acordes a cada video; lo ya hecho se documenta para reciclar solo si de verdad queda. Regla: sonido con semilla propia por video; imágenes en `biblioteca/` y reciclaje únicamente tras mirarlas; piezas de código en `CATALOGO.md`.
+- 2026-11-10 · Emi autorizó usar Apify para fotos reales. Regla: pocas candidatas, tope de gasto, fuente y licencia comprobadas antes de bajar.

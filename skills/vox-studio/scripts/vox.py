@@ -9,6 +9,11 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
   armar GUION --dir DIR                    reconstruye video.json sin volver a pagar la voz
   imagen --prompt-file F --out O --estado S [--estilo ilustracion|foto|sticker] [--modelo M] [--croma verde|magenta]
   recorte ENTRADA SALIDA                   quita el fondo uniforme conectado al borde -> PNG con alfa
+  foto --consulta "..." --dir DIR [--execute]   busca fotos reales con Apify (candidatas, con su fuente)
+  foto-bajar --dir DIR --indice N --out O  descarga una candidata ya verificada (derechos y fuente)
+  catalogar DIR                            guarda en la biblioteca los recortes del video, con su descripción
+  biblioteca [--buscar TEXTO] [--espacio E]  qué hay para reciclar
+  reciclar ID --dir DIR                    copia un recurso de la biblioteca a una producción
   sonido GUION                             analiza el guion y propone música, efectos y remates
   render DIR                               render + portada + master a -14 LUFS + hoja de fotogramas para auditar
   cierre DIR                               tabla de gastado y restante del video (obligatoria al entregar)
@@ -544,6 +549,43 @@ def hoja_de_fotogramas(video: Path, datos: dict, salida: Path) -> None:
              "-vsync", "0", "-frames:v", "1", str(salida)])
 
 
+VOL_MUSICA = 0.09  # ganancia de la música bajo la voz en Vox.tsx
+
+
+def auditar_audio(d: Path, datos: dict, final: dict) -> dict:
+    """Revisión medible del sonido. No sustituye al oído de Emi: no juzga si la música gusta."""
+    import math
+    avisos = []
+    voz = _loudnorm(d / "public" / "audio" / "voz.mp3")
+    informe = {"voz_lufs": float(voz["input_i"]), "final_lufs": float(final["lufs"]), "final_pico_dbtp": float(final["pico_dbtp"])}
+    if datos.get("musica"):
+        mus = _loudnorm(d / "public" / datos["musica"])
+        bajo_voz = float(voz["input_i"]) - (float(mus["input_i"]) + 20 * math.log10(VOL_MUSICA))
+        informe["musica_bajo_voz_lu"] = round(bajo_voz, 1)
+        if bajo_voz < 12:
+            avisos.append(f"la música queda solo {bajo_voz:.1f} LU bajo la voz (mínimo 12): puede taparla")
+        if bajo_voz > 30:
+            avisos.append(f"la música queda {bajo_voz:.1f} LU bajo la voz: casi no se oirá")
+    else:
+        avisos.append("el video no lleva música")
+    if not -15.5 <= informe["final_lufs"] <= -13:
+        avisos.append(f"sonoridad final {informe['final_lufs']} LUFS fuera de -14 ± 1")
+    if informe["final_pico_dbtp"] > -1.0:
+        avisos.append(f"pico {informe['final_pico_dbtp']} dBTP por encima de -1")
+    usados = {e["sonido"] for e in datos["escenas"] if e.get("sonido")}
+    faltan = sorted(x for x in usados if not (d / "public" / "sfx" / f"{x}.wav").is_file())
+    if faltan:
+        avisos.append(f"faltan efectos en public/sfx: {faltan}")
+    silencio = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(d / "out" / "final.mp4"), "-af", "silencedetect=n=-45dB:d=1.2", "-f", "null", "-"],
+                              capture_output=True, text=True).stderr.count("silence_start")
+    if silencio:
+        avisos.append(f"{silencio} silencio(s) de más de 1.2 s")
+    informe["efectos"] = sorted(usados)
+    informe["avisos"] = avisos
+    (d / "out" / "auditoria-audio.json").write_text(json.dumps(informe, ensure_ascii=False, indent=1))
+    return informe
+
+
 def rendir(d: Path) -> dict:
     datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
     cmd = ["npx", "remotion", "render", "src/index.ts", "Vox", "out/video.mp4", "--props=src/data/video.json",
@@ -556,7 +598,91 @@ def rendir(d: Path) -> dict:
     _correr(foto + [c for c in cmd if c.startswith("--browser-executable")], cwd=d)
     masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja.png")
-    return medir(d / "out" / "final.mp4")
+    m = medir(d / "out" / "final.mp4")
+    m["audio"] = auditar_audio(d, datos, m)
+    return m
+
+
+# ---------- fotos reales (Apify) ----------
+
+ACTOR_FOTOS = "automation-lab~google-images-scraper"
+
+
+def buscar_fotos(consulta: str, maximo: int, tope_usd: float, derechos: str = "creative_commons") -> list[dict]:
+    """Candidatas reales con su página de origen. Encontrar una foto no da derecho a usarla."""
+    cab = {"Authorization": "Bearer " + os.environ.get("APIFY_TOKEN", MARCADOR)}
+    entrada = {"queries": [consulta], "maxResultsPerQuery": maximo, "imageSize": "large", "imageType": "photo",
+               "safeSearch": "strict", "language": "es", "country": "mx"}
+    if derechos != "cualquiera":
+        entrada["usageRights"] = derechos
+    url = f"https://api.apify.com/v2/acts/{ACTOR_FOTOS}/run-sync-get-dataset-items?maxTotalChargeUsd={tope_usd}&restartOnError=false"
+    datos = _json(_pedir(url, metodo="POST", cabeceras=cab, cuerpo=entrada, espera=280), "Apify")
+    if not isinstance(datos, list):
+        raise ErrorVox(f"Apify devolvió algo inesperado: {str(datos)[:160]}")
+    return [{"imagen": x.get("imageUrl") or x.get("url"), "pagina": x.get("sourceUrl"), "dominio": x.get("sourceDomain"),
+             "titulo": x.get("title"), "ancho": x.get("width"), "alto": x.get("height")}
+            for x in datos if (x.get("imageUrl") or x.get("url"))][:maximo]
+
+
+# ---------- biblioteca para reciclar ----------
+
+def dir_biblioteca() -> Path:
+    return Path(os.environ.get("VOX_BIBLIOTECA") or RAIZ.parent.parent / "biblioteca")
+
+
+def leer_catalogo() -> list[dict]:
+    f = dir_biblioteca() / "catalogo.json"
+    return json.loads(f.read_text(encoding="utf-8")) if f.exists() else []
+
+
+def catalogar(d: Path) -> list[dict]:
+    """Copia a la biblioteca los recortes que el video usó, con lo que muestran y cómo se hicieron."""
+    g = json.loads((d / "guion.json").read_text(encoding="utf-8"))
+    cat = leer_catalogo()
+    conocidos = {x["sha256"] for x in cat}
+    nuevos = []
+    for s in g["escenas"]:
+        img = s.get("imagen_archivo")
+        origen = d / "public" / img if img else None
+        if not origen or not origen.is_file():
+            continue
+        sha = hashlib.sha256(origen.read_bytes()).hexdigest()
+        if sha in conocidos:
+            continue
+        prompt_f = d / "prompts" / (Path(img).stem + ".txt")
+        ident = f"{g['perfil']}-{d.name}-{Path(img).stem}"
+        destino = dir_biblioteca() / g["perfil"] / f"{ident}{origen.suffix}"
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(origen, destino)
+        try:  # copia ligera: basta para un video vertical y no engorda el repositorio
+            from PIL import Image
+            with Image.open(destino) as im:
+                if max(im.size) > 1200:
+                    im.thumbnail((1200, 1200))
+                    im.save(destino, optimize=True)
+        except ImportError:
+            pass
+        item = {"id": ident, "espacio": g["perfil"], "archivo": str(destino.relative_to(dir_biblioteca())), "sha256": sha,
+                "muestra": prompt_f.read_text(encoding="utf-8").strip() if prompt_f.is_file() else "",
+                "descripcion": s.get("descripcion_imagen", ""), "foto_real": bool(s.get("foto_real", False)),
+                "origen": f"productions/{g['perfil']}/{d.name}", "fecha": time.strftime("%Y-%m-%d"), "usos": 1}
+        cat.append(item)
+        conocidos.add(sha)
+        nuevos.append(item)
+    (dir_biblioteca() / "catalogo.json").write_text(json.dumps(cat, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    return nuevos
+
+
+def buscar_en_biblioteca(texto: str = "", espacio: str = "") -> list[dict]:
+    terminos = [t for t in re.split(r"\W+", texto.lower()) if len(t) > 2]
+    out = []
+    for x in leer_catalogo():
+        if espacio and x["espacio"] != espacio:
+            continue
+        donde = f"{x['muestra']} {x['descripcion']} {x['id']}".lower()
+        if all(t in donde for t in terminos):
+            out.append(x)
+    return out
 
 
 # ---------- CLI ----------
@@ -571,9 +697,15 @@ def _guion(ruta: str) -> dict:
 
 def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     video = armar_video(g, palabras, duracion_audio(d / "public" / "audio" / "voz.mp3"), perfiles()[g["perfil"]], d / "public")
-    SON.sintetizar_efectos(d / "public" / "sfx")
-    if video["musica"]:  # pista original compuesta con código, a la medida exacta del video
-        SON.guardar(d / "public" / video["musica"], SON.componer(video["animo"], video["frames"] / FPS), pico=0.5)
+    # Sonido nuevo para cada video: la semilla sale de su propio texto.
+    semilla = int(huella(g["titulo"], texto_completo(g))[:8], 16)
+    plan = SON.plan_musica(video["animo"], semilla) if video["musica"] else {"tonica": 48}
+    SON.sintetizar_efectos(d / "public" / "sfx", semilla, plan["tonica"])
+    if video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
+        cortes = [e["desde"] / FPS for e in video["escenas"][1:]]
+        SON.guardar(d / "public" / video["musica"], SON.componer(video["animo"], video["frames"] / FPS, semilla, cortes), pico=0.5)
+        (d / "estados").mkdir(exist_ok=True)
+        (d / "estados" / "musica.json").write_text(json.dumps(plan))
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
     (d / "src" / "data" / "video.json").write_text(json.dumps(video, ensure_ascii=False, indent=1), encoding="utf-8")
     return video
@@ -595,6 +727,14 @@ def main(argv=None) -> int:
     p = sub.add_parser("recorte"); p.add_argument("entrada"); p.add_argument("salida")
     p = sub.add_parser("render"); p.add_argument("dir")
     p = sub.add_parser("sonido"); p.add_argument("guion")
+    p = sub.add_parser("foto"); p.add_argument("--consulta", required=True); p.add_argument("--dir", required=True)
+    p.add_argument("--max", type=int, default=5); p.add_argument("--tope-usd", type=float, default=0.10)
+    p.add_argument("--derechos", choices=["creative_commons", "commercial", "cualquiera"], default="creative_commons"); p.add_argument("--execute", action="store_true")
+    p = sub.add_parser("foto-bajar"); p.add_argument("--dir", required=True); p.add_argument("--indice", type=int, required=True)
+    p.add_argument("--out", required=True); p.add_argument("--licencia", required=True); p.add_argument("--execute", action="store_true")
+    p = sub.add_parser("catalogar"); p.add_argument("dir")
+    p = sub.add_parser("biblioteca"); p.add_argument("--buscar", default=""); p.add_argument("--espacio", default="")
+    p = sub.add_parser("reciclar"); p.add_argument("id"); p.add_argument("--dir", required=True); p.add_argument("--como", default="")
     p = sub.add_parser("cierre"); p.add_argument("dir")
     p = sub.add_parser("aprender"); p.add_argument("texto"); p.add_argument("--espacio", default="")
     p = sub.add_parser("aprendizajes"); p.add_argument("--espacio", default="")
@@ -677,10 +817,59 @@ def main(argv=None) -> int:
                 print(f"  escena {x['id']}: sonido={x['sonido'] or '—'}  remate={x['remate'] or '—'}")
             print("Efectos disponibles: " + "; ".join(f"{k} ({v[1]})" for k, v in SON.EFECTOS.items()))
             print("Es una propuesta: revísala contra el sentido de cada escena y escribe en el guion musica.animo, sonido y remate.")
+        elif a.cmd == "foto":
+            if not 1 <= a.max <= 10:
+                raise ErrorVox("--max entre 1 y 10: se buscan pocas candidatas, no un banco de imágenes")
+            if not a.execute:
+                print(f"En seco: hasta {a.max} fotos de «{a.consulta}», derechos {a.derechos}, tope {a.tope_usd} USD. Añade --execute.")
+                return 0
+            fotos = buscar_fotos(a.consulta, a.max, a.tope_usd, a.derechos)
+            est = Path(a.dir) / "estados" / "fotos.json"
+            est.parent.mkdir(parents=True, exist_ok=True)
+            est.write_text(json.dumps({"consulta": a.consulta, "derechos": a.derechos, "candidatas": fotos}, ensure_ascii=False, indent=1))
+            for i, f in enumerate(fotos):
+                print(f"[{i}] {f['ancho']}x{f['alto']}  {f['dominio']}  {str(f['titulo'])[:60]}\n     página: {f['pagina']}")
+            print("Antes de usar una: abre su página, confirma qué muestra y su licencia. El filtro de derechos solo orienta.")
+        elif a.cmd == "foto-bajar":
+            est = json.loads((Path(a.dir) / "estados" / "fotos.json").read_text())
+            f = est["candidatas"][a.indice]
+            if len(a.licencia.strip()) < 8:
+                raise ErrorVox("--licencia: escribe la licencia y el autor comprobados en la página de origen")
+            if not a.execute:
+                print(f"En seco: bajaría {f['imagen']} (página {f['pagina']}). Añade --execute.")
+                return 0
+            destino = Path(a.out)
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            destino.write_bytes(_pedir(f["imagen"], espera=60))
+            f.update(licencia=a.licencia, archivo=str(destino), sha256=hashlib.sha256(destino.read_bytes()).hexdigest())
+            (Path(a.dir) / "estados" / "fotos.json").write_text(json.dumps(est, ensure_ascii=False, indent=1))
+            print(f"Foto guardada en {destino}. Si el host está bloqueado por la red del entorno, pide a Emi autorizar ese dominio.")
+        elif a.cmd == "catalogar":
+            nuevos = catalogar(Path(a.dir))
+            print(f"{len(nuevos)} recurso(s) nuevos en la biblioteca: " + ", ".join(x["id"] for x in nuevos))
+        elif a.cmd == "biblioteca":
+            for x in buscar_en_biblioteca(a.buscar, a.espacio):
+                print(f"{x['id']}  [{x['espacio']}]  usos {x['usos']}  {x['archivo']}\n    {x['muestra'] or x['descripcion']}")
+            print("Reciclar solo si la imagen dice exactamente lo que la escena necesita; mírala antes. Si no, genera una nueva.")
+        elif a.cmd == "reciclar":
+            cat = leer_catalogo()
+            x = next((c for c in cat if c["id"] == a.id), None)
+            if not x:
+                raise ErrorVox(f"no existe {a.id} en la biblioteca")
+            destino = Path(a.dir) / "public" / "img" / (a.como or Path(x["archivo"]).name)
+            destino.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(dir_biblioteca() / x["archivo"], destino)
+            x["usos"] += 1
+            (dir_biblioteca() / "catalogo.json").write_text(json.dumps(cat, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+            print(f"Copiado a {destino} (uso número {x['usos']}).")
         elif a.cmd == "render":
             m = rendir(Path(a.dir))
             print(f"Final en {a.dir}/out/final.mp4 · {m['duracion_s']} s · {m['lufs']} LUFS · pico {m['pico_dbtp']} dBTP")
-            print(f"Audita {a.dir}/out/hoja.png y {a.dir}/out/portada.png antes de entregar y termina con `cierre`.")
+            au = m["audio"]
+            print(f"Audio: voz {au['voz_lufs']} LUFS · música {au.get('musica_bajo_voz_lu', '—')} LU bajo la voz · efectos {au['efectos']}")
+            for aviso in au["avisos"]:
+                print(f"  ⚠ {aviso}")
+            print(f"Audita {a.dir}/out/hoja.png y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
         elif a.cmd == "cierre":
             d = Path(a.dir)
             ini = d / "estados" / "saldo-inicio.json"

@@ -114,6 +114,74 @@ class Sonido(unittest.TestCase):
         self.assertAlmostEqual(v["finVoz"], palabras[-1]["b"], places=2)
 
 
+class NuevoPorVideo(unittest.TestCase):
+    def test_cada_video_tiene_su_musica(self):
+        import numpy as np
+        p1, p2 = vox.SON.plan_musica("energia", 1), vox.SON.plan_musica("energia", 2)
+        self.assertNotEqual((p1["tonica"], p1["bpm"], p1["progresion"]), (p2["tonica"], p2["bpm"], p2["progresion"]))
+        a = vox.SON.componer("energia", 6.0, 1, [2.0, 4.0])
+        self.assertFalse(np.array_equal(a, vox.SON.componer("energia", 6.0, 2, [2.0, 4.0])))
+        self.assertFalse(np.array_equal(a, vox.SON.componer("energia", 6.0, 1)))  # sigue los cambios de escena
+        self.assertTrue(np.array_equal(a, vox.SON.componer("energia", 6.0, 1, [2.0, 4.0])))
+
+    def test_efectos_afinados_a_la_musica(self):
+        with tempfile.TemporaryDirectory() as d:
+            vox.SON.sintetizar_efectos(Path(d) / "a", 1, 45)
+            vox.SON.sintetizar_efectos(Path(d) / "b", 1, 50)
+            self.assertNotEqual((Path(d) / "a" / "ding.wav").read_bytes(), (Path(d) / "b" / "ding.wav").read_bytes())
+
+
+class Biblioteca(unittest.TestCase):
+    def test_catalogar_buscar_y_reciclar(self):
+        import json, os
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["VOX_BIBLIOTECA"] = str(Path(tmp) / "bib")
+            try:
+                d = Path(tmp) / "productions" / "personal" / "tema"
+                (d / "public" / "img").mkdir(parents=True); (d / "prompts").mkdir()
+                Image.new("RGBA", (1600, 900), (200, 30, 30, 255)).save(d / "public" / "img" / "01.png")
+                (d / "prompts" / "01.txt").write_text("Una pesa rusa roja")
+                g = guion(); g["escenas"][0]["imagen_archivo"] = "img/01.png"
+                (d / "guion.json").write_text(json.dumps(g))
+                self.assertEqual([x["id"] for x in vox.catalogar(d)], ["personal-tema-01"])
+                self.assertEqual(vox.catalogar(d), [])  # no duplica
+                self.assertEqual(len(vox.buscar_en_biblioteca("pesa roja")), 1)
+                self.assertEqual(vox.buscar_en_biblioteca("pesa", "milla"), [])
+                self.assertEqual(vox.buscar_en_biblioteca("bicicleta"), [])
+                with Image.open(Path(tmp) / "bib" / "personal" / "personal-tema-01.png") as im:
+                    self.assertLessEqual(max(im.size), 1200)
+                otro = Path(tmp) / "productions" / "personal" / "otro"
+                self.assertEqual(vox.main(["reciclar", "personal-tema-01", "--dir", str(otro)]), 0)
+                self.assertTrue((otro / "public" / "img" / "personal-tema-01.png").is_file())
+                self.assertEqual(vox.leer_catalogo()[0]["usos"], 2)
+            finally:
+                del os.environ["VOX_BIBLIOTECA"]
+
+
+class Fotos(unittest.TestCase):
+    def test_candidatas_con_su_fuente(self):
+        import json
+        real = vox._pedir
+        visto = {}
+        def falso(url, **kw):
+            visto.update(url=url, **kw)
+            return json.dumps([{"imageUrl": "https://ejemplo.org/a.jpg", "sourceUrl": "https://ejemplo.org/p", "sourceDomain": "ejemplo.org", "title": "A", "width": 1200, "height": 800}, {"title": "sin imagen"}]).encode()
+        vox._pedir = falso
+        try:
+            fotos = vox.buscar_fotos("Palacio de Bellas Artes", 5, 0.1)
+        finally:
+            vox._pedir = real
+        self.assertEqual(fotos, [{"imagen": "https://ejemplo.org/a.jpg", "pagina": "https://ejemplo.org/p", "dominio": "ejemplo.org", "titulo": "A", "ancho": 1200, "alto": 800}])
+        self.assertIn("maxTotalChargeUsd=0.1", visto["url"])
+        self.assertNotIn("token=", visto["url"])  # el token va en cabecera, nunca en la URL
+        self.assertEqual(visto["cuerpo"]["usageRights"], "creative_commons")
+
+    def test_en_seco_no_llama(self):
+        self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada"]), 0)
+        self.assertEqual(vox.main(["foto", "--consulta", "x", "--dir", "/tmp/nada", "--max", "50", "--execute"]), 2)
+
+
 class Tiempos(unittest.TestCase):
     def test_escenas_salen_de_las_palabras(self):
         g = guion(); palabras, fin = alinear(g)

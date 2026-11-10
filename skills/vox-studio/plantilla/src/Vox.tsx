@@ -344,7 +344,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
       </div>
       {v.perfil.handle && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba - 52, fontFamily: 'Anton', fontSize: 34, color: c.tinta, opacity: 0.7}}>{v.perfil.handle}</div>}
       {v.voz && <Audio src={staticFile(v.voz)} />}
-      {v.musica && <Audio src={staticFile(v.musica)} volume={(fr) => interpolate(fr / fps, [0, 0.5, (v.finVoz ?? 9999), (v.finVoz ?? 9999) + 0.5], [0.3, 0.11, 0.11, 0.32], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
+      {v.musica && <Audio src={staticFile(v.musica)} volume={(fr) => interpolate(fr / fps, [0, 0.5, (v.finVoz ?? 9999), (v.finVoz ?? 9999) + 0.5], [0.26, 0.09, 0.09, 0.3], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})} />}
       {v.sfx && v.escenas.map((e, i) => (
         <React.Fragment key={e.id}>
           {i > 0 && <Audio src={staticFile(`sfx/${e.transicion === 'rasgado' ? 'rasgar' : e.transicion === 'barrido' ? 'deslizar' : SONIDOS[i % SONIDOS.length]}.wav`)} from={Math.max(0, e.desde - VIAJE)} volume={0.3} />}
