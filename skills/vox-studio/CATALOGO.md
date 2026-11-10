@@ -40,6 +40,7 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 
 - Entradas (`entrada`): `sello`, `desliza-izq`, `cae`, `desliza-der`, `desdobla`, `mordidas`.
 - Transiciones (`transicion`): `viaje` (cámara sobre el lienzo), `barrido` (panel de color), `rasgado` (papel).
+- Cierre: sello con el llamado del espacio y flecha a comentarios al terminar la voz. Pulso del recorte a media escena en escenas de más de 5 s.
 - Detalles fijos: resaltador que se dibuja, rayos tras el recorte, semitono, cinta, nota manuscrita con flecha, barra de avance, subtítulos por palabra.
 
 ## Imágenes

@@ -20,7 +20,7 @@ export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
   fps: number; ancho: number; alto: number; frames: number; titulo: string;
   perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string; subtitulos?: string};
-  finVoz?: number; volMusica?: number; volEfecto?: number; portada?: {texto: string; resaltar: string; imagen: string};
+  finVoz?: number; cierre?: string; volMusica?: number; volEfecto?: number; portada?: {texto: string; resaltar: string; imagen: string};
   voz: string; musica: string; sfx: boolean; escenas: Escena[]; palabras: Palabra[];
 };
 
@@ -158,6 +158,9 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   const verbos = ['cae', 'desliza-der', 'sello', 'desliza-izq'];
   const entrada = entrar(verbos[indice % verbos.length], f - 8, fps);
   const medio = spring({frame: f - 4, fps, config: {damping: 200, stiffness: 120}});
+  // Escenas de más de 5 s: a la mitad el recorte da un pulso para que el plano no se quede quieto.
+  const golpe = e.dur > 150 ? spring({frame: f - Math.round(e.dur / 2), fps, config: {damping: 200, stiffness: 90}}) : 0;
+  const pulso = 1 + 0.07 * Math.sin(Math.PI * golpe);
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
@@ -170,7 +173,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
         })}
       </svg>}
       <div style={{...entrada, position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-        <div style={{transform: vaiven}}>
+        <div style={{transform: `${vaiven} scale(${pulso})`}}>
           {e.imagen ? (
             e.foto ? (
               <div style={{background: '#fff', padding: '18px 18px 60px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
@@ -260,7 +263,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
     if (actual.length) g.push(actual);
     return g;
   }, [palabras, fuente]);
-  const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < (grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : g[g.length - 1].b + 0.4));
+  const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < (grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : g[g.length - 1].b + 0.12));
   if (i < 0) return null;
   const grupo = grupos[i];
   return (
@@ -277,6 +280,25 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
           );
         })}
       </div>
+    </div>
+  );
+};
+
+/** Cierre: al terminar la voz, un sello invita a comentar y una flecha señala el botón de comentarios. */
+const Cierre: React.FC<{texto: string; c: Colores; desde: number}> = ({texto, c, desde}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const f = frame - desde;
+  if (f < 0) return null;
+  const t = spring({frame: f - 6, fps, config: {damping: 200, stiffness: 120}});
+  return (
+    <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: 1300, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 26}}>
+      <div style={entrar('sello', f, fps)}>
+        <div style={{fontFamily: 'Anton', fontSize: 84, lineHeight: 1, color: c.papel, background: c.acento, padding: '10px 30px 14px', boxShadow: `10px 10px 0 ${c.tinta}`, transform: 'rotate(-2deg)', letterSpacing: 1}}>{texto}</div>
+      </div>
+      <svg width={150} height={120} viewBox="0 0 150 120">
+        <path d="M8 30 C 60 10, 110 40, 128 100 M128 100 l -30 -10 M128 100 l 6 -32" fill="none" stroke={c.tinta} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
+      </svg>
     </div>
   );
 };
@@ -339,6 +361,8 @@ export const Vox: React.FC<VideoVox> = (v) => {
           <div style={{width: '100%', height: '100%', background: c.apoyo, clipPath: `polygon(${Array.from({length: 25}).map((_, n) => `${n * 4.17}% ${n % 2 ? 0 : 2.2 + azar(n) * 1.6}%`).join(', ')}, 100% 100%, ${Array.from({length: 25}).map((_, n) => `${100 - n * 4.17}% ${n % 2 ? 100 : 97.8 - azar(n + 9) * 1.6}%`).join(', ')}, 0 100%)`}} />
         </div>
       )}
+      {v.cierre && v.finVoz != null && <Cierre texto={v.cierre} c={c} desde={Math.round((v.finVoz + 0.15) * fps)} />}
+      {v.cierre && v.finVoz != null && v.sfx && <Audio src={staticFile('sfx/pop.wav')} from={Math.round((v.finVoz + 0.15) * fps)} volume={0.35} />}
       {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} />}
       {/* barra de avance y firma, dentro de la zona segura */}
       <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba - 8, width: SEGURO.der - SEGURO.izq, height: 10, background: `${c.tinta}22`}}>

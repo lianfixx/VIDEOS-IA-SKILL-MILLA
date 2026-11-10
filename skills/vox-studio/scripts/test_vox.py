@@ -270,6 +270,26 @@ class Niveles(unittest.TestCase):
             self.assertEqual(vox.main(["foto-bajar", "--dir", str(d), "--indice", "0", "--out", str(Path(tmp) / "fuera.jpg"), "--licencia", "CC0 de alguien"]), 2)
 
 
+class Oficio(unittest.TestCase):
+    def test_avisos_de_guion(self):
+        g = guion()
+        g["escenas"][0]["narracion"] = " ".join(["palabra"] * 30)
+        g["escenas"][1]["narracion"] = "El 73 por ciento lo ignora."
+        avisos = " | ".join(vox.avisos_guion(g))
+        for esperado in ("el gancho tiene 30 palabras", "escena 1: 30 palabras", "sin imagen ni dato", "ninguna escena muestra `fuente`", "empiezan igual"):
+            self.assertIn(esperado, avisos)
+        self.assertEqual(vox.validar_guion(g), [])  # son avisos: no bloquean
+
+    def test_cola_y_cierre_por_espacio(self):
+        g = guion(); palabras, fin = alinear(g)
+        v = vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])
+        self.assertEqual(v["cierre"], "SU OPINIÓN")
+        self.assertEqual(v["frames"], round((fin + vox.COLA) * vox.FPS))
+        self.assertGreaterEqual(v["frames"] / vox.FPS - v["finVoz"], 1.2)  # hay tiempo para leer el cierre
+        for p in vox.perfiles().values():
+            self.assertTrue(0 < len(p["cierre"]) <= 16)
+
+
 class Tiempos(unittest.TestCase):
     def test_escenas_salen_de_las_palabras(self):
         g = guion(); palabras, fin = alinear(g)

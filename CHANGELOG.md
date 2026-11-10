@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-10 · Vox Studio 0.7.0: cierre, ritmo, oficio del guion y guía de TikTok
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 10/11/2026: confirmar que las mejoras están documentadas y en la skill; auditar y mejorarla para que los videos queden bien.
+- Cambios: cierre automático al terminar la voz (sello con el llamado del espacio y flecha a comentarios; 1.5 s de cola); pulso del recorte a media escena en escenas de más de 5 s; `validar` emite avisos de oficio no bloqueantes (gancho, escenas largas, duración total, escenas sin imagen, cifras sin fuente, keywords repetidos) y `armar` avisa de escenas de más de 7 s en la voz real; `render` entrega `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok. `cierre` añadido a los cuatro perfiles.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/{SKILL.md,CATALOGO.md}`, `espacios/*/perfil.json`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: se comprobó que `plantilla/src/` es idéntica a la del demo (todas las mejoras viven en la skill); pruebas 42/42 → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto: 20.97 s, −14.04 LUFS, pico −2.36 dBTP, sin avisos de audio; transiciones revisadas cuadro por cuadro y hoja con guía de TikTok revisada: todo el contenido dentro de la zona visible → aprobado. Escucha de Emi → no ejecutado.
+- Pendiente: los mismos de la versión 0.6.0.
+
 ## 2026-11-10 · Vox Studio 0.6.0: segunda auditoría independiente (15 fallas) y niveles de audio
 
 - Agente: Claude Code (sesión en la nube)

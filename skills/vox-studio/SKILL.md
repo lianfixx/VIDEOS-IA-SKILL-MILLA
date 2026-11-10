@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.6.0"
+  version: "0.7.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -24,6 +24,8 @@ Cada marca vive en [su carpeta](../../espacios/README.md) y no se mezcla: `espac
 ## Voz del guion
 
 Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
+
+`validar` añade avisos de oficio (⚠) que no bloquean pero deben atenderse o justificarse: gancho de más de 14 palabras, escena de más de 22 palabras sin cambio de plano, video fuera de 55–200 palabras (unos 20–75 s), escenas sin nada que ver, cifras sin fuente y keywords que arrancan igual. `armar` avisa además de cualquier escena que dure más de 7 s en la voz real.
 
 ## Música, efectos y remates (siempre)
 
@@ -49,6 +51,10 @@ Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con
 ## Solo video
 
 Esta skill hace video y nada más: guion, imagen, voz, sonido, montaje, portada y su auditoría. No redacta ni programa publicaciones en X ni en ninguna red, y no mezcla instrucciones de otras skills. La skill de X de Emi (`lianfixx/X`) es independiente: puede dejar ideas de video en su propio repositorio (`puente/para-vox.md`) y aquí se toman solo como propuestas de tema para el espacio `personal`, preguntando igual la postura de Emi. El `handle` de un espacio es el @ de la red donde se publica el video; un @ de otra red va en `cuentas` y no se muestra en pantalla.
+
+## Cierre
+
+Cuando termina la voz cae un sello con el llamado del espacio (`cierre` en `perfil.json`: «COMENTA», «TE LEEMOS», «SU OPINIÓN», «OPINA») y una flecha hacia el botón de comentarios; el video dura 1.5 s más que la narración para que se lea. Las escenas de más de 5 s reciben un pulso del recorte a la mitad.
 
 ## Portada
 
@@ -88,7 +94,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 ## Auditar y corregir
 
-`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. Leer los avisos de audio de `render`: sin avisos, el sonido está en rango. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
+`render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena, y `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok sombreadas en rojo: ningún texto ni rostro debe quedar debajo. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. Leer los avisos de audio de `render`: sin avisos, el sonido está en rango. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
 
 ## Aprender de cada video (obligatorio)
 

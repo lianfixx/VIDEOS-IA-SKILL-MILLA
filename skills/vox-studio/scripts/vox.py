@@ -67,6 +67,8 @@ ESTILOS = {
 CROMAS = {"verde": "pure green (#00FF00)", "magenta": "pure magenta (#FF00FF)"}
 SIGNOS = "¿¡?!.,;:"
 MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
+COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
+ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lento
 LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -239,6 +241,36 @@ def validar_guion(g: dict) -> list[str]:
     return e
 
 
+def avisos_guion(g: dict) -> list[str]:
+    """Oficio del guion: no bloquea, pero un video que ignora estos avisos rara vez queda bien."""
+    a: list[str] = []
+    escenas = [s for s in (g.get("escenas") or []) if isinstance(s, dict)]
+    cuenta = [len(str(s.get("narracion", "")).split()) for s in escenas]
+    if not cuenta:
+        return a
+    if cuenta[0] > 14:
+        a.append(f"el gancho tiene {cuenta[0]} palabras; con 14 o menos detiene mejor el scroll")
+    total = sum(cuenta)
+    if total < 55:
+        a.append(f"{total} palabras en total (~{total / 2.7:.0f} s): muy corto para desarrollar una idea")
+    if total > 200:
+        a.append(f"{total} palabras en total (~{total / 2.7:.0f} s): pasa de 75 s; recorta o divide en dos videos")
+    for i, n in enumerate(cuenta):
+        if n > 22:
+            a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos")
+    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato")]
+    if sin_imagen:
+        a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
+    if sum(1 for s in escenas if s.get("imagen_archivo")) < max(2, len(escenas) // 2):
+        a.append("menos de la mitad de las escenas lleva imagen; el estilo pide algo que ver casi siempre")
+    if not any(s.get("fuente") for s in escenas) and any(ch.isdigit() for s in escenas for ch in str(s.get("narracion", ""))):
+        a.append("hay cifras en la narración y ninguna escena muestra `fuente`")
+    primeras = [str(s.get("keyword", "")).split()[:1] for s in escenas]
+    if len({tuple(x) for x in primeras}) < len(primeras) - 1:
+        a.append("varios keywords empiezan igual; varía el arranque")
+    return a
+
+
 def texto_completo(g: dict) -> str:
     return " ".join(" ".join(str(s["narracion"]).split()) for s in g["escenas"])
 
@@ -276,7 +308,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             raise ErrorVox("una escena quedó sin palabras; revisa la narración")
         inicios.append(palabras[pos]["a"])
         pos += c
-    total = int(round((duracion + 0.7) * FPS))
+    total = int(round((duracion + COLA) * FPS))
     cortes = [0] + [max(0, int(round((t - 0.12) * FPS))) for t in inicios[1:]] + [total]
     escenas = []
     ents, trs = efectivas(g["escenas"], "entrada", ENTRADAS), efectivas(g["escenas"], "transicion", TRANSICIONES)
@@ -310,6 +342,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         "titulo": g["titulo"], "perfil": perfil, "voz": "audio/voz.mp3",
         "musica": "" if animo == "ninguna" else "audio/musica.wav", "animo": animo,
         "finVoz": round(palabras[-1]["b"], 3), "portada": portada, "sfx": True, "escenas": escenas,
+        "cierre": str(perfil.get("cierre") or "COMENTA")[:16].upper(),
         "palabras": [{"t": p["t"], "a": round(p["a"], 3), "b": round(p["b"], 3)} for p in palabras],
     }
 
@@ -580,16 +613,24 @@ def medir(video: Path) -> dict:
     return {"lufs": d.get("input_i"), "pico_dbtp": d.get("input_tp"), "duracion_s": round(duracion_audio(video), 2)}
 
 
-def hoja_de_fotogramas(video: Path, datos: dict, salida: Path) -> None:
-    """Un cuadro del inicio, el cambio y la mitad de cada escena, para auditar con los ojos."""
+def hoja_de_fotogramas(video: Path, datos: dict, salida: Path, guia: bool = False) -> None:
+    """Un cuadro del inicio, el cambio y la mitad de cada escena, para auditar con los ojos.
+
+    Con `guia` se sombrean las zonas que tapa la interfaz de TikTok (barra superior, botones
+    de la derecha y descripción inferior): nada importante debe caer ahí.
+    """
     cuadros = [0]
     for e in datos["escenas"]:
         cuadros += [e["desde"] + 2, e["desde"] + e["dur"] // 2]
-    cuadros = sorted(set(min(c, datos["frames"] - 1) for c in cuadros))
+    cuadros = sorted(set(min(c, datos["frames"] - 1) for c in cuadros + [datos["frames"] - 8]))
     sel = "+".join(f"eq(n\\,{c})" for c in cuadros)
     cols = min(8, len(cuadros))
     filas = -(-len(cuadros) // cols)
-    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vf", f"select='{sel}',scale=250:-1,tile={cols}x{filas}",
+    zonas = ""
+    if guia:
+        zonas = ("drawbox=x=0:y=0:w=1080:h=215:color=red@0.28:t=fill,drawbox=x=0:y=1450:w=1080:h=470:color=red@0.28:t=fill,"
+                 "drawbox=x=960:y=760:w=120:h=690:color=red@0.28:t=fill,")
+    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vf", f"select='{sel}',{zonas}scale=250:-1,tile={cols}x{filas}",
              "-vsync", "0", "-frames:v", "1", str(salida)])
 
 
@@ -658,6 +699,7 @@ def rendir(d: Path) -> dict:
     _correr(foto + [c for c in cmd if c.startswith("--browser-executable")], cwd=d)
     tipo = masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja.png")
+    hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja-tiktok.png", guia=True)
     m = medir(d / "out" / "final.mp4")
     m["audio"] = auditar_audio(d, datos, m, tipo)
     return m
@@ -799,6 +841,9 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     else:  # sin música: no dejar restos de un armado anterior
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
+    for e in video["escenas"]:  # ritmo real, medido en la voz
+        if e["dur"] / FPS > ESCENA_LARGA:
+            print(f"⚠ la escena {e['id']} dura {e['dur'] / FPS:.1f} s: divídela o acepta el pulso automático a media escena")
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
     (d / "src" / "data" / "video.json").write_text(json.dumps(video, ensure_ascii=False, indent=1), encoding="utf-8")
     return video
@@ -861,6 +906,8 @@ def main(argv=None) -> int:
             for x in errores:
                 print("✗", x)
             print("Guion válido." if not errores else f"{len(errores)} problema(s).")
+            for x in avisos_guion(g):
+                print("⚠", x)
             return 1 if errores else 0
         elif a.cmd in {"voz", "armar"}:
             g = _guion(a.guion)
@@ -991,7 +1038,7 @@ def main(argv=None) -> int:
             print(f"Audio: voz {au['voz_lufs']} LUFS · música {au.get('musica_bajo_voz_lu', '—')} LU bajo la voz · efectos respecto a la voz (dB) {au['efectos_respecto_a_voz_db']} · master {au['ganancia_master_db']:+.1f} dB")
             for aviso in au["avisos"]:
                 print(f"  ⚠ {aviso}")
-            print(f"Audita {a.dir}/out/hoja.png y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
+            print(f"Audita {a.dir}/out/hoja.png, {a.dir}/out/hoja-tiktok.png (zonas que tapa TikTok en rojo) y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
         elif a.cmd == "cierre":
             d = Path(a.dir)
             ini = d / "estados" / "saldo-inicio.json"
