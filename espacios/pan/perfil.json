@@ -3,10 +3,10 @@
   "handle": "",
   "estado": "candidato",
   "colores": {
-    "papel": "#F3F1EA",
-    "tinta": "#0B1B33",
-    "acento": "#0B5FFF",
-    "apoyo": "#FF8A00"
+    "papel": "#F3EFE6",
+    "tinta": "#253775",
+    "acento": "#0043A1",
+    "apoyo": "#EDBF4D"
   },
   "voz": {
     "proveedor": "elevenlabs",
@@ -15,5 +15,7 @@
     "modelo": "eleven_multilingual_v2"
   },
   "tono": "Crítico y directo, con datos verificables y fuente en pantalla. La postura es de Emi; no hablar a nombre del partido sin autorización.",
-  "cuadricula": true
+  "cuadricula": false,
+  "titular": "Anton",
+  "estilo_imagen": "foto"
 }

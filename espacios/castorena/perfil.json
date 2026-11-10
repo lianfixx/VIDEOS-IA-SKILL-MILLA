@@ -3,10 +3,10 @@
   "handle": "",
   "estado": "candidato",
   "colores": {
-    "papel": "#ECE8DF",
-    "tinta": "#101A2E",
-    "acento": "#14284B",
-    "apoyo": "#B08D57"
+    "papel": "#F7F5F0",
+    "tinta": "#0D1B2A",
+    "acento": "#8A6D3B",
+    "apoyo": "#C8A96B"
   },
   "voz": {
     "proveedor": "elevenlabs",
@@ -14,6 +14,8 @@
     "nombre": "Laura D - Expressive & Friendly",
     "modelo": "eleven_multilingual_v2"
   },
-  "tono": "Sobrio e institucional. Explica, no opina sobre asuntos en curso. Requiere visto bueno del despacho antes de publicar.",
-  "cuadricula": true
+  "tono": "Muy formal e institucional, de usted, frases cortas y sentenciosas. Explica; no opina sobre asuntos en curso, sin humor, sin promesas de resultado. Requiere visto bueno del despacho antes de publicar.",
+  "cuadricula": false,
+  "titular": "Gelasio",
+  "estilo_imagen": "foto"
 }

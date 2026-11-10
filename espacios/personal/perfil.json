@@ -15,5 +15,7 @@
     "modelo": "eleven_multilingual_v2"
   },
   "tono": "Suelto, crítico y con humor; gym, vlogs y estilo de vida. Un chiste cada 2 o 3 escenas, nunca a costa del dato.",
-  "cuadricula": false
+  "cuadricula": false,
+  "titular": "Anton",
+  "estilo_imagen": "ilustracion"
 }

@@ -7,12 +7,13 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "typecheck": "tsc --noEmit",
-    "still": "remotion still src/index.ts Vox out/still.png --browser-executable=/usr/local/bin/chrome-headless-shell",
-    "render": "remotion render src/index.ts Vox out/video.mp4 --codec=h264 --audio-codec=aac --pixel-format=yuv420p --browser-executable=/usr/local/bin/chrome-headless-shell"
+    "still": "remotion still src/index.ts Vox out/still.png",
+    "render": "remotion render src/index.ts Vox out/video.mp4 --codec=h264 --audio-codec=aac --pixel-format=yuv420p"
   },
   "dependencies": {
     "@fontsource/anton": "5.3.0",
     "@fontsource/caveat": "5.3.0",
+    "@fontsource/gelasio": "5.3.0",
     "@remotion/cli": "4.0.540",
     "@remotion/fonts": "4.0.540",
     "@remotion/media": "4.0.540",
@@ -25,5 +26,7 @@
     "@types/react-dom": "19.1.9",
     "typescript": "5.9.3"
   },
-  "engines": {"node": ">=22"}
+  "engines": {
+    "node": ">=22"
+  }
 }

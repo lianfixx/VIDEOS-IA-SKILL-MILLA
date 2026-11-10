@@ -6,7 +6,7 @@
     "papel": "#F6F0E4",
     "tinta": "#172636",
     "acento": "#D6A72C",
-    "apoyo": "#172636"
+    "apoyo": "#E9DDBF"
   },
   "voz": {
     "proveedor": "elevenlabs",
@@ -15,5 +15,7 @@
     "modelo": "eleven_multilingual_v2"
   },
   "tono": "Serio y cercano. Contenido jurídico solo con fuentes oficiales vigentes; sin prometer resultados. Humor mínimo y nunca sobre el problema del cliente.",
-  "cuadricula": false
+  "cuadricula": false,
+  "titular": "Anton",
+  "estilo_imagen": "ilustracion"
 }

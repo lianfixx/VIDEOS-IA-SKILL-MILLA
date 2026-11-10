@@ -4,20 +4,22 @@ import {Audio} from '@remotion/media';
 import {loadFont} from '@remotion/fonts';
 import antonUrl from '@fontsource/anton/files/anton-latin-400-normal.woff2';
 import caveatUrl from '@fontsource/caveat/files/caveat-latin-700-normal.woff2';
+import gelasioUrl from '@fontsource/gelasio/files/gelasio-latin-700-normal.woff2';
 
 // Fuentes empaquetadas en local: el render no depende de Google Fonts ni de la red.
 loadFont({family: 'Anton', url: antonUrl, weight: '400'});
 loadFont({family: 'Caveat', url: caveatUrl, weight: '700'});
+loadFont({family: 'Gelasio', url: gelasioUrl, weight: '700'});
 
 export type Colores = {papel: string; tinta: string; acento: string; apoyo: string};
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
-  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string;
+  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
   fps: number; ancho: number; alto: number; frames: number; titulo: string;
-  perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean};
+  perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string};
   voz: string; musica: string; sfx: boolean; escenas: Escena[]; palabras: Palabra[];
 };
 
@@ -27,8 +29,6 @@ const H = 1920;
 const SEGURO = {izq: 90, der: 960, arriba: 230, abajo: 1440};
 const PASO_Y = 2400; // separación entre escenas en el lienzo (mayor que la pantalla)
 
-/** Movimiento "a doses": los elementos de papel se actualizan a 12 fps; la cámara, a 30. */
-const doses = (frame: number) => Math.floor(frame / 2.5) * 2.5;
 const azar = (n: number) => {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453;
   return x - Math.floor(x);
@@ -37,13 +37,13 @@ const lugar = (i: number) => ({x: (i % 2 === 0 ? -1 : 1) * 620, y: i * PASO_Y, g
 
 const Papel: React.FC<{c: Colores; cuadricula: boolean}> = ({c, cuadricula}) => {
   const frame = useCurrentFrame();
-  const semilla = Math.floor(frame / 10) % 6; // el grano "hierve" 3 veces por segundo
+  const semilla = Math.floor(frame / 15) % 4; // el grano cambia 2 veces por segundo: vivo, sin distraer
   return (
     <AbsoluteFill style={{backgroundColor: c.papel}}>
       {cuadricula && (
         <AbsoluteFill style={{opacity: 0.09, backgroundImage: `linear-gradient(${c.tinta} 2px, transparent 2px), linear-gradient(90deg, ${c.tinta} 2px, transparent 2px)`, backgroundSize: '90px 90px'}} />
       )}
-      <svg width={W} height={H} style={{position: 'absolute', mixBlendMode: 'multiply', opacity: 0.2}}>
+      <svg width={W} height={H} style={{position: 'absolute', mixBlendMode: 'multiply', opacity: 0.13}}>
         <filter id="grano">
           <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves={2} seed={semilla} />
           <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.3  0 0 0 0 0.22  0 0 0 0.9 0" />
@@ -57,7 +57,7 @@ const Papel: React.FC<{c: Colores; cuadricula: boolean}> = ({c, cuadricula}) => 
 
 /** Entrada de un elemento según su "verbo de papel". Devuelve estilos; nunca usa opacidad. */
 const entrar = (verbo: string, f: number, fps: number): React.CSSProperties => {
-  const s = spring({frame: f, fps, config: {damping: 13, stiffness: 190, mass: 0.7}});
+  const s = spring({frame: f, fps, config: {damping: 18, stiffness: 170, mass: 0.8}});
   const duro = spring({frame: f, fps, config: {damping: 200, stiffness: 260}});
   if (f < 0) return {transform: 'translateX(-3000px)'};
   switch (verbo) {
@@ -95,29 +95,42 @@ const partir = (texto: string): string[] => {
   return lineas;
 };
 
+const sinSignos = (p: string) => p.replace(/[¿¡?!.,;:]/g, '');
+/** Tipografía del titular por espacio: Anton (condensada) o Gelasio (serif sobria). */
+const FUENTES: Record<string, {ancho: number; tope: number; espacio: number}> = {
+  Anton: {ancho: 0.47, tope: 176, espacio: -1},
+  Gelasio: {ancho: 0.64, tope: 132, espacio: -2},
+};
+const FuenteCtx = React.createContext('Anton');
+const medidas = (keyword: string, fuente: string) => {
+  const m = FUENTES[fuente] ?? FUENTES.Anton;
+  const lineas = partir(keyword);
+  const largo = Math.max(...lineas.map((l) => l.length));
+  // Sin piso: una palabra larga se encoge hasta caber en la zona segura.
+  const tam = Math.min(lineas.length >= 3 ? m.tope * 0.82 : m.tope, (SEGURO.der - SEGURO.izq) / (largo * m.ancho));
+  return {lineas, tam, fin: 326 + lineas.length * tam * 1.06, espacio: m.espacio};
+};
+
 const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, c, f, indice}) => {
   const {fps} = useVideoConfig();
-  const lineas = partir(e.keyword);
-  const largo = Math.max(...lineas.map((l) => l.length));
-  const tope = lineas.length >= 3 ? 160 : 195;
-  const tam = Math.max(110, Math.min(tope, (SEGURO.der - SEGURO.izq) / (largo * 0.47)));
+  const fuente = React.useContext(FuenteCtx);
+  const {lineas, tam, espacio} = medidas(e.keyword, fuente);
   const verbos = ['desliza-izq', 'cae', 'desliza-der', 'sello', 'mordidas', 'desdobla'];
   return (
-    <div style={{position: 'absolute', left: SEGURO.izq, top: 350, width: SEGURO.der - SEGURO.izq}}>
+    <div style={{position: 'absolute', left: SEGURO.izq, top: 326, width: SEGURO.der - SEGURO.izq}}>
       {lineas.map((linea, j) => {
         const verbo = j === 0 ? e.entrada : verbos[(indice + j) % verbos.length];
-        const q = doses(f);
-        const temblor = `rotate(${(azar(indice * 7 + j + q) - 0.5) * 0.9}deg)`;
+        const temblor = `rotate(${(azar(indice * 7 + j) - 0.5) * 1.2}deg)`; // inclinación fija por línea; no vibra
         return (
           <div key={j} style={{...entrar(verbo, f - 3 - j * 4, fps), height: tam * 1.06}}>
-            <div style={{transform: temblor, fontFamily: 'Anton', fontSize: tam, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', letterSpacing: -1}}>
+            <div style={{transform: temblor, fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: tam, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', letterSpacing: espacio}}>
               {linea.split(' ').map((p, k) => {
-                const marca = e.resaltar && p.replace(/[¿¡]/g, '') === e.resaltar.replace(/[¿¡]/g, '');
+                const marca = !!e.resaltar && sinSignos(p) === sinSignos(e.resaltar);
                 const trazo = spring({frame: f - 16 - j * 4, fps, config: {damping: 200, stiffness: 140}});
                 return (
                   <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * 0.22}}>
                     {marca && (
-                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: tam * 0.1, bottom: -tam * 0.02, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
+                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
                     )}
                     <span style={{position: 'relative'}}>{p}</span>
                     {marca && <span style={{position: 'absolute', left: 0, top: 0, color: c.papel, clipPath: `inset(-20% ${(1 - trazo) * 100}% -20% 0)`}}>{p}</span>}
@@ -138,16 +151,23 @@ const borde = (px: number, color: string) =>
 
 const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arriba: number}> = ({e, c, f, indice, arriba}) => {
   const {fps} = useVideoConfig();
-  const alto = (e.nota ? 1165 : 1235) - arriba;
-  const q = doses(f);
-  const vaiven = `translate(${(azar(q + indice) - 0.5) * 5}px, ${(azar(q * 1.7 + indice) - 0.5) * 5}px) rotate(${(indice % 2 ? 3 : -3) + (azar(q * 0.6 + indice) - 0.5) * 1.6}deg)`;
+  const alto = (e.nota ? 1150 : 1265) - arriba;
+  // Flotación lenta y continua (antes vibraba a 12 fps: Emi lo percibió como temblor).
+  const vaiven = `translateY(${Math.sin(f / 24) * 5}px) rotate(${(indice % 2 ? 2 : -2) + Math.sin(f / 37 + indice) * 0.7}deg)`;
   const verbos = ['cae', 'desliza-der', 'sello', 'desliza-izq'];
   const entrada = entrar(verbos[indice % verbos.length], f - 8, fps);
   const medio = spring({frame: f - 4, fps, config: {damping: 200, stiffness: 120}});
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
-      <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${q * 0.4}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />
+      {(e.imagen || e.dato) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
+      {(e.imagen || e.dato) && <svg width={alto * 1.3} height={alto * 1.3} viewBox="-100 -100 200 200" style={{position: 'absolute'}}>
+        {Array.from({length: 12}).map((_, n) => {
+          const ang = (n / 12) * Math.PI * 2 + indice;
+          const t = spring({frame: f - 12 - (n % 3), fps, config: {damping: 200, stiffness: 160}});
+          return <line key={n} x1={Math.cos(ang) * 72} y1={Math.sin(ang) * 72} x2={Math.cos(ang) * (72 + 20 * t)} y2={Math.sin(ang) * (72 + 20 * t)} stroke={c.tinta} strokeWidth={2.6} strokeLinecap="round" />;
+        })}
+      </svg>}
       <div style={{...entrada, position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <div style={{transform: vaiven}}>
           {e.imagen ? (
@@ -186,10 +206,7 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
 
 const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = ({e, c, indice, f}) => {
   const {fps} = useVideoConfig();
-  const lineas = partir(e.keyword);
-  const largo = Math.max(...lineas.map((l) => l.length));
-  const tam = Math.max(110, Math.min(lineas.length >= 3 ? 160 : 195, (SEGURO.der - SEGURO.izq) / (largo * 0.47)));
-  const finTitular = 350 + lineas.length * tam * 1.06;
+  const finTitular = medidas(e.keyword, React.useContext(FuenteCtx)).fin;
   return (
     <div style={{position: 'absolute', width: W, height: H}}>
       {e.kicker && (
@@ -198,9 +215,9 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
         </div>
       )}
       <Titular e={e} c={c} f={f} indice={indice} />
-      <Sticker e={e} c={c} f={f} indice={indice} arriba={finTitular + 40} />
-      <Nota e={e} c={c} f={f} indice={indice} />
-      {e.fuente && <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.abajo - 6, fontFamily: 'Caveat', fontSize: 34, color: c.tinta, opacity: 0.75}}>Fuente: {e.fuente}</div>}
+      <Sticker e={e} c={c} f={f} indice={indice} arriba={finTitular + 62} />
+      <div style={{position: 'absolute', inset: 0, zIndex: 3}}><Nota e={e} c={c} f={f} indice={indice} /></div>
+      {e.fuente && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 30, maxWidth: 520, textAlign: 'right', fontFamily: 'Caveat', fontSize: 42, lineHeight: 1, color: c.tinta}}>Fuente: {e.fuente}</div>}
     </div>
   );
 };
@@ -238,7 +255,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores}> = ({palabras, c}) 
         {grupo.map((p, k) => {
           const dicha = t >= p.a - 0.04;
           const activa = dicha && t < p.b + 0.06;
-          const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 11, stiffness: 260, mass: 0.5}});
+          const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 17, stiffness: 240, mass: 0.6}});
           return (
             <span key={k} style={{fontFamily: 'Anton', fontSize: 74, lineHeight: 1.05, textTransform: 'uppercase', color: activa ? c.papel : dicha ? c.tinta : `${c.tinta}38`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
               {p.t}
@@ -262,16 +279,24 @@ export const Vox: React.FC<VideoVox> = (v) => {
   const actual = v.escenas[k];
   const a = lugar(Math.max(0, k - 1));
   const b = lugar(k);
-  const viaje = k === 0 ? 1 : spring({frame: frame - (actual.desde - VIAJE), fps, config: {damping: 22, stiffness: 150, mass: 0.9}});
-  const deriva = interpolate(frame, [actual.desde, actual.desde + actual.dur], [1, 1.05], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const tr = actual.transicion || 'viaje';
+  // 'viaje': la cámara recorre el lienzo. 'barrido' y 'rasgado': un panel cruza la pantalla y la cámara cambia tapada.
+  const viaje = k === 0 ? 1 : tr === 'viaje'
+    ? spring({frame: frame - (actual.desde - VIAJE), fps, config: {damping: 26, stiffness: 140, mass: 0.9}})
+    : frame >= actual.desde ? 1 : 0;
+  const cruce = k > 0 && tr !== 'viaje' ? interpolate(frame, [actual.desde - 8, actual.desde + 8], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : -1;
+  const derivaDe = (e: Escena) => interpolate(frame, [e.desde, e.desde + e.dur], [1, 1.05], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  const mezcla = Math.min(1, Math.max(0, viaje));
+  const deriva = k === 0 ? derivaDe(actual) : derivaDe(v.escenas[k - 1]) * (1 - mezcla) + derivaDe(actual) * mezcla;
   const cam = {
     x: interpolate(viaje, [0, 1], [a.x, b.x]),
     y: interpolate(viaje, [0, 1], [a.y, b.y]),
     giro: interpolate(viaje, [0, 1], [a.giro, b.giro]),
-    zoom: (1 - 0.2 * Math.sin(Math.PI * Math.min(1, Math.max(0, viaje)))) * deriva, // retrocede a mitad del viaje
+    zoom: (1 - (tr === 'viaje' ? 0.14 : 0) * Math.sin(Math.PI * Math.min(1, Math.max(0, viaje)))) * deriva, // retrocede a mitad del viaje
   };
   const avance = frame / v.frames;
   return (
+    <FuenteCtx.Provider value={v.perfil.titular && FUENTES[v.perfil.titular] ? v.perfil.titular : 'Anton'}>
     <AbsoluteFill style={{backgroundColor: c.papel, overflow: 'hidden'}}>
       <Papel c={c} cuadricula={v.perfil.cuadricula} />
       <div style={{position: 'absolute', left: W / 2, top: H / 2, transform: `scale(${cam.zoom}) rotate(${-cam.giro}deg) translate(${-cam.x}px, ${-cam.y}px)`}}>
@@ -279,7 +304,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
           if (Math.abs(i - k) > 1) return null;
           const p = lugar(i);
           // La primera escena arranca ya compuesta: el frame 0 debe detener el scroll.
-          const f = frame - e.desde + (i === 0 ? 60 : VIAJE + 3);
+          const f = frame - e.desde + (i === 0 ? 60 : (e.transicion || 'viaje') === 'viaje' ? VIAJE + 3 : 14);
           return (
             <div key={e.id} style={{position: 'absolute', left: p.x - W / 2, top: p.y - H / 2, width: W, height: H, transform: `rotate(${p.giro}deg)`}}>
               <EscenaVox e={e} c={c} indice={i} f={f} />
@@ -287,21 +312,33 @@ export const Vox: React.FC<VideoVox> = (v) => {
           );
         })}
       </div>
+      {cruce >= 0 && cruce < 1 && tr === 'barrido' && (
+        <>
+          <div style={{position: 'absolute', top: 0, left: 0, width: '125%', height: '100%', background: c.acento, transform: `translateX(${interpolate(cruce, [0, 1], [-126, 100])}%) skewX(-8deg)`}} />
+          <div style={{position: 'absolute', top: 0, left: 0, width: '70%', height: '100%', background: c.tinta, transform: `translateX(${interpolate(cruce, [0, 1], [-260, 190])}%) skewX(-8deg)`}} />
+        </>
+      )}
+      {cruce >= 0 && cruce < 1 && tr === 'rasgado' && (
+        <div style={{position: 'absolute', left: 0, top: 0, width: '100%', height: '130%', transform: `translateY(${interpolate(cruce, [0, 1], [-131, 100])}%)`, filter: `drop-shadow(0 14px 0 ${c.tinta})`}}>
+          <div style={{width: '100%', height: '100%', background: c.apoyo, clipPath: `polygon(${Array.from({length: 25}).map((_, n) => `${n * 4.17}% ${n % 2 ? 0 : 2.2 + azar(n) * 1.6}%`).join(', ')}, 100% 100%, ${Array.from({length: 25}).map((_, n) => `${100 - n * 4.17}% ${n % 2 ? 100 : 97.8 - azar(n + 9) * 1.6}%`).join(', ')}, 0 100%)`}} />
+        </div>
+      )}
       {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} />}
       {/* barra de avance y firma, dentro de la zona segura */}
       <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba - 8, width: SEGURO.der - SEGURO.izq, height: 10, background: `${c.tinta}22`}}>
         <div style={{width: `${avance * 100}%`, height: '100%', background: c.acento}} />
       </div>
-      {v.perfil.handle && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 26, fontFamily: 'Anton', fontSize: 34, color: c.tinta, opacity: 0.7}}>{v.perfil.handle}</div>}
+      {v.perfil.handle && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba - 52, fontFamily: 'Anton', fontSize: 34, color: c.tinta, opacity: 0.7}}>{v.perfil.handle}</div>}
       {v.voz && <Audio src={staticFile(v.voz)} />}
       {v.musica && <Audio src={staticFile(v.musica)} volume={0.1} loop />}
       {v.sfx && v.escenas.map((e, i) => (
         <React.Fragment key={e.id}>
-          {i > 0 && <Audio src={staticFile(`sfx/${SONIDOS[i % SONIDOS.length]}.wav`)} from={Math.max(0, e.desde - VIAJE)} volume={0.32} />}
-          {e.resaltar && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + 10} volume={0.22} />}
+          {i > 0 && <Audio src={staticFile(`sfx/${e.transicion === 'rasgado' ? 'rasgar' : e.transicion === 'barrido' ? 'deslizar' : SONIDOS[i % SONIDOS.length]}.wav`)} from={Math.max(0, e.desde - VIAJE)} volume={0.3} />}
+          {e.resaltar && i > 0 && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + 10} volume={0.22} />}
         </React.Fragment>
       ))}
       
     </AbsoluteFill>
+    </FuenteCtx.Provider>
   );
 };
