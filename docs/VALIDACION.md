@@ -78,6 +78,8 @@ cd skills/vox-studio/plantilla && npm ci && npm run typecheck
 
 Comprobado con servicios reales (no simulados): narración ElevenLabs con alineación por palabra, imágenes Kie (`nano-banana-2-lite` y `seedream/5-lite-text-to-image`), búsqueda Apify y descarga de una foto de Wikimedia Commons con su licencia, y render completo de dos demos técnicos. No comprobado: escucha humana de voz, música y efectos; aprobación estética; publicación.
 
+3D, sombreadores, Blender y ComfyUI (11 de noviembre de 2026). Comprobado con ejecución real: horno de objetos 3D y de fotos tratadas, imagen fija y giro de Blender en acabado plano y real, y render completo de un demo que usa los cuatro primeros recursos. **No comprobado: ComfyUI contra un servidor real** (el cliente solo se probó con un servidor simulado en las pruebas); la instalación de Blender en un contenedor nuevo (`vox.py blender-instalar` se ejecutó una vez aquí).
+
 ## Pizarra Studio (11 de noviembre de 2026)
 
 Skill independiente en `skills/pizarra-studio/`; el motor de dibujo es externo (`santmun/video-pizarra`, commit `dc6adc4`) y se instala con `pizarra.py instalar` en `~/.cache/pizarra-studio/motor`.

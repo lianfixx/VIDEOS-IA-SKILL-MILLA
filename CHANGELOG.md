@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.10.0: 3D, sombreadores, Blender y ComfyUI, solo cuando hacen falta
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: implementar 3D, sombreadores, Blender y ComfyUI «de manera perfecta y cuando sea necesario, para eso hay que razonar»; al final auditar a profundidad, arreglar y mejorar.
+- Cambios: guía de decisión `TRES-D.md` (qué necesita la escena → qué recurso, señales de que no va). Escenas con `objeto3d` (moneda, monedas, barras, caja, globo; Three.js con colores del espacio y contorno de tinta) y `tratamiento` (semitono, duotono, por sombreador) que exigen un `porque` escrito; las barras exigen valores reales y `fuente`; `validar` avisa si más de una de cada tres escenas lleva 3D. Lo que necesita WebGL se hornea aparte (composición `Horno`) y el video principal solo pega imágenes. Campo `secuencia` para objetos que giran. Comandos `blender-instalar`, `blender` (texto, moneda, caja o modelo propio; acabado plano o real; imagen o giro) y `comfy` (servidor de Emi por `COMFY_URL`; sin servidor se detiene). La auditoría de imagen mira la última escena ya asentada. Las referencias externas pasan estos recursos de «descartado» a «adoptado con condiciones». Pizarra Studio 0.3.1 aclara que ahí no se usan.
+- Archivos: `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md,TRES-D.md,plantilla/package.json,plantilla/package-lock.json,plantilla/.gitignore,plantilla/src/Root.tsx,plantilla/src/Vox.tsx,plantilla/src/Tres.tsx,scripts/vox.py,scripts/blender_objeto.py,scripts/test_vox.py}`, `skills/pizarra-studio/SKILL.md`, `docs/{REFERENCIAS-EXTERNAS.md,VALIDACION.md}`, `espacios/APRENDIZAJES.md`, `tools/empaquetar_vox.py` y este registro.
+- Verificación: pruebas de vox-studio y pizarra-studio → aprobado; `tsc --noEmit` → aprobado; `ia/check_skill.py` → aprobado; demo 2 reconstruido sin gasto con dos objetos 3D, una foto tratada, un texto y una moneda de Blender, rendido completo (4 min 29 s, −14.05 LUFS) → aprobado técnicamente, con un aviso de imagen en la última escena que se está comprobando. ComfyUI contra un servidor real → no ejecutado (no hay servidor; solo servidor simulado en pruebas). Revisión independiente del código nuevo → en curso al hacer este commit.
+- Pendiente: corregir lo que encuentre la revisión independiente; confirmar el aviso de la última escena; que Emi vea el demo; fusionar a `main`.
+
 ## 2026-11-11 · Vox Studio 0.9.0 y Pizarra Studio 0.3.0: mejoras tomadas de cuatro referencias de X
 
 - Agente: Claude Code (sesión en la nube)

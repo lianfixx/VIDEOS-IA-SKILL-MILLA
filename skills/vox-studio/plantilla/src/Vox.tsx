@@ -14,7 +14,7 @@ loadFont({family: 'Gelasio', url: gelasioUrl, weight: '700'});
 export type Colores = {papel: string; tinta: string; acento: string; apoyo: string};
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
-  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string;
+  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string; secuencia?: {carpeta: string; cuadros: number; bucle?: boolean} | null;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
@@ -182,7 +182,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: DER_BAJO - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
-      {(e.imagen || e.dato) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
+      {(e.imagen || e.dato || e.secuencia) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
       {(e.imagen || e.dato) && <svg width={alto * 1.3} height={alto * 1.3} viewBox="-100 -100 200 200" style={{position: 'absolute'}}>
         {Array.from({length: 12}).map((_, n) => {
           const ang = (n / 12) * Math.PI * 2 + indice;
@@ -192,7 +192,13 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
       </svg>}
       <div style={{...entrada, position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <div style={{transform: `${vaiven} scale(${pulso})`}}>
-          {e.imagen ? (
+          {e.secuencia ? (
+            // Secuencia rendida aparte (objeto 3D horneado o Blender): un cuadro por frame. Función pura del tiempo.
+            // En bucle gira sin fin; sin bucle sigue la entrada del objeto y se queda en su último cuadro.
+            <Img src={staticFile(`${e.secuencia.carpeta}/${String(e.secuencia.bucle === false
+              ? Math.min(e.secuencia.cuadros - 1, Math.max(0, Math.floor(f - 8)))
+              : ((Math.max(0, Math.floor(f)) % e.secuencia.cuadros) + e.secuencia.cuadros) % e.secuencia.cuadros).padStart(4, '0')}.png`)} style={{display: 'block', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain'}} />
+          ) : e.imagen ? (
             e.foto ? (
               <div style={{background: '#fff', padding: '18px 18px 60px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
                 <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: 'grayscale(1) contrast(1.25)'}} />
@@ -204,7 +210,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
             <div style={{fontFamily: 'Anton', fontSize: Math.min(alto * 0.62, 900 / Math.max(2, e.dato.length)), color: c.papel, background: c.tinta, padding: '10px 46px', boxShadow: `14px 14px 0 ${c.acento}`, border: `8px solid ${c.papel}`, outline: `6px solid ${c.tinta}`}}>{e.dato}</div>
           ) : null}
           {/* cinta adhesiva */}
-          {(e.imagen || e.dato) && <div style={{position: 'absolute', top: -26, left: '38%', width: 190, height: 52, background: c.acento, opacity: 0.82, transform: 'rotate(-5deg)'}} />}
+          {(e.imagen || e.dato) && !e.secuencia && <div style={{position: 'absolute', top: -26, left: '38%', width: 190, height: 52, background: c.acento, opacity: 0.82, transform: 'rotate(-5deg)'}} />}
         </div>
       </div>
     </div>

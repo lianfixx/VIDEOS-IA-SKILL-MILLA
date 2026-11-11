@@ -2,8 +2,8 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.9.0"
-  release_date: "2026-11-10"
+  version: "0.10.0"
+  release_date: "2026-11-11"
   language: "es-MX"
 ---
 
@@ -98,6 +98,17 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 - **Nada tiembla**: flotación lenta, rebotes amortiguados. Sin fades. Entradas y transiciones (`viaje`, `barrido`, `rasgado`) variadas; el validador rechaza repetir la anterior.
 - Texto dentro de la zona segura de TikTok (x 90–960, y 230–1440).
 - Música y efectos: siempre, compuestos con código (ver arriba). Música de terceros solo con derechos documentados.
+
+## 3D, sombreadores, Blender y ComfyUI (solo cuando hace falta)
+
+Están disponibles y **no son el estilo**: son acentos. Antes de usar uno se razona si explica algo mejor que un recorte plano, y esa razón se escribe en el guion (`porque`); si la frase no sale, no se usa. La guía completa, con la tabla de «qué necesita la escena → qué recurso», las señales de que no va y los comandos, está en [TRES-D.md](TRES-D.md). Resumen:
+
+- `objeto3d` en una escena (`moneda`, `monedas`, `barras`, `caja`, `globo`): 3D dibujado con los colores del espacio y contorno de tinta. Sin costo. Las `barras` son un dato: exigen valores reales y `fuente`.
+- `tratamiento` (`semitono`, `duotono`) sobre una foto o recorte realista, para que se vea impreso en el mismo papel.
+- `$V blender ...`: objeto con luz y material de verdad, texto con volumen o un modelo 3D de Emi. Se instala una vez con `$V blender-instalar`.
+- `$V comfy ...`: imagen desde el servidor de ComfyUI de Emi (`COMFY_URL`). Este entorno no tiene tarjeta gráfica: sin servidor, el comando se detiene y lo dice.
+
+`validar` avisa si más de una de cada tres escenas lleva 3D. Orden de preferencia: lo más simple que sirva.
 
 ## Auditar y corregir
 

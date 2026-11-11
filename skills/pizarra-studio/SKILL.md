@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -10,6 +10,8 @@ metadata:
 # Pizarra Studio
 
 Skill independiente de [Vox Studio](../vox-studio/SKILL.md): mismas reglas de fondo, mismos espacios y mismas llaves, **instrucciones separadas**. Si Emi pide estilo vox o box, se usa Vox Studio; si pide pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal, se usa esta. Si no queda claro, se le pregunta; la guía para recomendar está en [espacios/ESTILOS.md](../../espacios/ESTILOS.md).
+
+El 3D, los sombreadores, Blender y ComfyUI de Vox Studio **no se usan aquí**: este estilo es trazo a mano y un render lo rompe. Si un video necesita un objeto 3D, es un video de Vox Studio.
 
 Estado: **candidata**. La cadena completa está probada técnicamente; ningún video suyo tiene aún aprobación de Emi.
 

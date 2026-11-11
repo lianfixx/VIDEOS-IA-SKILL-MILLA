@@ -1,3 +1,4 @@
+import os
 import sys
 import tempfile
 import unittest
@@ -392,6 +393,171 @@ class Revision(unittest.TestCase):
             self.assertIn("render anterior", str(cm.exception))
             m = json.loads(vox.escribir_manifiesto(d, final, {"motor": "x"}).read_text())
             self.assertEqual(len(m["sha256"]), 64)
+
+
+class TresDe(unittest.TestCase):
+    def err(self, g):
+        return " | ".join(vox.validar_guion(g))
+
+    def test_el_3d_exige_un_porque(self):
+        g = guion(); g["escenas"][1]["objeto3d"] = {"tipo": "monedas", "valores": [4]}
+        self.assertIn("objeto3d.porque", self.err(g))
+        g["escenas"][1]["objeto3d"]["porque"] = "el dinero apilado se entiende mejor con volumen"
+        self.assertEqual(vox.validar_guion(g), [])
+        g["escenas"][1]["objeto3d"]["tipo"] = "dragon"
+        self.assertIn("objeto3d.tipo", self.err(g))
+
+    def test_barras_son_datos(self):
+        g = guion(); g["escenas"][1]["objeto3d"] = {"tipo": "barras", "valores": [3], "porque": "comparar dos cantidades reales con volumen"}
+        e = self.err(g)
+        self.assertIn("al menos 2 valores", e); self.assertIn("necesita `fuente`", e)
+        g["escenas"][1]["objeto3d"]["valores"] = [3, 8]; g["escenas"][1]["fuente"] = "INEGI, 2025"
+        self.assertEqual(vox.validar_guion(g), [])
+        g["escenas"][1]["objeto3d"]["valores"] = [3, -1]
+        self.assertIn("números no negativos", self.err(g))
+
+    def test_un_solo_recurso_por_escena(self):
+        g = guion(); g["escenas"][1].update(objeto3d={"tipo": "caja", "porque": "mostrar el paquete completo con volumen"}, dato="7")
+        self.assertIn("ocupa el lugar del recorte", self.err(g))
+        g = guion(); g["escenas"][1]["tratamiento"] = "semitono"
+        self.assertIn("solo aplica a una escena con imagen_archivo", self.err(g))
+        g = guion(); g["escenas"][1].update(tratamiento="neon", imagen_archivo="img/a.png")
+        self.assertIn("no existe", self.err(g))
+
+    def test_secuencia_completa_o_no_se_arma(self):
+        g = guion(); g["escenas"][1]["secuencia"] = {"carpeta": "../fuera", "cuadros": 4}
+        self.assertIn("secuencia necesita", self.err(g))
+        g["escenas"][1]["secuencia"] = {"carpeta": "seq/x", "cuadros": 3}
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g)
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "seq" / "x").mkdir(parents=True)
+            for n in (0, 1):
+                (Path(d) / "seq" / "x" / f"{n:04d}.png").write_bytes(b"x")
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], Path(d))
+            self.assertIn("faltan 1", str(cm.exception))
+            (Path(d) / "seq" / "x" / "0002.png").write_bytes(b"x")
+            v = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], Path(d))
+            self.assertEqual(v["escenas"][1]["secuencia"], {"carpeta": "seq/x", "cuadros": 3})
+            self.assertIsNone(v["escenas"][0]["secuencia"])
+
+    def test_demasiado_3d_avisa(self):
+        g = guion()
+        for i in (1, 2):
+            g["escenas"][i]["objeto3d"] = {"tipo": "caja", "porque": "x" * 20}
+        self.assertIn("el 3D es un acento", " | ".join(vox.avisos_guion(g)))
+
+    def test_blender_pide_razon_y_destino_dentro(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = ["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "caja"]
+            self.assertEqual(vox.main(base + ["--out", "public/img/a.png", "--porque", "porque sí"]), 2)
+            self.assertEqual(vox.main(base + ["--out", "../a.png", "--porque", "x" * 25]), 2)
+            self.assertEqual(vox.main(["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "texto", "--out", "public/a.png", "--porque", "x" * 25]), 2)
+            self.assertEqual(vox.main(["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "modelo", "--modelo", "/no/hay.glb", "--out", "public/a.png", "--porque", "x" * 25]), 2)
+
+
+class Horno(unittest.TestCase):
+    def test_recorte_comun_para_toda_la_secuencia(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as d:
+            rutas = []
+            for n, caja in enumerate([(100, 120, 160, 200), (140, 100, 220, 180)]):
+                im = Image.new("RGBA", (400, 400), (0, 0, 0, 0)); im.paste((255, 0, 0, 255), caja)
+                f = Path(d) / f"{n:04d}.png"; im.save(f); rutas.append(f)
+            w, h = vox.recortar_al_contenido(rutas, margen=10)
+            self.assertEqual((w, h), (140, 120))                 # unión de los dos contornos + margen
+            for f in rutas:
+                with Image.open(f) as im:
+                    self.assertEqual(im.size, (140, 120))
+            vacio = Path(d) / "v.png"; Image.new("RGBA", (50, 50), (0, 0, 0, 0)).save(vacio)
+            with self.assertRaises(vox.ErrorVox):
+                vox.recortar_al_contenido([vacio])
+
+    def test_plan_del_horno(self):
+        from PIL import Image
+        g = guion()
+        g["escenas"][1]["objeto3d"] = {"tipo": "monedas", "valores": [4], "porque": "el dinero apilado se entiende con volumen"}
+        g["escenas"][2].update(imagen_archivo="img/f.png", tratamiento="duotono")
+        palabras, fin = alinear(g)
+        with tempfile.TemporaryDirectory() as d:
+            pub = Path(d); (pub / "img").mkdir()
+            Image.new("RGBA", (1800, 1200), (9, 9, 9, 255)).save(pub / "img" / "f.png")
+            datos = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], pub)
+            listo, trabajos = vox.plan_horno(datos, pub)
+            self.assertEqual([t["modo"] for t in trabajos], ["objeto", "foto"])
+            e1, e2 = listo["escenas"][1], listo["escenas"][2]
+            self.assertEqual(e1["secuencia"]["bucle"], False)
+            self.assertEqual(e1["secuencia"]["cuadros"], datos["escenas"][1]["dur"] + 16)
+            self.assertTrue(e2["imagen"].startswith("horno/03-duotono-") and e2["foto"] is False)
+            self.assertEqual((trabajos[1]["props"]["lado"], trabajos[1]["props"]["alto"]), (900, 600))
+            self.assertTrue(all("objeto3d" not in e and "tratamiento" not in e for e in listo["escenas"]))
+            self.assertEqual(datos["escenas"][1]["objeto3d"]["tipo"], "monedas")       # el original no se toca
+            self.assertEqual(vox.plan_horno(datos, pub)[1][0]["destino"], trabajos[0]["destino"])  # misma firma: se reutiliza
+            datos["escenas"][1]["objeto3d"]["valores"] = [6]
+            self.assertNotEqual(vox.plan_horno(datos, pub)[1][0]["destino"], trabajos[0]["destino"])
+
+
+class Comfy(unittest.TestCase):
+    FLUJO = {"3": {"class_type": "KSampler", "inputs": {}}, "9": {"class_type": "SaveImage", "inputs": {}}}
+
+    def con_url(self, valor):
+        previo = os.environ.get("COMFY_URL")
+        if valor is None:
+            os.environ.pop("COMFY_URL", None)
+        else:
+            os.environ["COMFY_URL"] = valor
+        return previo
+
+    def test_sin_servidor_no_se_simula(self):
+        previo = self.con_url(None)
+        try:
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.comfy_generar(self.FLUJO, Path("/tmp/x.png"))
+            self.assertIn("COMFY_URL", str(cm.exception))
+        finally:
+            self.con_url(previo)
+
+    def test_envia_espera_y_baja_la_imagen(self):
+        import json
+        previo = self.con_url("https://comfy.ejemplo")
+        real = vox._pedir
+        vistas = []
+        def falso(url, **kw):
+            vistas.append((url, kw.get("metodo", "GET")))
+            if url.endswith("/prompt"):
+                self.assertEqual(kw["cuerpo"], {"prompt": self.FLUJO})
+                return json.dumps({"prompt_id": "abc"}).encode()
+            if "/history/abc" in url:
+                return json.dumps({"abc": {"status": {"status_str": "success"}, "outputs": {"9": {"images": [{"filename": "a b.png", "subfolder": "", "type": "output"}]}}}}).encode()
+            if "/view?" in url:
+                self.assertIn("filename=a+b.png", url)
+                return b"PNGDATA"
+            raise AssertionError(url)
+        vox._pedir = falso
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                info = vox.comfy_generar(self.FLUJO, Path(d) / "img" / "c.png")
+                self.assertEqual((Path(d) / "img" / "c.png").read_bytes(), b"PNGDATA")
+                self.assertEqual(info["prompt_id"], "abc")
+                with self.assertRaises(vox.ErrorVox):
+                    vox.comfy_generar({"nodos": []}, Path(d) / "x.png")   # no es formato API
+        finally:
+            vox._pedir = real
+            self.con_url(previo)
+        self.assertEqual([m for _, m in vistas], ["POST", "GET", "GET"])
+
+    def test_error_del_flujo(self):
+        import json
+        previo = self.con_url("https://comfy.ejemplo")
+        real = vox._pedir
+        vox._pedir = lambda url, **kw: json.dumps({"prompt_id": "z"} if url.endswith("/prompt") else {"z": {"status": {"status_str": "error"}, "outputs": {}}}).encode()
+        try:
+            with self.assertRaises(vox.ErrorVox):
+                vox.comfy_generar(self.FLUJO, Path("/tmp/no.png"))
+        finally:
+            vox._pedir = real
+            self.con_url(previo)
 
 
 class Tiempos(unittest.TestCase):

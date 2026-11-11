@@ -36,6 +36,10 @@ Al estrenar la revisión de transiciones sobre el demo aparecieron dos fallas qu
 
 Render determinista cuadro por cuadro, datos separados del código, hoja de contacto, zonas seguras, música y efectos por código, entrevista antes de producir, espacios por marca, aprendizaje entre videos y la regla de no fingir un render.
 
+### Adoptado después, con condiciones (decisión de Emi, 11/11/2026)
+
+Three.js, sombreadores, Blender y ComfyUI se habían descartado por el riesgo de aspecto «render». Emi pidió tenerlos disponibles **para cuando hagan falta, razonando cada uso**. Quedaron así en Vox Studio 0.10.0: son acentos con los colores y el contorno de tinta del espacio, cada uso lleva un `porque` escrito, `validar` avisa si pasan de una de cada tres escenas, y ComfyUI solo funciona con el servidor de Emi. Guía: `skills/vox-studio/TRES-D.md`.
+
 ### Descartado, con motivo
 
 | Idea | Por qué no |
@@ -43,7 +47,7 @@ Render determinista cuadro por cuadro, datos separados del código, hoja de cont
 | Campaña de 18 variantes (3 ganchos × 3 formatos × 2 cierres) | Es para vender paquetes a clientes. Emi publica en sus propios espacios; multiplicar la voz por 3 triplica el gasto sin un fin |
 | Formatos 1:1 y 16:9 en Vox Studio | Es una mejora real (X prefiere horizontal o cuadrado), pero exige rehacer la composición, no recortar. Queda propuesto, sin hacer. Pizarra Studio ya rinde en 16:9 |
 | «Generar y calcar» con un modelo de video | Cuesta, y contradice la regla de no usar video generado donde se dice que todo es código |
-| Three.js, sombreadores, Blender, ComfyUI, simulaciones | No sirven al estilo editorial de estos videos y empujan hacia el aspecto «hecho por IA» que Emi quiere evitar |
+| Simulaciones físicas y de partículas | No sirven al estilo editorial de estos videos y empujan hacia el aspecto «hecho por IA» que Emi quiere evitar |
 | Contenedor primero y texto después | Se probó en el recuadro del dato: llegaba vacío y se veía peor. Revertido |
 | Skills oficiales de Remotion (`remotion-dev/skills`) | El repositorio existe; no se instaló para no mezclar instrucciones ajenas con las de estas skills. Sirve como consulta al modificar la plantilla |
 | Precios, paquetes y venta del servicio | Fuera del alcance: aquí solo se hace video |

@@ -23,7 +23,7 @@ a = ap.parse_args()
 
 with tempfile.TemporaryDirectory() as tmp:
     destino = Path(tmp) / "vox-studio"
-    ignora = shutil.ignore_patterns("node_modules", "out", "__pycache__", "*.pyc", "test_*.py")
+    ignora = shutil.ignore_patterns("node_modules", "out", "__pycache__", "*.pyc", "test_*.py", "horno", "_render.json")
     shutil.copytree(RAIZ / "skills" / "vox-studio", destino, ignore=ignora)
     shutil.copytree(RAIZ / "espacios", destino / "espacios", ignore=ignora)
     # Guía de entrevista de pizarra: en la app no se produce, pero sí se puede entrevistar y dejar el traspaso listo.

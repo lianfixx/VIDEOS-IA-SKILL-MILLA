@@ -7,3 +7,5 @@ estados/
 src/data/video.json
 .env*
 *.log
+src/data/_render.json
+public/horno/

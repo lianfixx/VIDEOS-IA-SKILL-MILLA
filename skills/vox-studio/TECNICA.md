@@ -72,12 +72,20 @@ La música se genera con una semilla derivada del título y la narración: decid
 - El estado de cada tarea guarda la huella de prompt, aspecto y modelo: no se reutiliza para otra imagen ni se reenvía tras un fallo.
 - Descargas solo desde los dominios de resultado de Kie; fotos reales con tope de 15 MB y verificación de que son imágenes.
 
+## 5 bis. 3D, sombreadores y Blender
+
+- **Horno.** Las escenas con `objeto3d` o `tratamiento` se rinden aparte en la composición `Horno` (720 px, fondo transparente, `--gl=swangle`) y entran al video como imágenes; el render principal no usa WebGL. `plan_horno` decide qué hornear y `hornear` lo guarda en `public/horno/<id>-<firma>` (la firma cubre el pedido, los colores y el código del 3D); lo que ya está horneado no se repite. `src/data/_render.json` es el derivado que se rinde; `video.json` conserva el pedido.
+- **Secuencias.** Un objeto horneado dura `dur + 16` cuadros y no se repite en bucle; un giro de Blender sí. El mismo recorte al contenido se aplica a todos los cuadros de una secuencia.
+- **Materiales.** Compositor: `meshToonMaterial` con el color del espacio y contorno por casco invertido en tinta. Sombreador: luminancia elevada a 0.55 antes de tramar; semitono a 45° con celda de 9 px; duotono tinta → acento → papel.
+- **Blender.** Módulo `bpy` 5.3 con Cycles en CPU, vista «Standard» para que el color de marca salga exacto. `plano`: emisión + sombra de una banda y contorno Freestyle. `real`: material físico y tres luces de área. Cámara de 70 mm a la distancia que encierra el objeto.
+- **ComfyUI.** Cliente HTTP (`/prompt`, `/history`, `/view`) contra `COMFY_URL`; nunca se llama sin esa variable.
+
 ## 6. Auditorías automáticas de `render`
 
 | Informe | Qué mide | Avisa cuando |
 |---|---|---|
 | `out/auditoria-audio.json` | voz, música respecto a la voz, cada efecto respecto a la voz, sonoridad y pico finales, ganancia del master, rango dinámico, silencios | música a menos de 12 o más de 26 LU; efecto por encima de la voz o 16 dB por debajo; final fuera de −15 a −13 LUFS; pico sobre −1.5 dBTP; master de más de 4 dB; rango dinámico menor de 1.5 LU (audio plano); silencio de más de 1.2 s |
-| `out/auditoria-video.json` | códec, tamaño, fps, formato de pixel, audio, duración; tinta en las zonas que tapa TikTok y en la zona útil, a tres cuartos de cada escena | formato distinto del esperado; más de 0.4 % de una zona tapada con contenido; menos de 6 % de tinta en la zona útil; primer cuadro casi vacío |
+| `out/auditoria-video.json` | códec, tamaño, fps, formato de pixel, audio, duración; tinta en las zonas que tapa TikTok y en la zona útil, a tres cuartos de cada escena (la última, 6 cuadros antes del final, con el sello de cierre ya asentado) | formato distinto del esperado; más de 0.4 % de una zona tapada con contenido; menos de 6 % de tinta en la zona útil; primer cuadro casi vacío |
 | `out/hoja.png`, `out/hoja-tiktok.png`, `out/portada.png` | para revisar con los ojos | — |
 | `out/hoja-transiciones.png`, `out/hoja-telefono.png` (comando `revisar`) | cada corte en −6, −3, 0, +3, +6 y +12 cuadros; el video a 150 px de ancho | — |
 | `out/revision.json` | segundos revisados, hallazgos con su arreglo, pendientes y quién revisó, atado a la huella del render | `cierre` se niega si falta, si es de otro render o si no está firmado |
@@ -97,4 +105,4 @@ Si la voz suena natural, si la música gusta, si el chiste funciona y si el ritm
 | Imagen `seedream/5-lite-text-to-image` | 5.5 créditos de Kie |
 | Búsqueda de fotos en Apify | ~0.06 USD (0.005 de arranque + 0.05 por página + 0.0023 por foto) |
 | Voz | los caracteres que cobre ElevenLabs por la narración; se informa lo que su API reporta |
-| Música, efectos, portada, render | sin costo de proveedor |
+| Música, efectos, portada, render, 3D del compositor, sombreadores, Blender | sin costo de proveedor (tiempo de CPU) |
