@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · GitHub corre las pruebas de todas las skills en cada push
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, confirmación expresa: «Hazlo por favor» (añadir las pruebas al flujo de GitHub).
+- Cambios: trabajo nuevo `pruebas` en `.github/workflows/registro-ia.yml`, junto al que ya revisaba registro, secretos y reglas: instala FFmpeg y numpy 2.5.4, Pillow 13.0.0 y SciPy 1.18.1 sobre Python 3.13, y corre las pruebas de milla-video-studio, vox-studio, pizarra-studio, editor-studio y del radar, `ia/test_guard.py`, `check_skill` de las cuatro skills con sus puentes y el empaquetado de Editor Studio (que falla si quedan enlaces rotos). Usa el código del propio commit; las reglas siguen aplicándose con la versión de la base, como antes.
+- Archivos: `.github/workflows/registro-ia.yml`, `docs/VALIDACION.md`, `skills/editor-studio/TECNICA.md` y este registro.
+- Verificación: las cinco suites en un entorno de Python limpio con solo esas tres bibliotecas → 43, 73, 21, 105 y 11 pruebas, todas aprobadas; el archivo del flujo se lee bien (dos trabajos: `verificar` y `pruebas`); `check_skill` de las cuatro skills → aprobado. La primera corrida en GitHub será la de este push → por comprobar en el pull request.
+- Pendiente: mirar que el trabajo `pruebas` salga en verde en el pull request.
+
 ## 2026-11-11 · Editor Studio 0.2.0: segunda auditoría de fondo, con tres revisores independientes
 
 - Agente: Claude Code (sesión en la nube)

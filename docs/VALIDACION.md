@@ -102,4 +102,4 @@ python3 tools/empaquetar_editor.py --salida /tmp/editor-studio.zip    # falla si
 python3 skills/editor-studio/scripts/editor.py doctor
 ```
 
-Ninguna de estas pruebas usa red ni gasta saldo. Hoy corren como freno local antes de cada commit (`ia/politica.json`); el flujo de GitHub (`registro-ia.yml`) todavía no las ejecuta: añadirlas ahí requiere la confirmación expresa de Emi.
+Ninguna de estas pruebas usa red ni gasta saldo. Corren como freno local antes de cada commit (`ia/politica.json`) y, desde el 11/11/2026 (confirmado por Emi), también en GitHub: el trabajo `pruebas` de `.github/workflows/registro-ia.yml` corre en cada push y pull request las pruebas de las cuatro skills y del radar, `ia/test_guard.py`, la validez de cada `SKILL.md` con sus puentes y el paquete de Editor Studio, con Python 3.13, FFmpeg y numpy, Pillow y SciPy fijados. Así se prueba también lo que llegue de un chat, un conector u otra IA sin frenos locales.

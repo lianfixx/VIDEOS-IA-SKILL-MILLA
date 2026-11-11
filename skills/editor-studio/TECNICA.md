@@ -103,6 +103,8 @@ Tres revisores (flujo bajo estrés, imagen y sonido, guías y conexiones). Cada 
 - **Reglas que solo cumplía la prosa**: topes de nivel y de sonido por espacio, música preguntada, permiso de quien sale a cuadro, tipo de video.
 - **Otras IA**: el paquete llevaba enlaces rotos y no había plantilla de traspaso; las guías de entrada no nombraban la skill.
 
+Las pruebas corren además en GitHub en cada push (trabajo `pruebas` de `registro-ia.yml`), no solo como freno local.
+
 Queda sin comprobar: un Dolby Vision real de iPhone, macOS, un video de más de 6 minutos de punta a punta, el sticker en un video a cámara (con la cara en plano medio apenas cabe) y, sobre todo, un video real de Emi.
 
 ## Si algo falla
