@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Plan de la skill de edición (Editor Studio) y análisis de siete videos de referencia
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: analizar en orden cinco videos de Santiago Muñoz sobre edición y animación con IA (más dos de contexto), buscar cada skill en GitHub, y preparar una skill propia de edición de video, separada de Vox y Pizarra pero conectada con ellas y con las de X e Historias; «genera un plan completo y pregúntame absolutamente todo».
+- Cambios: solo documentación; no se creó ninguna skill ni se cambió código. `docs/REFERENCIAS-EXTERNAS.md` suma el análisis de los siete videos, la skill de GitHub que corresponde a cada uno con el commit leído, el estado de sus licencias (la mayoría sin licencia: se toma el método y no el código), lo que se propone adoptar, los choques con decisiones anteriores de Emi (video generado, personaje) y lo comprobado en este entorno. `docs/PLAN-EDITOR.md` (nuevo) trae la propuesta completa: qué es, piezas, flujo con compuertas, los tres niveles y cómo se sugiere uno, conexión entre skills, aprendizaje semanal, configuración paso por paso, fases, riesgos y 45 preguntas para Emi.
+- Archivos: `docs/REFERENCIAS-EXTERNAS.md`, `docs/PLAN-EDITOR.md` (nuevo) y este registro.
+- Verificación: transcripciones de seis de los siete videos obtenidas con Apify (0.03 USD) y leídas completas → hecho; el séptimo (Warp) no tiene subtítulos, solo se leyó su descripción; los videos no se vieron. Trece repositorios clonados en lectura y leídos sin ejecutar → hecho. HyperFrames 0.9.34: instalación y render de prueba 1080×1920 de 2 s en 2.7 s → aprobado (con la biblioteca de animación local; cargada de internet falla). Dominios probados: Kie, ElevenLabs, Apify, Google Fonts y Gemini alcanzables; YouTube, AssemblyAI, OpenAI, Higgsfield, Pixabay, TikTok, Instagram y la descarga directa de Drive bloqueados. Box encendido. No comprobado: Kling ni Scribe con gasto real; ninguna edición de un video de Emi. Pruebas del repositorio → aprobadas (ver commit).
+- Pendiente: respuestas de Emi a las 45 preguntas; un crudo de prueba; decidir transcripción y forma de recibir los crudos. La comparación Obsidian/Notion se abrió como sesión aparte, a pedido de Emi; no forma parte de este repositorio.
+
 ## 2026-11-11 · Vox Studio 0.12.0: Flow Music como complemento opcional de la música
 
 - Agente: Claude Code (sesión en la nube)
