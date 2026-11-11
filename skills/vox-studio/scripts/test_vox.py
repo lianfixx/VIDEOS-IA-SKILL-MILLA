@@ -485,5 +485,24 @@ class Proveedor(unittest.TestCase):
         self.assertIn("no conectado", t)
 
 
+class AjustesVoz(unittest.TestCase):
+    V = {"voice_id": "abc", "modelo": "m"}
+
+    def test_por_defecto_no_cambia_la_huella_anterior(self):
+        self.assertEqual(vox.ajustes_voz(self.V), vox.AJUSTES_VOZ)
+        self.assertEqual(vox.firma_voz("hola", self.V), vox.huella("hola", "abc", "m"))
+
+    def test_ajustes_propios_cambian_entrega_y_huella(self):
+        v = {**self.V, "ajustes": {"speed": 0.9, "style": 0.15}}
+        a = vox.ajustes_voz(v)
+        self.assertEqual((a["speed"], a["style"], a["stability"]), (0.9, 0.15, 0.4))
+        self.assertNotEqual(vox.firma_voz("hola", v), vox.firma_voz("hola", self.V))
+
+    def test_rechaza_velocidad_fuera_de_rango_y_claves_raras(self):
+        for malo in ({"speed": 1.5}, {"volumen": 2}):
+            with self.assertRaises(vox.ErrorVox):
+                vox.ajustes_voz({**self.V, "ajustes": malo})
+
+
 if __name__ == "__main__":
     unittest.main()

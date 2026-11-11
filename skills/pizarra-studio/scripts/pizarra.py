@@ -239,7 +239,7 @@ def narrar_guion(d: Path, ejecutar: bool, prueba: bool = False) -> dict:
         raise ErrorVox("guion.json necesita `escenas` con `id` y `narracion` en cada una")
     voz = vox.perfiles()[b["espacio"]]["voz"]
     texto = " ".join(" ".join(str(s["narracion"]).split()) for s in escenas)
-    firma = vox.huella(texto, voz["voice_id"], voz.get("modelo", ""))
+    firma = vox.firma_voz(texto, voz)
     cache = d / "estados" / "voz.json"
     guardado = json.loads(cache.read_text()) if cache.is_file() else {}
     cruda = d / "audio" / "vo-cruda.mp3"

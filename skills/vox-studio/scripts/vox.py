@@ -460,9 +460,33 @@ def huella(*partes: str) -> str:
     return hashlib.sha256("\x1f".join(partes).encode()).hexdigest()
 
 
+AJUSTES_VOZ = {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}
+
+
+def ajustes_voz(voz: dict) -> dict:
+    """Ajustes de entrega de la voz. `voz.ajustes` del perfil cambia solo las claves conocidas;
+    `speed` (0.7 a 1.2; 1 = normal) baja o sube el ritmo sin cambiar de voz."""
+    propios = voz.get("ajustes") or {}
+    desconocidas = set(propios) - set(AJUSTES_VOZ) - {"speed"}
+    if desconocidas:
+        raise ErrorVox(f"ajustes de voz desconocidos: {sorted(desconocidas)}")
+    out = {**AJUSTES_VOZ, **propios}
+    if "speed" in out and not 0.7 <= float(out["speed"]) <= 1.2:
+        raise ErrorVox("voz.ajustes.speed debe estar entre 0.7 y 1.2")
+    return out
+
+
+def firma_voz(texto: str, voz: dict) -> str:
+    """Huella de una narración: cambia si cambian texto, voz, modelo o ajustes propios."""
+    partes = [texto, voz["voice_id"], voz.get("modelo", "")]
+    if voz.get("ajustes"):
+        partes.append(json.dumps(voz["ajustes"], sort_keys=True))
+    return huella(*partes)
+
+
 def narrar(texto: str, voz: dict) -> tuple[bytes, list[dict]]:
     cuerpo = {"text": texto, "model_id": voz.get("modelo", "eleven_multilingual_v2"),
-              "voice_settings": {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}}
+              "voice_settings": ajustes_voz(voz)}
     r = _json(_pedir(f"{ELEVEN}/text-to-speech/{voz['voice_id']}/with-timestamps?output_format=mp3_44100_128",
                      metodo="POST", cabeceras=_eleven(), cuerpo=cuerpo, espera=240), "ElevenLabs")
     al = r.get("alignment") or {}
@@ -1111,7 +1135,7 @@ def main(argv=None) -> int:
             texto = texto_completo(g)
             d = Path(a.dir)
             cache = d / "estados" / "voz.json"
-            firma = huella(texto, voz["voice_id"], voz.get("modelo", ""))
+            firma = firma_voz(texto, voz)
             guardado = json.loads(cache.read_text()) if cache.exists() else {}
             vigente = guardado.get("firma") == firma and (d / "public" / "audio" / "voz.mp3").is_file()
             if vigente:

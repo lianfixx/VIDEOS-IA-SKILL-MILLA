@@ -56,6 +56,7 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 
 | Paso | Valor | Función |
 |---|---|---|
+| Entrega de la voz | estabilidad 0.4, similitud 0.8, estilo 0.3; `voz.ajustes` del perfil cambia esas claves y `speed` (0.7–1.2). Los ajustes propios entran en la huella: cambiarlos vuelve a narrar | `ajustes_voz`, `firma_voz` |
 | Voz | normalizada a −16 LUFS en dos pasadas | `normalizar` |
 | Música | compuesta a −20 dBFS RMS; ganancia calculada para quedar 17 LU bajo la voz | `_escribir_video` |
 | Envolvente de música | ×2.6 en el primer medio segundo, nivel base durante la voz, ×3 al terminar | `Vox.tsx` |
