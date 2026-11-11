@@ -14,7 +14,7 @@ loadFont({family: 'Gelasio', url: gelasioUrl, weight: '700'});
 export type Colores = {papel: string; tinta: string; acento: string; apoyo: string};
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
-  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string; secuencia?: {carpeta: string; cuadros: number; bucle?: boolean} | null;
+  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string; secuencia?: {carpeta: string; cuadros: number; bucle?: boolean; inicio?: number} | null; tratada?: boolean;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
@@ -196,12 +196,12 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
             // Secuencia rendida aparte (objeto 3D horneado o Blender): un cuadro por frame. Función pura del tiempo.
             // En bucle gira sin fin; sin bucle sigue la entrada del objeto y se queda en su último cuadro.
             <Img src={staticFile(`${e.secuencia.carpeta}/${String(e.secuencia.bucle === false
-              ? Math.min(e.secuencia.cuadros - 1, Math.max(0, Math.floor(f - 8)))
+              ? Math.min(e.secuencia.cuadros - 1, Math.max(0, Math.floor(f - 8 - (e.secuencia.inicio ?? 0))))
               : ((Math.max(0, Math.floor(f)) % e.secuencia.cuadros) + e.secuencia.cuadros) % e.secuencia.cuadros).padStart(4, '0')}.png`)} style={{display: 'block', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain'}} />
           ) : e.imagen ? (
             e.foto ? (
               <div style={{background: '#fff', padding: '18px 18px 60px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
-                <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: 'grayscale(1) contrast(1.25)'}} />
+                <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: e.tratada ? 'none' : 'grayscale(1) contrast(1.25)'}} />
               </div>
             ) : (
               <Img src={staticFile(e.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain', filter: `${borde(7, '#fff')} drop-shadow(14px 14px 0 ${c.tinta})`}} />

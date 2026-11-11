@@ -414,7 +414,25 @@ class TresDe(unittest.TestCase):
         g["escenas"][1]["objeto3d"]["valores"] = [3, 8]; g["escenas"][1]["fuente"] = "INEGI, 2025"
         self.assertEqual(vox.validar_guion(g), [])
         g["escenas"][1]["objeto3d"]["valores"] = [3, -1]
-        self.assertIn("números no negativos", self.err(g))
+        self.assertIn("no negativos", self.err(g))
+        for malo in ([3, float("inf")], [0, 0]):
+            g["escenas"][1]["objeto3d"]["valores"] = malo
+            self.assertTrue(self.err(g), malo)
+        g["escenas"][1]["objeto3d"]["valores"] = [3, 8]
+        for malo in (7, -1, "1", 0.5, True):                       # resaltar: índice real de una barra
+            g["escenas"][1]["objeto3d"]["resaltar"] = malo
+            self.assertIn("objeto3d.resaltar", self.err(g), malo)
+        g["escenas"][1]["objeto3d"]["resaltar"] = 0
+        self.assertEqual(vox.validar_guion(g), [])
+
+    def test_monedas_de_2_a_8(self):
+        g = guion(); g["escenas"][1]["objeto3d"] = {"tipo": "monedas", "porque": "el dinero apilado se entiende mejor con volumen"}
+        self.assertEqual(vox.validar_guion(g), [])                 # sin valores: tres por defecto
+        for malo in ([0], [100], [2.5]):
+            g["escenas"][1]["objeto3d"]["valores"] = malo
+            self.assertIn("entero de 2 a 8", self.err(g), malo)
+        g["escenas"][1]["objeto3d"].update(valores=[5], resaltar=1)
+        self.assertIn("solo existe en barras", self.err(g))
 
     def test_un_solo_recurso_por_escena(self):
         g = guion(); g["escenas"][1].update(objeto3d={"tipo": "caja", "porque": "mostrar el paquete completo con volumen"}, dato="7")
@@ -455,6 +473,37 @@ class TresDe(unittest.TestCase):
             self.assertEqual(vox.main(base + ["--out", "../a.png", "--porque", "x" * 25]), 2)
             self.assertEqual(vox.main(["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "texto", "--out", "public/a.png", "--porque", "x" * 25]), 2)
             self.assertEqual(vox.main(["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "modelo", "--modelo", "/no/hay.glb", "--out", "public/a.png", "--porque", "x" * 25]), 2)
+            # el destino se valida antes de gastar minutos de render: dentro de public/, .png si es imagen, carpeta si gira
+            llamado = []
+            real = vox.rendir_con_blender
+            vox.rendir_con_blender = lambda *a, **k: llamado.append(1)
+            try:
+                for malo in (["--out", "seq/y", "--giro", "4"], ["--out", "public/img/caja"], ["--out", "public/img/caja.jpg"], ["--out", "public/seq/y.png", "--giro", "4"]):
+                    self.assertEqual(vox.main(base + malo + ["--porque", "x" * 25]), 2, malo)
+            finally:
+                vox.rendir_con_blender = real
+            self.assertEqual(llamado, [])
+
+    def test_blender_limpia_el_giro_anterior(self):
+        from PIL import Image
+        with tempfile.TemporaryDirectory() as tmp:
+            destino = Path(tmp) / "public" / "seq" / "x"; destino.mkdir(parents=True)
+            for n in range(6):                                     # restos de un giro más largo, con el objeto en otra esquina
+                im = Image.new("RGBA", (200, 200), (0, 0, 0, 0)); im.paste((0, 0, 255, 255), (150, 150, 190, 190)); im.save(destino / f"{n:04d}.png")
+            def falso(espec, espera=1800):
+                self.assertEqual(list(Path(espec["salida"]).glob("*.png")), [])   # llegó limpia
+                for n in range(espec["giro"]):
+                    im = Image.new("RGBA", (200, 200), (0, 0, 0, 0)); im.paste((255, 0, 0, 255), (20, 20, 60, 60)); im.save(Path(espec["salida"]) / f"{n:04d}.png")
+                return {"ok": True, "blender": "prueba", "cuadros": espec["giro"], "segundos": 0.0}
+            real = vox.rendir_con_blender
+            vox.rendir_con_blender = falso
+            try:
+                self.assertEqual(vox.main(["blender", "--dir", tmp, "--perfil", "personal", "--tipo", "caja", "--giro", "3", "--out", "public/seq/x", "--porque", "x" * 25]), 0)
+            finally:
+                vox.rendir_con_blender = real
+            self.assertEqual(sorted(f.name for f in destino.glob("*.png")), ["0000.png", "0001.png", "0002.png"])
+            with Image.open(destino / "0000.png") as im:
+                self.assertEqual(im.size, (68, 68))                # recortado al objeto nuevo, sin el resto viejo
 
 
 class Horno(unittest.TestCase):
@@ -489,13 +538,82 @@ class Horno(unittest.TestCase):
             e1, e2 = listo["escenas"][1], listo["escenas"][2]
             self.assertEqual(e1["secuencia"]["bucle"], False)
             self.assertEqual(e1["secuencia"]["cuadros"], datos["escenas"][1]["dur"] + 16)
-            self.assertTrue(e2["imagen"].startswith("horno/03-duotono-") and e2["foto"] is False)
+            self.assertTrue(e2["imagen"].startswith("horno/03-duotono-") and e2["tratada"] is True)
+            self.assertEqual(e1["secuencia"]["inicio"], 0)
             self.assertEqual((trabajos[1]["props"]["lado"], trabajos[1]["props"]["alto"]), (900, 600))
             self.assertTrue(all("objeto3d" not in e and "tratamiento" not in e for e in listo["escenas"]))
             self.assertEqual(datos["escenas"][1]["objeto3d"]["tipo"], "monedas")       # el original no se toca
             self.assertEqual(vox.plan_horno(datos, pub)[1][0]["destino"], trabajos[0]["destino"])  # misma firma: se reutiliza
             datos["escenas"][1]["objeto3d"]["valores"] = [6]
             self.assertNotEqual(vox.plan_horno(datos, pub)[1][0]["destino"], trabajos[0]["destino"])
+
+    def test_la_firma_cambia_con_el_codigo_y_la_primera_escena_se_hornea_asentada(self):
+        from PIL import Image
+        g = guion()
+        g["escenas"][0].update(imagen_archivo="", objeto3d={"tipo": "caja", "porque": "mostrar el paquete completo con volumen"})
+        g["escenas"][2].update(imagen_archivo="img/f.png", tratamiento="semitono", foto_real=True)
+        g["portada"] = {"imagen_archivo": "img/f.png"}
+        palabras, fin = alinear(g)
+        with tempfile.TemporaryDirectory() as d:
+            pub = Path(d) / "public"; (pub / "img").mkdir(parents=True); (Path(d) / "src").mkdir()
+            Image.new("RGBA", (300, 200), (9, 9, 9, 255)).save(pub / "img" / "f.png")
+            (Path(d) / "src" / "Tres.tsx").write_text("v1")
+            datos = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], pub)
+            listo, trabajos = vox.plan_horno(datos, pub)
+            sec = listo["escenas"][0]["secuencia"]
+            self.assertEqual(sec["inicio"], vox.ADELANTO_PRIMERA - 8)      # el compositor pide desde ese cuadro
+            self.assertEqual(trabajos[0]["props"]["inicio"], sec["inicio"])
+            self.assertTrue(listo["escenas"][2]["foto"])                    # la foto real tratada conserva su marco
+            self.assertEqual(listo["portada"]["imagen"], listo["escenas"][2]["imagen"])  # la portada usa la tratada
+            (Path(d) / "src" / "Tres.tsx").write_text("v2")
+            self.assertNotEqual(vox.plan_horno(datos, pub)[1][0]["destino"], trabajos[0]["destino"])
+            self.assertNotEqual(vox.plan_horno(datos, pub)[1][1]["destino"], trabajos[1]["destino"])
+
+    def hornear_con(self, d, trabajos, cuadro):
+        """Sustituye a Remotion: `cuadro(n)` devuelve la imagen del cuadro n, o None para no escribirlo."""
+        real = vox._correr
+        def falso(cmd, cwd=None, **kw):
+            if "still" in cmd:
+                im = cuadro(0)
+                if im is not None:
+                    im.save(Path(cwd) / "out" / "_horno.png")
+            else:
+                (Path(cwd) / "out" / "_horno").mkdir()
+                for n in range(trabajos[0]["cuadros"]):
+                    im = cuadro(n)
+                    if im is not None:
+                        im.save(Path(cwd) / "out" / "_horno" / f"element-{n:03d}.png")
+        vox._correr = falso
+        try:
+            return vox.hornear(Path(d), trabajos, "")
+        finally:
+            vox._correr = real
+
+    def test_un_horneado_fallido_no_queda_como_bueno(self):
+        from PIL import Image
+        vacio = lambda n: Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+        def lleno(n):
+            im = Image.new("RGBA", (100, 100), (0, 0, 0, 0)); im.paste((255, 0, 0, 255), (30, 30, 60, 60)); return im
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "public" / "horno" / "vieja-000").mkdir(parents=True)
+            sec = [{"modo": "objeto", "destino": "horno/02-abc", "cuadros": 3, "props": {}}]
+            for _ in (1, 2):                                       # la segunda corrida tampoco lo da por bueno
+                with self.assertRaises(vox.ErrorVox):
+                    self.hornear_con(d, sec, vacio)
+                self.assertFalse((Path(d) / "public" / "horno" / "02-abc").exists())
+            with self.assertRaises(vox.ErrorVox):                  # faltó un cuadro
+                self.hornear_con(d, sec, lambda n: lleno(n) if n < 2 else None)
+            self.assertEqual(self.hornear_con(d, sec, lleno), 1)
+            destino = Path(d) / "public" / "horno" / "02-abc"
+            self.assertEqual(sorted(f.name for f in destino.iterdir()), [".listo", "0000.png", "0001.png", "0002.png"])
+            self.assertFalse((Path(d) / "public" / "horno" / "vieja-000").exists())   # lo que ya nadie pide se borra
+            self.assertEqual(self.hornear_con(d, sec, vacio), 0)   # ya horneado: no se repite
+            foto = [{"modo": "foto", "destino": "horno/03-semitono-x.png", "cuadros": 1, "props": {"src": "img/f.png"}}]
+            with self.assertRaises(vox.ErrorVox):                  # textura que no cargó: PNG transparente
+                self.hornear_con(d, foto, vacio)
+            self.assertFalse((Path(d) / "public" / "horno" / "03-semitono-x.png").exists())
+            self.assertEqual(self.hornear_con(d, foto, lleno), 1)
+            self.assertFalse(destino.exists())                     # el plan cambió: la secuencia anterior se limpia
 
 
 class Comfy(unittest.TestCase):
@@ -520,6 +638,9 @@ class Comfy(unittest.TestCase):
 
     def test_envia_espera_y_baja_la_imagen(self):
         import json
+        from PIL import Image
+        import io
+        mem = io.BytesIO(); Image.new("RGB", (8, 8), (200, 30, 30)).save(mem, "PNG"); self.png = mem.getvalue()
         previo = self.con_url("https://comfy.ejemplo")
         real = vox._pedir
         vistas = []
@@ -532,20 +653,51 @@ class Comfy(unittest.TestCase):
                 return json.dumps({"abc": {"status": {"status_str": "success"}, "outputs": {"9": {"images": [{"filename": "a b.png", "subfolder": "", "type": "output"}]}}}}).encode()
             if "/view?" in url:
                 self.assertIn("filename=a+b.png", url)
-                return b"PNGDATA"
+                return self.png
             raise AssertionError(url)
         vox._pedir = falso
         try:
             with tempfile.TemporaryDirectory() as d:
                 info = vox.comfy_generar(self.FLUJO, Path(d) / "img" / "c.png")
-                self.assertEqual((Path(d) / "img" / "c.png").read_bytes(), b"PNGDATA")
+                self.assertEqual((Path(d) / "img" / "c.png").read_bytes(), self.png)
                 self.assertEqual(info["prompt_id"], "abc")
                 with self.assertRaises(vox.ErrorVox):
                     vox.comfy_generar({"nodos": []}, Path(d) / "x.png")   # no es formato API
+                with self.assertRaises(vox.ErrorVox):
+                    vox.comfy_generar({"3": {"class_type": "KSampler", "inputs": {}}}, Path(d) / "x.png")   # no guarda imagen
+                self.png = b"<html>error</html>"
+                with self.assertRaises(vox.ErrorVox):
+                    vox.comfy_generar(self.FLUJO, Path(d) / "img" / "malo.png")
+                self.assertFalse((Path(d) / "img" / "malo.png").exists())
         finally:
             vox._pedir = real
             self.con_url(previo)
-        self.assertEqual([m for _, m in vistas], ["POST", "GET", "GET"])
+        self.assertEqual([m for _, m in vistas], ["POST", "GET", "GET"] * 2)   # la buena y la que devolvió HTML
+
+    def test_direccion_del_servidor(self):
+        for url, vale in (("https://comfy.ejemplo", True), ("http://127.0.0.1:8188", True), ("http://localhost:8188", True),
+                          ("http://192.168.1.20:8188", False), ("http://comfy.ejemplo", False), ("ftp://x", False)):
+            previo = self.con_url(url)
+            try:
+                if vale:
+                    self.assertEqual(vox.comfy_base(), url)
+                else:
+                    with self.assertRaises(vox.ErrorVox) as cm:
+                        vox.comfy_base()
+                    self.assertIn("COMFY_URL", str(cm.exception))
+            finally:
+                self.con_url(previo)
+        with self.assertRaises(vox.ErrorVox):                      # http local solo para ComfyUI, no para otros proveedores
+            vox._pedir("http://127.0.0.1:1/x")
+
+    def test_en_seco_valida_el_flujo(self):
+        previo = self.con_url("https://comfy.ejemplo")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                malo = Path(tmp) / "interfaz.json"; malo.write_text('{"nodes": [], "links": []}')
+                self.assertEqual(vox.main(["comfy", "--dir", tmp, "--flujo", str(malo), "--out", "public/img/a.png", "--porque", "x" * 25]), 2)
+        finally:
+            self.con_url(previo)
 
     def test_error_del_flujo(self):
         import json

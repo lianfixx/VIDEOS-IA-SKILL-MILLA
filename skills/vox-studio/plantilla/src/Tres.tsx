@@ -1,6 +1,6 @@
 import React from 'react';
 import {ThreeCanvas} from '@remotion/three';
-import {continueRender, delayRender, spring, staticFile} from 'remotion';
+import {cancelRender, continueRender, delayRender, spring, staticFile} from 'remotion';
 import * as THREE from 'three';
 
 // 3D y sombreadores al servicio del estilo de papel: colores planos de la marca, contorno de tinta
@@ -12,7 +12,8 @@ export type Objeto3D = {tipo: string; valores?: number[]; resaltar?: number};
 export const OBJETOS_3D = ['moneda', 'monedas', 'barras', 'caja', 'globo'] as const;
 export const TRATAMIENTOS = ['semitono', 'duotono'] as const;
 
-const tinta = (color: string) => <meshBasicMaterial color={color} side={THREE.BackSide} />;
+const LUZ_AMBIENTE = 0.35;
+const tinta = (color: string) => <meshBasicMaterial color={color} side={THREE.BackSide} toneMapped={false} />;
 const plano = (color: string) => <meshToonMaterial color={color} />;
 
 /** Malla con contorno de tinta (casco invertido): se lee como dibujo, no como plástico. */
@@ -30,14 +31,14 @@ const Moneda: React.FC<{c: Paleta; y?: number; giro: number}> = ({c, y = 0, giro
     {[0.14, -0.14].map((z) => (
       <mesh key={z} position={[0, 0, z]}>
         <torusGeometry args={[1.02, 0.07, 12, 48]} />
-        <meshBasicMaterial color={c.tinta} />
+        <meshBasicMaterial color={c.tinta} toneMapped={false} />
       </mesh>
     ))}
   </group>
 );
 
 const Escena3D: React.FC<{o: Objeto3D; c: Paleta; f: number; fps: number}> = ({o, c, f, fps}) => {
-  const entra = spring({frame: f, fps, config: {damping: 13, stiffness: 150, mass: 1}});
+  const entra = spring({frame: Math.max(0, f), fps, config: {damping: 13, stiffness: 150, mass: 1}});
   const valores = (o.valores && o.valores.length ? o.valores : [3, 5, 8]).slice(0, 5);
   let cuerpo: React.ReactNode = null;
   if (o.tipo === 'moneda') {
@@ -45,11 +46,13 @@ const Escena3D: React.FC<{o: Objeto3D; c: Paleta; f: number; fps: number}> = ({o
   } else if (o.tipo === 'monedas') {
     const n = Math.max(2, Math.min(8, Math.round(valores[0])));
     cuerpo = (
-      <group rotation={[0.42, f * 0.012, 0]} position={[0, -n * 0.17, 0]}>
+      // Cada moneda aparece creciendo sobre la pila y asienta: cae poco, para no salirse del lienzo del horno.
+      <group scale={0.86} rotation={[0.42, f * 0.012, 0]} position={[0, -n * 0.15, 0]}>
         {Array.from({length: n}).map((_, i) => {
-          const cae = spring({frame: f - 4 - i * 3, fps, config: {damping: 14, stiffness: 180}});
+          const llega = 4 + i * 3;
+          const cae = spring({frame: Math.max(0, f - llega), fps, config: {damping: 14, stiffness: 180}});
           return (
-            <group key={i} position={[Math.sin(i * 2.4) * 0.09, i * 0.34 + (1 - cae) * 6, Math.cos(i * 1.7) * 0.09]} rotation={[Math.PI / 2, 0, 0]}>
+            <group key={i} visible={f >= llega} scale={Math.max(0.001, cae)} position={[Math.sin(i * 2.4) * 0.09, i * 0.34 + (1 - cae) * 0.9, Math.cos(i * 1.7) * 0.09]} rotation={[Math.PI / 2, 0, 0]}>
               <Pieza c={c} color={i % 2 ? c.apoyo : c.acento} geometria={<cylinderGeometry args={[1.25, 1.25, 0.26, 40]} />} grosor={1.05} rotation={[-Math.PI / 2, 0, 0]} />
             </group>
           );
@@ -63,7 +66,7 @@ const Escena3D: React.FC<{o: Objeto3D; c: Paleta; f: number; fps: number}> = ({o
     cuerpo = (
       <group scale={cabe}><group rotation={[0.28, -0.5 + Math.sin(f / 60) * 0.08, 0]} position={[-((valores.length - 1) * paso) / 2, -1.6, 0]}>
         {valores.map((v, i) => {
-          const sube = spring({frame: f - 6 - i * 5, fps, config: {damping: 16, stiffness: 120}});
+          const sube = spring({frame: Math.max(0, f - 6 - i * 5), fps, config: {damping: 16, stiffness: 120}});
           const alto = Math.max(0.05, (v / max) * 3.2 * sube);
           const fuerte = i === (o.resaltar ?? valores.length - 1);
           return <Pieza key={i} c={c} color={fuerte ? c.acento : c.papel} position={[i * paso, alto / 2, 0]} geometria={<boxGeometry args={[0.85, alto, 0.85]} />} casco={<boxGeometry args={[0.95, alto + 0.1, 0.95]} />} />;
@@ -78,22 +81,23 @@ const Escena3D: React.FC<{o: Objeto3D; c: Paleta; f: number; fps: number}> = ({o
         <Pieza c={c} color={c.apoyo} geometria={<sphereGeometry args={[1.7, 40, 28]} />} grosor={1.04} />
         <lineSegments>
           <edgesGeometry args={[new THREE.SphereGeometry(1.715, 12, 8)]} />
-          <lineBasicMaterial color={c.tinta} />
+          <lineBasicMaterial color={c.tinta} toneMapped={false} />
         </lineSegments>
       </group>
     );
   }
   return (
     <>
-      <ambientLight intensity={1.6} />
-      <directionalLight position={[3, 5, 6]} intensity={1.4} />
+      {/* Ambiente + directa = π: la cara iluminada da exactamente el color de la marca; la sombra, una sola banda. */}
+      <ambientLight intensity={LUZ_AMBIENTE} />
+      <directionalLight position={[3, 5, 6]} intensity={Math.PI - LUZ_AMBIENTE} />
       <group scale={0.25 + 0.75 * entra}>{cuerpo}</group>
     </>
   );
 };
 
 export const Objeto3DVista: React.FC<{o: Objeto3D; c: Paleta; f: number; fps: number; lado: number}> = ({o, c, f, fps, lado}) => (
-  <ThreeCanvas width={lado} height={lado} style={{background: 'transparent'}} camera={{fov: 30, position: [0, 0, 8.4]}} gl={{alpha: true, antialias: true}}>
+  <ThreeCanvas width={lado} height={lado} style={{background: 'transparent'}} camera={{fov: 30, position: [0, 0, 8.4]}} gl={{alpha: true, antialias: true}} flat>
     <Escena3D o={o} c={c} f={f} fps={fps} />
   </ThreeCanvas>
 );
@@ -125,9 +129,12 @@ void main(){
   gl_FragColor = vec4(color * t.a, t.a);   // respeta la transparencia del recorte
 }`;
 
+// Color tal cual está escrito (sin pasar a lineal): el sombreador escribe valores finales de pantalla.
+const crudo = (hex: string) => new THREE.Color().setStyle(hex, THREE.LinearSRGBColorSpace);
+
 const Lamina: React.FC<{textura: THREE.Texture; c: Paleta; modo: number; ancho: number; alto: number}> = ({textura, c, modo, ancho, alto}) => {
   const uniformes = React.useMemo(() => ({
-    mapa: {value: textura}, tinta: {value: new THREE.Color(c.tinta)}, papel: {value: new THREE.Color(c.papel)}, acento: {value: new THREE.Color(c.acento)},
+    mapa: {value: textura}, tinta: {value: crudo(c.tinta)}, papel: {value: crudo(c.papel)}, acento: {value: crudo(c.acento)},
     tam: {value: new THREE.Vector2(ancho, alto)}, modo: {value: modo},
   }), [textura, c.tinta, c.papel, c.acento, ancho, alto, modo]);
   return (
@@ -148,7 +155,7 @@ export const FotoTratada: React.FC<{src: string; c: Paleta; tratamiento: string;
       t.minFilter = THREE.LinearFilter;
       setTextura(t);
       continueRender(espera);
-    }, undefined, () => continueRender(espera));
+    }, undefined, () => cancelRender(new Error(`no se pudo cargar la imagen ${src} para tratarla`)));
   }, [src, espera]);
   if (!textura) return null;
   const img = textura.image as {width: number; height: number};

@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.10.1: revisión independiente del 3D, Blender y ComfyUI (14 fallas) corregida
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: «al final audita a profundidad, arregla y mejora» lo implementado de 3D, sombreadores, Blender y ComfyUI.
+- Cambios: (1) los colores horneados ya son los de la marca: sin mapeo de tonos, luces que dan el color exacto en la cara iluminada y sombreador que escribe papel, tinta y acento tal cual; (2) el horno arma y comprueba en `out/` y mueve de una vez, con marca `.listo`: un horneado vacío, incompleto o interrumpido ya no queda como bueno; (3) Blender centra y gira modelos con nodo padre; (4) el giro de Blender es constante (sin fotogramas clave); (5) un objeto 3D en la primera escena se hornea en el tramo que el compositor muestra y ya no se congela; (6) la firma de caché incluye el código que dibuja y se borra lo horneado que nadie pide; (7) repetir un giro en la misma carpeta limpia los cuadros anteriores; (8) `--out` de `blender` se valida antes de rendir (dentro de `public/`, `.png` o carpeta) y se comprueba que Blender escribió todo; (9) acabado real: una pieza sin material recibe el color de acento; (10) `validar` rechaza valores infinitos, `resaltar` fuera de rango y monedas fuera de 2 a 8; (11) una foto real tratada conserva su marco y la portada usa la imagen tratada; (12) `comfy` valida dirección (https, o http solo local) y flujo también en seco, y verifica que lo bajado sea una imagen; (13) una textura que no carga cancela el render en vez de dejar un PNG vacío; (14) las monedas aparecen sobre la pila sin salirse del lienzo ni dejar una pila fantasma; (15) documentos alineados con el código.
+- Archivos: `skills/vox-studio/{SKILL.md,TRES-D.md,TECNICA.md,plantilla/src/Tres.tsx,plantilla/src/Root.tsx,plantilla/src/Vox.tsx,scripts/vox.py,scripts/blender_objeto.py,scripts/test_vox.py}` y este registro.
+- Verificación: pruebas de vox-studio 66/66 (seis nuevas, una por grupo de fallas) → aprobado; pizarra-studio y `ia/test_guard.py` → aprobado; `tsc --noEmit` → aprobado. Blender con ejecución real: glTF con nodo padre trasladado centrado y girando en 8 cuadros; cubo con giro de 8 cuadros idéntico cada 90° (diferencia 0.0); `.obj` sin materiales en acabado real con color medio (239, 88, 40) → aprobado. Paquete para la app regenerado con los archivos nuevos → aprobado. Render completo del demo con los colores corregidos → en curso al hacer este commit. ComfyUI contra un servidor real → no ejecutado.
+- Pendiente: confirmar en el render los colores horneados y cerrar la revisión del demo; que Emi vea el demo; fusionar a `main`.
+
 ## 2026-11-11 · Vox Studio 0.10.0: 3D, sombreadores, Blender y ComfyUI, solo cuando hacen falta
 
 - Agente: Claude Code (sesión en la nube)

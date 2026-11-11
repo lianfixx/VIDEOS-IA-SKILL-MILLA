@@ -7,7 +7,7 @@ import demo from './data/demo.json';
 // Horno: rinde aparte, con fondo transparente, lo que necesita WebGL (un objeto 3D o una foto
 // tratada). El video principal solo pega esas imágenes, así que no depende de WebGL ni se frena.
 export type HornoProps = {
-  modo: 'objeto' | 'foto'; colores: Paleta; lado: number; alto: number; frames: number;
+  modo: 'objeto' | 'foto'; colores: Paleta; lado: number; alto: number; frames: number; inicio?: number;
   objeto3d: Objeto3D | null; src: string; tratamiento: string;
 };
 const Horno: React.FC<HornoProps> = (p) => {
@@ -16,14 +16,15 @@ const Horno: React.FC<HornoProps> = (p) => {
   return (
     <AbsoluteFill style={{backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center'}}>
       {p.modo === 'objeto' && p.objeto3d
-        ? <Objeto3DVista o={p.objeto3d} c={p.colores} f={frame} fps={fps} lado={p.lado} />
+        ? <Objeto3DVista o={p.objeto3d} c={p.colores} f={frame + (p.inicio ?? 0)} fps={fps} lado={p.lado} />
         : <FotoTratada src={p.src} c={p.colores} tratamiento={p.tratamiento} anchoMax={p.lado} altoMax={p.alto} />}
     </AbsoluteFill>
   );
 };
 const hornoBase: HornoProps = {modo: 'objeto', colores: demo.perfil.colores, lado: 720, alto: 720, frames: 30, objeto3d: {tipo: 'caja'}, src: '', tratamiento: 'semitono'};
 
-// `npm run render -- --props=src/data/video.json` sustituye el demo por la producción real.
+// Se rinde con `vox.py render`, que hornea el 3D y los tratamientos y pasa `src/data/_render.json`.
+// Rendir `video.json` directo deja sin dibujar las escenas con `objeto3d` o `tratamiento`.
 export const Root: React.FC = () => (
   <>
   <Composition

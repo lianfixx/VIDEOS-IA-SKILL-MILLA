@@ -107,9 +107,13 @@ def construir(e: dict) -> list:
         objetos = [o for o in bpy.data.objects if o not in antes and o.type == "MESH"]
         if not objetos:
             raise SystemExit("el modelo no trae ninguna malla")
-        if acabado == "plano":  # en «real» se respetan los materiales del archivo
-            m = material("modelo", c["acento"], acabado)
-            for o in objetos:
+        # En «real» se respetan los materiales del archivo; una malla que no trae ninguno (.stl, .obj sin .mtl)
+        # recibe el color de la marca para no salir gris.
+        m = material("modelo", c["acento"], acabado)
+        for o in objetos:
+            if acabado == "plano":
+                o.data.materials.clear()
+            if not any(o.data.materials):
                 o.data.materials.clear()
                 o.data.materials.append(m)
     return objetos
@@ -123,10 +127,21 @@ def encuadrar(objetos: list, giro: bool):
     radio = max((p - centro).length for p in puntos) or 1.0
     eje = bpy.data.objects.new("eje", None)
     bpy.context.collection.objects.link(eje)
+    # Se cuelga del eje la raíz de cada malla (un .glb casi siempre trae un nodo padre): así el conjunto
+    # entero queda centrado y gira, tenga o no jerarquía.
+    raices = []
     for o in objetos:
-        if o.parent is None:
-            o.location -= centro
-            o.parent = eje
+        r = o
+        while r.parent is not None:
+            r = r.parent
+        if r not in raices:
+            raices.append(r)
+    for r in raices:
+        m = r.matrix_world.copy()
+        m.translation -= centro
+        r.parent = eje
+        r.matrix_world = m
+    bpy.context.view_layer.update()
     cam_datos = bpy.data.cameras.new("camara")
     cam_datos.lens = 70
     cam = bpy.data.objects.new("camara", cam_datos)
@@ -193,23 +208,21 @@ def main() -> None:
     salida = Path(e["salida"])
     if giro > 0:
         salida.mkdir(parents=True, exist_ok=True)
-        escena.frame_start, escena.frame_end = 0, giro - 1
-        eje.rotation_euler = (0, 0, 0)
-        eje.keyframe_insert("rotation_euler", frame=0)
-        eje.rotation_euler = (0, 0, math.radians(360))
-        eje.keyframe_insert("rotation_euler", frame=giro)  # el cuadro `giro` no se rinde: el bucle cierra sin salto
-        for curva in (eje.animation_data.action.fcurves if hasattr(eje.animation_data.action, "fcurves") else []):
-            for punto in curva.keyframe_points:
-                punto.interpolation = "LINEAR"
+        # Sin fotogramas clave: el ángulo se fija a mano en cada cuadro, así el giro es constante de verdad.
+        # El cuadro `giro` (360°) no se rinde: el bucle cierra sin repetir el primero.
         for n in range(giro):
-            escena.frame_set(n)
-            eje.rotation_euler = (0, 0, math.radians(360 * n / giro))  # giro constante aunque la curva no sea lineal
+            eje.rotation_euler = (0, 0, math.radians(360 * n / giro))
+            bpy.context.view_layer.update()
             escena.render.filepath = str(salida / f"{n:04d}.png")
             bpy.ops.render.render(write_still=True)
     else:
         salida.parent.mkdir(parents=True, exist_ok=True)
         escena.render.filepath = str(salida)
         bpy.ops.render.render(write_still=True)
+    esperados = [salida / f"{n:04d}.png" for n in range(giro)] if giro > 0 else [salida]
+    faltan = [str(f) for f in esperados if not f.is_file()]
+    if faltan:
+        raise SystemExit(f"Blender no escribió {len(faltan)} archivo(s): {faltan[0]}")
     print(json.dumps({"ok": True, "blender": bpy.app.version_string, "cuadros": max(1, giro)}))
 
 
