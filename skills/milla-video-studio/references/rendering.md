@@ -47,6 +47,7 @@ No confundir una portada candidata con una portada aprobada. Seleccionar el fram
 | `scene.theme` | `ivory` o `navy`; paleta fija marfil `#F6F0E4`, azul `#172636`, dorado `#D6A72C` |
 | `scene.transition` | `family` implementada y `durationSeconds` de solapamiento entrante |
 | `scene.diagram` | Nodos y aristas nativos exactos, descritos abajo |
+| `scene.beats` | De 1 a 5 planos dibujados con código que entran con la voz; descritos en «Planos dentro de la escena». Excluyen `diagram` y `asset_ids` en esa escena |
 | `subtitleCues` | Opcional; `{start,end,text}` con tiempos medidos sobre la narración final; nunca generados por reparto de palabras |
 | `subtitlesVerified` | Debe ser `true` si existen cues; declaración no sustituye escucha y evidencia |
 | `subtitleCues[].words` | Opcional; `{start,end,text}` absoluto por palabra, obtenido del audio real, mismo texto que el cue |
@@ -126,3 +127,25 @@ Consulta: 4 de octubre de 2026. Documentación oficial; revalidar cambios cuando
 - [Still CLI](https://www.remotion.dev/docs/cli/still): extracción de frames y ejecutable local de navegador.
 - [random](https://www.remotion.dev/docs/random): evitar aleatoriedad no determinista entre procesos.
 - [Licensing](https://www.remotion.dev/docs/licensing) y [licencia/precios](https://www.remotion.dev/license): condiciones por uso; todos los paquetes Remotion deben fijar la misma versión.
+
+## Planos dentro de la escena (`beats`)
+
+Candidato desde la versión 1.3.0 (11/11/2026): probado en validadores, cuadros y un render técnico sin audio; ningún video de MILLA aprobado los usa todavía. Una escena larga no se queda con un título quieto: se cuenta con planos que entran cuando la voz dice su palabra.
+
+Cada plano lleva `at` (segundos absolutos del audio final) y `kind`. El primero puede empezar con la escena; los demás van al menos 18 frames después del anterior y terminan de entrar 12 frames antes del fin de la escena. Al entrar un plano, el anterior sale. Ocupan la zona de imágenes y diagrama (y de 755 a 1355), así que la escena no lleva `diagram` ni `asset_ids`; una imagen se muestra con un plano `image`.
+
+| `kind` | Campos | Para qué |
+|---|---|---|
+| `quote` | `text` (literal, 12 a 150), `highlight` (fragmento literal), `source` | la norma o la tesis, con la frase clave subrayándose |
+| `list` | `items` (2 a 4): `text`, `mark` `yes`/`no`, `at` opcional | qué sí y qué no; requisitos |
+| `calendar` | `days` (2 a 31) o `cells` (`label`, `state` `crossed`/`marked`); `caption` | plazos y cómputos |
+| `figure` | `value` (hasta 6), `caption`, `strike` | monto, artículo o año que cuenta hasta su valor |
+| `timeline` | `milestones` (2 a 4): `date`, `text`, `at` opcional | plazos encadenados |
+| `bars` | `bars` (2 a 4): `label`, `value`, `text`, `at` opcional; `source` | comparar cantidades; la barra mide lo que dice la cifra |
+| `image` | `asset_id` de una imagen registrada, no repetida | cambiar de imagen al cambiar de idea |
+
+Cualquier plano admite `note: {text, at}`: la aclaración que acompaña, debajo. Sin `at`, las piezas entran a ritmo fijo.
+
+**Tiempos desde la voz, no a mano.** Escribir `anchor` (la palabra) en cada plano o pieza y ejecutar `python3 scripts/milla.py anchor-beats RUTA/project.json`: toma el inicio real de esa palabra en `subtitleCues[].words` (exige `wordTimestampsVerified: true`), entra 0.13 s antes y falla si la voz no dice la palabra en ese tramo. No adivina.
+
+Sin partículas ni anillos; solo marfil, azul y dorado; la cita va en serif del sistema. Las mismas reglas viven en `milla.py` y en `manifest-validation.mjs`, y una prueba comprueba que ambos aceptan y rechazan lo mismo.

@@ -12,7 +12,7 @@ Este archivo transmite instrucciones. Para ejecutar se necesita la carpeta de c�
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -51,7 +51,7 @@ Ejecutar `python3 scripts/milla.py doctor` desde la carpeta de la skill. Comprue
 2. Investigar y escribir guion, mapa de afirmaciones y storyboard. Leer [prompts](skills/milla-video-studio/references/prompts.md) y [narrativa, ritmo y motion](skills/milla-video-studio/references/narrative-motion.md) (candidato: lo aprendido en Vox Studio que vale para todos los espacios). Dar función explicativa a cada escena.
 3. Configurar secretos fuera del chat/repositorio. Hacer solicitudes mínimas dentro del presupuesto. Registrar hash de petición y task ID. Tras timeout de POST, comprobar estado antes de reenviar.
 4. Resolver voz, música, imágenes, recortes y tiempos. Conservar originales/derivados/hashes. Revisar cada recurso antes de montar. Guardar motivos de rechazo y aprobación.
-5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](skills/milla-video-studio/references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela.
+5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](skills/milla-video-studio/references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela. Contar cada escena larga con `beats` (cita, lista, calendario, cifra, línea de tiempo, barras, imagen) y fijar sus tiempos con `milla.py anchor-beats` desde las palabras reales de la voz (candidato).
 6. Ejecutar `python3 scripts/milla.py validate RUTA/project.json`. `--allow-pending` solo revisa borradores; no convierte pendientes en aprobación. Renderizar storyboard y segmentos críticos antes del completo.
 7. Masterizar y medir con [QA](skills/milla-video-studio/references/quality.md). Ejecutar `python3 scripts/milla.py inspect-video RUTA/video.mp4 --output RUTA/qa.json`. Corregir riesgos concretos, sin ciclos interminables.
 8. Entregar MP4, portada, subtítulos, fuentes y resumen breve de cambios/mediciones/limitaciones. Conservar composición, lockfile, audios separados, manifiesto y estado en destino durable autorizado. No inferir publicación en redes. La portada es un entregable con revisión propia de píxeles: sin texto inventado, logos ni marcas de agua y legible en tamaño pequeño; sus imágenes siguen las reglas 1 y 3.
@@ -822,6 +822,7 @@ No confundir una portada candidata con una portada aprobada. Seleccionar el fram
 | `scene.theme` | `ivory` o `navy`; paleta fija marfil `#F6F0E4`, azul `#172636`, dorado `#D6A72C` |
 | `scene.transition` | `family` implementada y `durationSeconds` de solapamiento entrante |
 | `scene.diagram` | Nodos y aristas nativos exactos, descritos abajo |
+| `scene.beats` | De 1 a 5 planos dibujados con código que entran con la voz; descritos en «Planos dentro de la escena». Excluyen `diagram` y `asset_ids` en esa escena |
 | `subtitleCues` | Opcional; `{start,end,text}` con tiempos medidos sobre la narración final; nunca generados por reparto de palabras |
 | `subtitlesVerified` | Debe ser `true` si existen cues; declaración no sustituye escucha y evidencia |
 | `subtitleCues[].words` | Opcional; `{start,end,text}` absoluto por palabra, obtenido del audio real, mismo texto que el cue |
@@ -901,6 +902,28 @@ Consulta: 4 de octubre de 2026. Documentación oficial; revalidar cambios cuando
 - [Still CLI](https://www.remotion.dev/docs/cli/still): extracción de frames y ejecutable local de navegador.
 - [random](https://www.remotion.dev/docs/random): evitar aleatoriedad no determinista entre procesos.
 - [Licensing](https://www.remotion.dev/docs/licensing) y [licencia/precios](https://www.remotion.dev/license): condiciones por uso; todos los paquetes Remotion deben fijar la misma versión.
+
+## Planos dentro de la escena (`beats`)
+
+Candidato desde la versión 1.3.0 (11/11/2026): probado en validadores, cuadros y un render técnico sin audio; ningún video de MILLA aprobado los usa todavía. Una escena larga no se queda con un título quieto: se cuenta con planos que entran cuando la voz dice su palabra.
+
+Cada plano lleva `at` (segundos absolutos del audio final) y `kind`. El primero puede empezar con la escena; los demás van al menos 18 frames después del anterior y terminan de entrar 12 frames antes del fin de la escena. Al entrar un plano, el anterior sale. Ocupan la zona de imágenes y diagrama (y de 755 a 1355), así que la escena no lleva `diagram` ni `asset_ids`; una imagen se muestra con un plano `image`.
+
+| `kind` | Campos | Para qué |
+|---|---|---|
+| `quote` | `text` (literal, 12 a 150), `highlight` (fragmento literal), `source` | la norma o la tesis, con la frase clave subrayándose |
+| `list` | `items` (2 a 4): `text`, `mark` `yes`/`no`, `at` opcional | qué sí y qué no; requisitos |
+| `calendar` | `days` (2 a 31) o `cells` (`label`, `state` `crossed`/`marked`); `caption` | plazos y cómputos |
+| `figure` | `value` (hasta 6), `caption`, `strike` | monto, artículo o año que cuenta hasta su valor |
+| `timeline` | `milestones` (2 a 4): `date`, `text`, `at` opcional | plazos encadenados |
+| `bars` | `bars` (2 a 4): `label`, `value`, `text`, `at` opcional; `source` | comparar cantidades; la barra mide lo que dice la cifra |
+| `image` | `asset_id` de una imagen registrada, no repetida | cambiar de imagen al cambiar de idea |
+
+Cualquier plano admite `note: {text, at}`: la aclaración que acompaña, debajo. Sin `at`, las piezas entran a ritmo fijo.
+
+**Tiempos desde la voz, no a mano.** Escribir `anchor` (la palabra) en cada plano o pieza y ejecutar `python3 scripts/milla.py anchor-beats RUTA/project.json`: toma el inicio real de esa palabra en `subtitleCues[].words` (exige `wordTimestampsVerified: true`), entra 0.13 s antes y falla si la voz no dice la palabra en ese tramo. No adivina.
+
+Sin partículas ni anillos; solo marfil, azul y dorado; la cita va en serif del sistema. Las mismas reglas viven en `milla.py` y en `manifest-validation.mjs`, y una prueba comprueba que ambos aceptan y rechazan lo mismo.
 
 
 ---
@@ -1096,7 +1119,7 @@ En Claude Code local, `/insights` ayuda a detectar patrones de uso. Sus sugerenc
 
 # Narrativa, ritmo y motion compartidos con Vox Studio
 
-Estado: **candidato** en MILLA. Emi pidió el 11/11/2026 que las mejoras logradas en Vox Studio se apliquen también a los videos de pizarra o motion, y que lo aprendido en un espacio valga para todos salvo su espíritu. Aquí queda qué se adopta y qué no. Ningún video de MILLA se ha producido todavía con estas reglas; la primera producción las confirma o las corrige.
+Estado: **candidato** en MILLA (reglas desde la 1.2.0; planos animados en el compositor desde la 1.3.0). Emi pidió el 11/11/2026 que las mejoras logradas en Vox Studio se apliquen también a los videos de pizarra o motion, y que lo aprendido en un espacio valga para todos salvo su espíritu. Aquí queda qué se adopta y qué no. Ningún video de MILLA se ha producido todavía con estas reglas; la primera producción las confirma o las corrige.
 
 ## Qué se adopta tal cual
 
@@ -1118,4 +1141,9 @@ Reglas de método, sin cambiar el estándar de MILLA (Kie Nano Banana Lite, Fish
 
 ## Qué código existe y dónde
 
-Las piezas animadas (cita subrayada, lista, calendario, cifra, duo, flujo, línea de tiempo, barras, etiquetas, apunte, estilo pizarra) viven en la plantilla de Vox Studio (`skills/vox-studio/plantilla/src/Vox.tsx`) y funcionan con el perfil `milla` de `espacios/milla/`. **No se han portado** a la plantilla de esta skill (`assets/remotion-template`): hacerlo es un cambio mayor del compositor, pendiente de que Emi lo pida. Mientras tanto, un video de pizarra o motion de MILLA puede producirse con Vox Studio en `estilo: "pizarra"` y perfil `milla`, respetando las reglas permanentes de esta skill para imágenes, voz y revisión.
+Hay dos formas de hacer video en este repositorio y las dos tienen ya las piezas animadas:
+
+- **Vox Studio** (collage): `skills/vox-studio/plantilla/src/Vox.tsx`, con `planos` anclados a palabras.
+- **Pizarra estilo motion** (esta skill): `assets/remotion-template/src/MillaVideo.tsx`, con `beats` por escena desde la 1.3.0: cita subrayada, lista, calendario, cifra, línea de tiempo, barras, imagen y nota, más `anchor-beats` para tomar los tiempos de la voz real. Ver [renderizado](skills/milla-video-studio/references/rendering.md#planos-dentro-de-la-escena-beats). El flujo de cajas con flechas ya existía aquí como `diagram`.
+
+No se portaron a la pizarra, porque dependen del estilo de recortes de Vox: el duo de dos recortes, las etiquetas sobre una imagen y el sello de remate. La voz por tramos, las pausas `[pausa]` y la segunda voz son de la herramienta de Vox Studio (ElevenLabs); aquí la voz sigue siendo Fish y su ritmo se logra con puntuación y tomas por tramo.

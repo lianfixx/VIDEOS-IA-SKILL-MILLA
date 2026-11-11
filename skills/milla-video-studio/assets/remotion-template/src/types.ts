@@ -15,7 +15,20 @@ export type Diagram = {
   nodes: Array<{id: string; label: string; x: number; y: number}>;
   edges: Array<{from: string; to: string; label?: string}>;
 };
+/** Plano: lo que se ve dentro de una escena desde el segundo `at` (tomado de la voz real). */
+export type Beat = {
+  at: number; anchor?: string; note?: {text: string; at?: number};
+} & (
+  | {kind: 'quote'; text: string; highlight?: string; source: string}
+  | {kind: 'list'; items: Array<{text: string; mark?: 'yes' | 'no'; at?: number}>}
+  | {kind: 'calendar'; days?: number; cells?: Array<{label: string; state?: 'crossed' | 'marked'}>; caption?: string}
+  | {kind: 'figure'; value: string; caption?: string; strike?: boolean}
+  | {kind: 'timeline'; milestones: Array<{date: string; text: string; at?: number}>}
+  | {kind: 'bars'; bars: Array<{label: string; value: number; text?: string; at?: number}>; source: string}
+  | {kind: 'image'; asset_id: string}
+);
 export type Scene = {
+  beats?: Beat[];
   id: string;
   start: number;
   end: number;

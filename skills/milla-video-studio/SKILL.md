@@ -2,7 +2,7 @@
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -41,7 +41,7 @@ Ejecutar `python3 scripts/milla.py doctor` desde la carpeta de la skill. Comprue
 2. Investigar y escribir guion, mapa de afirmaciones y storyboard. Leer [prompts](references/prompts.md) y [narrativa, ritmo y motion](references/narrative-motion.md) (candidato: lo aprendido en Vox Studio que vale para todos los espacios). Dar función explicativa a cada escena.
 3. Configurar secretos fuera del chat/repositorio. Hacer solicitudes mínimas dentro del presupuesto. Registrar hash de petición y task ID. Tras timeout de POST, comprobar estado antes de reenviar.
 4. Resolver voz, música, imágenes, recortes y tiempos. Conservar originales/derivados/hashes. Revisar cada recurso antes de montar. Guardar motivos de rechazo y aprobación.
-5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela.
+5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela. Contar cada escena larga con `beats` (cita, lista, calendario, cifra, línea de tiempo, barras, imagen) y fijar sus tiempos con `milla.py anchor-beats` desde las palabras reales de la voz (candidato).
 6. Ejecutar `python3 scripts/milla.py validate RUTA/project.json`. `--allow-pending` solo revisa borradores; no convierte pendientes en aprobación. Renderizar storyboard y segmentos críticos antes del completo.
 7. Masterizar y medir con [QA](references/quality.md). Ejecutar `python3 scripts/milla.py inspect-video RUTA/video.mp4 --output RUTA/qa.json`. Corregir riesgos concretos, sin ciclos interminables.
 8. Entregar MP4, portada, subtítulos, fuentes y resumen breve de cambios/mediciones/limitaciones. Conservar composición, lockfile, audios separados, manifiesto y estado en destino durable autorizado. No inferir publicación en redes. La portada es un entregable con revisión propia de píxeles: sin texto inventado, logos ni marcas de agua y legible en tamaño pequeño; sus imágenes siguen las reglas 1 y 3.

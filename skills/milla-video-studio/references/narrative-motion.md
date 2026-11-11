@@ -1,6 +1,6 @@
 # Narrativa, ritmo y motion compartidos con Vox Studio
 
-Estado: **candidato** en MILLA. Emi pidió el 11/11/2026 que las mejoras logradas en Vox Studio se apliquen también a los videos de pizarra o motion, y que lo aprendido en un espacio valga para todos salvo su espíritu. Aquí queda qué se adopta y qué no. Ningún video de MILLA se ha producido todavía con estas reglas; la primera producción las confirma o las corrige.
+Estado: **candidato** en MILLA (reglas desde la 1.2.0; planos animados en el compositor desde la 1.3.0). Emi pidió el 11/11/2026 que las mejoras logradas en Vox Studio se apliquen también a los videos de pizarra o motion, y que lo aprendido en un espacio valga para todos salvo su espíritu. Aquí queda qué se adopta y qué no. Ningún video de MILLA se ha producido todavía con estas reglas; la primera producción las confirma o las corrige.
 
 ## Qué se adopta tal cual
 
@@ -22,4 +22,9 @@ Reglas de método, sin cambiar el estándar de MILLA (Kie Nano Banana Lite, Fish
 
 ## Qué código existe y dónde
 
-Las piezas animadas (cita subrayada, lista, calendario, cifra, duo, flujo, línea de tiempo, barras, etiquetas, apunte, estilo pizarra) viven en la plantilla de Vox Studio (`skills/vox-studio/plantilla/src/Vox.tsx`) y funcionan con el perfil `milla` de `espacios/milla/`. **No se han portado** a la plantilla de esta skill (`assets/remotion-template`): hacerlo es un cambio mayor del compositor, pendiente de que Emi lo pida. Mientras tanto, un video de pizarra o motion de MILLA puede producirse con Vox Studio en `estilo: "pizarra"` y perfil `milla`, respetando las reglas permanentes de esta skill para imágenes, voz y revisión.
+Hay dos formas de hacer video en este repositorio y las dos tienen ya las piezas animadas:
+
+- **Vox Studio** (collage): `skills/vox-studio/plantilla/src/Vox.tsx`, con `planos` anclados a palabras.
+- **Pizarra estilo motion** (esta skill): `assets/remotion-template/src/MillaVideo.tsx`, con `beats` por escena desde la 1.3.0: cita subrayada, lista, calendario, cifra, línea de tiempo, barras, imagen y nota, más `anchor-beats` para tomar los tiempos de la voz real. Ver [renderizado](rendering.md#planos-dentro-de-la-escena-beats). El flujo de cajas con flechas ya existía aquí como `diagram`.
+
+No se portaron a la pizarra, porque dependen del estilo de recortes de Vox: el duo de dos recortes, las etiquetas sobre una imagen y el sello de remate. La voz por tramos, las pausas `[pausa]` y la segunda voz son de la herramienta de Vox Studio (ElevenLabs); aquí la voz sigue siendo Fish y su ritmo se logra con puntuación y tomas por tramo.

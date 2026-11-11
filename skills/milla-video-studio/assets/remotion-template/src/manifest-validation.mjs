@@ -2,6 +2,10 @@
 // file hashes, provenance and human approval; this module cannot replace it.
 export const supportedFamilies = ['wipe', 'push', 'mask', 'depth', 'pan', 'zoom', 'fade'];
 export const frameOf = (seconds, fps = 30) => Math.round(seconds * fps);
+// Planos (beats): lo que se ve dentro de una escena, sincronizado con la voz. Mismas reglas que milla.py.
+export const beatKinds = ['quote', 'list', 'calendar', 'figure', 'timeline', 'bars', 'image'];
+export const BEAT_MIN_GAP = 18; // frames entre planos: menos no da tiempo de leer
+export const BEAT_TAIL = 12;    // frames mínimos antes del fin de la escena
 const fail = (message) => { throw new Error(`MILLA render: ${message}`); };
 const finite = (n) => typeof n === 'number' && Number.isFinite(n);
 const requiredText = (text, limit, label) => {
@@ -84,6 +88,18 @@ export function validateManifest(m) {
       if (asset.sha256) usedImageHashes.add(asset.sha256);
     }
     if (scene.diagram && scene.asset_ids.length && scene.body) fail(`${scene.id}: imagen + diagrama + body exceden las zonas seguras. Separar el body en otra escena o quitarlo.`);
+    if (scene.beats != null) {
+      if (scene.diagram || scene.asset_ids.length) fail(`${scene.id}: los planos (beats) ocupan la zona de imágenes y diagrama; usar beats de tipo image en lugar de asset_ids y quitar diagram.`);
+      validateBeats(scene, start, end, fps, (id) => {
+        const asset = assets.get(id);
+        if (!asset || asset.kind !== 'image') fail(`${scene.id}: ${id} debe ser una imagen registrada.`);
+        if (usedImages.has(id)) fail(`Imagen repetida entre escenas: ${id}.`);
+        if (usedImagePaths.has(asset.path) || (asset.sha256 && usedImageHashes.has(asset.sha256))) fail(`Imagen repetida bajo otro ID: ${id}.`);
+        usedImages.add(id);
+        usedImagePaths.add(asset.path);
+        if (asset.sha256) usedImageHashes.add(asset.sha256);
+      });
+    }
     if (scene.diagram) validateDiagram(scene.diagram, scene.id);
     return {start, end, overlap};
   });
@@ -129,6 +145,89 @@ export function validateManifest(m) {
   }
   if (m.fontAssetId) fail('Esta plantilla base usa fuentes del sistema. Integrar carga bloqueante y verificar métricas antes de habilitar fontAssetId.');
   return {total, scenes};
+}
+
+const optionalText = (text, limit, label) => { if (text != null) requiredText(text, limit, label); };
+
+function validateBeats(scene, start, end, fps, useImage) {
+  const beats = scene.beats;
+  if (!Array.isArray(beats) || !beats.length || beats.length > 5) fail(`${scene.id}: beats requiere 1..5 planos.`);
+  let previous = null;
+  beats.forEach((beat, n) => {
+    const label = `${scene.id}.beats[${n}]`;
+    if (!beat || typeof beat !== 'object' || Array.isArray(beat)) fail(`${label}: se esperaba un objeto.`);
+    if (!beatKinds.includes(beat.kind)) fail(`${label}.kind no implementado: ${beat.kind}.`);
+    if (!finite(beat.at)) fail(`${label}.at: segundos absolutos tomados de la voz real.`);
+    const at = frameOf(beat.at, fps);
+    if (at < start || at > end - BEAT_TAIL) fail(`${label}.at fuera de su escena o a menos de ${BEAT_TAIL} frames del final.`);
+    if (previous != null && at < previous + BEAT_MIN_GAP) fail(`${label}.at: los planos avanzan con al menos ${BEAT_MIN_GAP} frames entre sí.`);
+    previous = at;
+    const next = beats[n + 1];
+    const windowEnd = next && finite(next.at) ? frameOf(next.at, fps) : end;
+    optionalText(beat.anchor, 40, `${label}.anchor`);
+    let last = at;
+    const piece = (value, pieceLabel) => {
+      if (value == null) return;
+      if (!finite(value)) fail(`${pieceLabel}.at inválido.`);
+      const f = frameOf(value, fps);
+      if (f < last || f > windowEnd - 6) fail(`${pieceLabel}.at fuera de su plano o desordenado.`);
+      last = f;
+    };
+    const pieces = (list, min, max, name, each) => {
+      if (!Array.isArray(list) || list.length < min || list.length > max) fail(`${label}.${name} requiere ${min}..${max} elementos.`);
+      list.forEach((item, k) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) fail(`${label}.${name}[${k}]: se esperaba un objeto.`);
+        each(item, `${label}.${name}[${k}]`);
+        piece(item.at, `${label}.${name}[${k}]`);
+      });
+    };
+    if (beat.kind === 'quote') {
+      requiredText(beat.text, 150, `${label}.text`);
+      if (beat.text.trim().length < 12) fail(`${label}.text: cita literal de al menos 12 caracteres.`);
+      requiredText(beat.source, 40, `${label}.source`);
+      if (beat.highlight != null && (typeof beat.highlight !== 'string' || !beat.highlight || !beat.text.includes(beat.highlight))) fail(`${label}.highlight debe ser un fragmento literal de la cita.`);
+    }
+    if (beat.kind === 'list') pieces(beat.items, 2, 4, 'items', (item, l) => {
+      requiredText(item.text, 18, `${l}.text`);
+      if (item.mark != null && !['yes', 'no'].includes(item.mark)) fail(`${l}.mark: usar yes o no.`);
+    });
+    if (beat.kind === 'calendar') {
+      if (beat.cells != null) pieces(beat.cells, 2, 14, 'cells', (cell, l) => {
+        requiredText(cell.label, 3, `${l}.label`);
+        if (cell.state != null && !['crossed', 'marked'].includes(cell.state)) fail(`${l}.state: usar crossed o marked.`);
+        if (cell.at != null) fail(`${l}.at no se admite: el calendario marca sus celdas a ritmo propio.`);
+      });
+      else if (!Number.isInteger(beat.days) || beat.days < 2 || beat.days > 31) fail(`${label}: calendar requiere days (2..31) o cells.`);
+      optionalText(beat.caption, 30, `${label}.caption`);
+    }
+    if (beat.kind === 'figure') {
+      requiredText(beat.value, 6, `${label}.value`);
+      optionalText(beat.caption, 30, `${label}.caption`);
+      if (beat.strike != null && typeof beat.strike !== 'boolean') fail(`${label}.strike debe ser booleano.`);
+    }
+    if (beat.kind === 'timeline') pieces(beat.milestones, 2, 4, 'milestones', (item, l) => {
+      requiredText(item.date, 10, `${l}.date`);
+      requiredText(item.text, 24, `${l}.text`);
+    });
+    if (beat.kind === 'bars') {
+      pieces(beat.bars, 2, 4, 'bars', (item, l) => {
+        requiredText(item.label, 16, `${l}.label`);
+        if (!finite(item.value) || item.value <= 0) fail(`${l}.value debe ser un número mayor que cero.`);
+        optionalText(item.text, 9, `${l}.text`);
+      });
+      requiredText(beat.source, 40, `${label}.source`);
+    }
+    if (beat.kind === 'image') {
+      requiredText(beat.asset_id, 100, `${label}.asset_id`);
+      useImage(beat.asset_id);
+    }
+    if (beat.note != null) {
+      if (typeof beat.note !== 'object' || Array.isArray(beat.note)) fail(`${label}.note: se esperaba un objeto.`);
+      requiredText(beat.note.text, 38, `${label}.note.text`);
+      last = at;
+      piece(beat.note.at, `${label}.note`);
+    }
+  });
 }
 
 function validateDiagram(diagram, sceneId) {

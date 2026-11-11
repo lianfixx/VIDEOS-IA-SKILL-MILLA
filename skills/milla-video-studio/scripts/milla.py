@@ -18,6 +18,10 @@ from urllib.parse import urlparse
 # Keep this set in lockstep with remotion-template/src/manifest-validation.mjs.
 # Aspirational transition names are rejected until the renderer implements them.
 FAMILIES = {"wipe", "push", "mask", "depth", "pan", "zoom", "fade"}
+# Beats (planos): what is shown inside a scene, timed to the real voice. Same rules as manifest-validation.mjs.
+BEAT_KINDS = {"quote", "list", "calendar", "figure", "timeline", "bars", "image"}
+BEAT_MIN_GAP = 18
+BEAT_TAIL = 12
 SHA256 = re.compile(r"^[a-fA-F0-9]{64}$")
 ENV_NAMES = ("KIE_API_KEY", "FISH_API_KEY", "APIFY_TOKEN")
 # ECMAScript WhiteSpace + LineTerminator code points used by trim() and /\s/.
@@ -300,6 +304,132 @@ def validate(data, root, allow_pending=False):
         if qa.get("approved") is not True:
             pending(f"{label}: visual/audio review pending")
 
+    def short_text(value, limit):
+        return isinstance(value, str) and bool(js_trim(value)) and utf16_length(value) <= limit
+
+    def check_beats(scene, label, start_frame, end_frame, use_image):
+        beats = scene.get("beats")
+        if not isinstance(beats, list) or not 1 <= len(beats) <= 5:
+            fail(f"{label}.beats must contain 1..5 beats")
+            return
+        previous = None
+        for n, beat in enumerate(beats):
+            b = f"{label}.beats[{n}]"
+            if not isinstance(beat, dict):
+                fail(f"{b}: expected object")
+                continue
+            kind = beat.get("kind")
+            if kind not in BEAT_KINDS:
+                fail(f"{b}.kind is not implemented")
+                continue
+            at = beat.get("at")
+            if not number(at):
+                fail(f"{b}.at must be absolute seconds taken from the real voice")
+                continue
+            at_frame = frame_of(at)
+            if start_frame is not None and not start_frame <= at_frame <= end_frame - BEAT_TAIL:
+                fail(f"{b}.at is outside its scene or within {BEAT_TAIL} frames of its end")
+            if previous is not None and at_frame < previous + BEAT_MIN_GAP:
+                fail(f"{b}.at: beats must advance at least {BEAT_MIN_GAP} frames apart")
+            previous = at_frame
+            nxt = beats[n + 1] if n + 1 < len(beats) and isinstance(beats[n + 1], dict) else None
+            window_end = frame_of(nxt["at"]) if nxt and number(nxt.get("at")) else end_frame
+            if beat.get("anchor") is not None and not short_text(beat.get("anchor"), 40):
+                fail(f"{b}.anchor must be nonempty text of at most 40 characters when present")
+            last = [at_frame]
+
+            def piece(value, piece_label):
+                if value is None:
+                    return
+                if not number(value):
+                    fail(f"{piece_label}.at is invalid")
+                    return
+                f = frame_of(value)
+                if window_end is not None and (f < last[0] or f > window_end - 6):
+                    fail(f"{piece_label}.at is outside its beat or out of order")
+                last[0] = f
+
+            def pieces(items, low, high, name, each):
+                if not isinstance(items, list) or not low <= len(items) <= high:
+                    fail(f"{b}.{name} must contain {low}..{high} items")
+                    return
+                for k, item in enumerate(items):
+                    il = f"{b}.{name}[{k}]"
+                    if not isinstance(item, dict):
+                        fail(f"{il}: expected object")
+                        continue
+                    each(item, il)
+                    piece(item.get("at"), il)
+
+            if kind == "quote":
+                text = beat.get("text")
+                if not short_text(text, 150) or len(js_trim(text)) < 12:
+                    fail(f"{b}.text must be a literal quote of 12..150 characters")
+                if not short_text(beat.get("source"), 40):
+                    fail(f"{b}.source must say where the quote comes from (at most 40 characters)")
+                mark = beat.get("highlight")
+                if mark is not None and (not isinstance(mark, str) or not mark or not isinstance(text, str) or mark not in text):
+                    fail(f"{b}.highlight must be a literal fragment of the quote")
+            elif kind == "list":
+                def each_item(item, il):
+                    if not short_text(item.get("text"), 18):
+                        fail(f"{il}.text must be nonempty text of at most 18 characters")
+                    if item.get("mark") is not None and item.get("mark") not in ("yes", "no"):
+                        fail(f"{il}.mark must be yes or no")
+                pieces(beat.get("items"), 2, 4, "items", each_item)
+            elif kind == "calendar":
+                if beat.get("cells") is not None:
+                    def each_cell(cell, il):
+                        if not short_text(cell.get("label"), 3):
+                            fail(f"{il}.label must be nonempty text of at most 3 characters")
+                        if cell.get("state") is not None and cell.get("state") not in ("crossed", "marked"):
+                            fail(f"{il}.state must be crossed or marked")
+                        if cell.get("at") is not None:
+                            fail(f"{il}.at is not supported: the calendar marks its cells at its own pace")
+                    pieces(beat.get("cells"), 2, 14, "cells", each_cell)
+                else:
+                    days = beat.get("days")
+                    if not isinstance(days, int) or isinstance(days, bool) or not 2 <= days <= 31:
+                        fail(f"{b}: calendar requires days (2..31) or cells")
+                if beat.get("caption") is not None and not short_text(beat.get("caption"), 30):
+                    fail(f"{b}.caption must be nonempty text of at most 30 characters when present")
+            elif kind == "figure":
+                if not short_text(beat.get("value"), 6):
+                    fail(f"{b}.value must be nonempty text of at most 6 characters")
+                if beat.get("caption") is not None and not short_text(beat.get("caption"), 30):
+                    fail(f"{b}.caption must be nonempty text of at most 30 characters when present")
+                if beat.get("strike") is not None and not isinstance(beat.get("strike"), bool):
+                    fail(f"{b}.strike must be boolean")
+            elif kind == "timeline":
+                def each_milestone(item, il):
+                    if not short_text(item.get("date"), 10):
+                        fail(f"{il}.date must be nonempty text of at most 10 characters")
+                    if not short_text(item.get("text"), 24):
+                        fail(f"{il}.text must be nonempty text of at most 24 characters")
+                pieces(beat.get("milestones"), 2, 4, "milestones", each_milestone)
+            elif kind == "bars":
+                def each_bar(item, il):
+                    if not short_text(item.get("label"), 16):
+                        fail(f"{il}.label must be nonempty text of at most 16 characters")
+                    if not number(item.get("value")) or item.get("value") <= 0:
+                        fail(f"{il}.value must be a number greater than zero")
+                    if item.get("text") is not None and not short_text(item.get("text"), 9):
+                        fail(f"{il}.text must be nonempty text of at most 9 characters when present")
+                pieces(beat.get("bars"), 2, 4, "bars", each_bar)
+                if not short_text(beat.get("source"), 40):
+                    fail(f"{b}.source must say where the figures come from (at most 40 characters)")
+            elif kind == "image":
+                use_image(beat.get("asset_id"), b)
+            note = beat.get("note")
+            if note is not None:
+                if not isinstance(note, dict):
+                    fail(f"{b}.note: expected object")
+                else:
+                    if not short_text(note.get("text"), 38):
+                        fail(f"{b}.note.text must be nonempty text of at most 38 characters")
+                    last[0] = at_frame
+                    piece(note.get("at"), f"{b}.note")
+
     def check_diagram(raw, label):
         if not isinstance(raw, dict):
             fail(f"{label}: expected object")
@@ -407,6 +537,20 @@ def validate(data, root, allow_pending=False):
             check_diagram(diagram, f"{label}.diagram")
         if diagram is not None and refs and scene.get("body") is not None:
             fail(f"{label}: image + diagram + body exceeds the safe layout zones")
+        if scene.get("beats") is not None:
+            if diagram is not None or refs:
+                fail(f"{label}: beats use the image and diagram zone; use image beats instead of asset_ids and remove diagram")
+
+            def use_image(aid, beat_label):
+                if not isinstance(aid, str) or aid not in asset_map:
+                    fail(f"{beat_label}: unknown asset reference")
+                elif asset_map[aid].get("kind") != "image":
+                    fail(f"{beat_label}: beat images must be registered images")
+                elif aid in visual_uses:
+                    fail(f"{beat_label}: image repeated across scenes")
+                else:
+                    visual_uses.add(aid)
+            check_beats(scene, label, start_frame, end_frame, use_image)
         transition = obj(scene.get("transition"), f"{label}.transition")
         family = transition.get("family")
         if not isinstance(family, str) or family not in FAMILIES:
@@ -551,6 +695,51 @@ def validate(data, root, allow_pending=False):
             "errors": errors, "warnings": warnings,
             "profile_adjustments": adjustments,
             "note": "Declarations and technical checks do not replace human viewing/listening or legal review."}
+
+
+def anchor_beats(data):
+    """Set each beat's `at` (and its pieces') from its `anchor` word, using verified word timestamps.
+
+    A beat enters 0.13 s before its word is spoken. The first beat of a scene without anchor starts with the scene.
+    Returns a report; raises ValueError when a word cannot be found, so nothing is guessed.
+    """
+    if data.get("wordTimestampsVerified") is not True:
+        raise ValueError("anchor-beats needs wordTimestampsVerified: true and real word timings in subtitleCues")
+    words = [w for cue in data.get("subtitleCues") or [] for w in (cue.get("words") or [])]
+    key = lambda t: str(t).strip(" \t\n¿¡?!.,;:«»()[]…%\"'“”‘’—-").lower()
+    changed = []
+    for scene in data.get("scenes") or []:
+        cursor = scene["start"]
+
+        def find(anchor, after, limit, label):
+            for w in words:
+                if after - 1e-6 <= w["start"] < limit and key(w["text"]) == key(anchor):
+                    return w
+            raise ValueError(f"{label}: the voice does not say {anchor!r} in that stretch of the scene")
+        beats = scene.get("beats") or []
+        for n, beat in enumerate(beats):
+            label = f"{scene.get('id')}.beats[{n}]"
+            if beat.get("anchor"):
+                w = find(beat["anchor"], cursor, scene["end"], label)
+                beat["at"] = round(max(scene["start"], w["start"] - 0.13), 3)
+                cursor = w["end"]
+                changed.append(label)
+            elif n == 0 and "at" not in beat:
+                beat["at"] = scene["start"]
+        for n, beat in enumerate(beats):
+            limit = beats[n + 1]["at"] if n + 1 < len(beats) and "at" in beats[n + 1] else scene["end"]
+            after = beat.get("at", scene["start"])
+            for name in ("items", "milestones", "bars"):
+                for k, item in enumerate(beat.get(name) or []):
+                    if isinstance(item, dict) and item.get("anchor"):
+                        w = find(item["anchor"], after, limit, f"{scene.get('id')}.beats[{n}].{name}[{k}]")
+                        item["at"] = round(max(beat.get("at", 0), w["start"] - 0.13), 3)
+                        after = w["end"]
+            note = beat.get("note")
+            if isinstance(note, dict) and note.get("anchor"):
+                w = find(note["anchor"], beat.get("at", scene["start"]), limit, f"{scene.get('id')}.beats[{n}].note")
+                note["at"] = round(max(beat.get("at", 0), w["start"] - 0.13), 3)
+    return {"status": "anchored", "beats": changed}
 
 
 def doctor():
@@ -767,6 +956,8 @@ def main(argv=None):
     val = sub.add_parser("validate", help="Validate project.json and local asset hashes")
     val.add_argument("manifest")
     val.add_argument("--allow-pending", action="store_true", help="Missing approvals/resources become draft warnings; policy violations stay errors")
+    anchor = sub.add_parser("anchor-beats", help="Fill each beat's `at` from its `anchor` word using verified word timestamps")
+    anchor.add_argument("manifest")
     scan = sub.add_parser("secret-scan", help="Scan UTF-8 text; print locations/categories, never matched values")
     scan.add_argument("path")
     inspect = sub.add_parser("inspect-video", help="Measure MP4; always requires human review")
@@ -782,6 +973,12 @@ def main(argv=None):
         elif args.command == "validate":
             path = Path(args.manifest).resolve()
             result = validate(json.loads(path.read_text(encoding="utf-8")), path.parent, args.allow_pending)
+        elif args.command == "anchor-beats":
+            path = Path(args.manifest).resolve()
+            data = json.loads(path.read_text(encoding="utf-8"))
+            result = anchor_beats(data)
+            # The manifest is the user's own draft: anchoring rewrites only timing fields, in place.
+            path.write_text(json.dumps(data, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
         elif args.command == "secret-scan":
             result = secret_scan(args.path)
         else:

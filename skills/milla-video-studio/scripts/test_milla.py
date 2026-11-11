@@ -275,6 +275,94 @@ class ProjectTests(unittest.TestCase):
         result = subprocess.run(["node", "--input-type=module", "-e", script], check=True, capture_output=True, text=True)
         self.assertEqual(milla.FAMILIES, set(json.loads(result.stdout)))
 
+    def beat_cases(self):
+        """Second beat of the first scene, valid and invalid; the first beat keeps the scene's image in use."""
+        ok = {
+            "quote": {"kind": "quote", "text": "El patrón deberá pagar el salario.", "highlight": "deberá pagar", "source": "LFT · Art. 101"},
+            "list": {"kind": "list", "items": [{"text": "Tarjeta", "mark": "yes"}, {"text": "Efectivo", "mark": "no", "at": 0.7}]},
+            "calendar-days": {"kind": "calendar", "days": 15, "caption": "días hábiles"},
+            "calendar-cells": {"kind": "calendar", "cells": [{"label": "S", "state": "crossed"}, {"label": "L", "state": "marked"}]},
+            "figure": {"kind": "figure", "value": "$23", "caption": "por hoja", "strike": True},
+            "timeline": {"kind": "timeline", "milestones": [{"date": "5 NOV", "text": "Entra en vigor"}, {"date": "+15", "text": "Sectores"}]},
+            "bars": {"kind": "bars", "source": "SCJN", "bars": [{"label": "A", "value": 23, "text": "$23"}, {"label": "B", "value": 66.5}]},
+            "note": {"kind": "figure", "value": "15", "note": {"text": "días hábiles", "at": 0.75}},
+        }
+        bad = {
+            "unknown-kind": {"kind": "video"},
+            "quote-no-source": {"kind": "quote", "text": "El patrón deberá pagar el salario."},
+            "quote-highlight": {"kind": "quote", "text": "El patrón deberá pagar el salario.", "highlight": "otra cosa", "source": "LFT"},
+            "quote-short": {"kind": "quote", "text": "Corta", "source": "LFT"},
+            "list-one": {"kind": "list", "items": [{"text": "Solo"}]},
+            "list-mark": {"kind": "list", "items": [{"text": "A", "mark": "maybe"}, {"text": "B"}]},
+            "list-piece-out": {"kind": "list", "items": [{"text": "A"}, {"text": "B", "at": 5}]},
+            "calendar-days": {"kind": "calendar", "days": 40},
+            "calendar-cell-at": {"kind": "calendar", "cells": [{"label": "S", "at": 0.7}, {"label": "L"}]},
+            "figure-long": {"kind": "figure", "value": "1234567"},
+            "figure-strike": {"kind": "figure", "value": "1", "strike": "yes"},
+            "timeline-date": {"kind": "timeline", "milestones": [{"text": "a"}, {"date": "x", "text": "b"}]},
+            "bars-zero": {"kind": "bars", "source": "SCJN", "bars": [{"label": "A", "value": 0}, {"label": "B", "value": 2}]},
+            "bars-source": {"kind": "bars", "bars": [{"label": "A", "value": 1}, {"label": "B", "value": 2}]},
+            "note-long": {"kind": "figure", "value": "1", "note": {"text": "x" * 39}},
+            "image-unknown": {"kind": "image", "asset_id": "missing"},
+            "image-repeated": {"kind": "image", "asset_id": "visual1"},
+        }
+        def scene_with(second, at=0.6, **extra):
+            project = copy.deepcopy(self.project)
+            scene = project["scenes"][0]
+            scene["asset_ids"] = []
+            scene["beats"] = [{"at": 0, "kind": "image", "asset_id": "visual0"}, {"at": at, **second}]
+            scene.update(extra)
+            return project
+        cases = [(f"ok:{k}", scene_with(v), True) for k, v in ok.items()]
+        cases += [(f"bad:{k}", scene_with(v), False) for k, v in bad.items()]
+        cases.append(("bad:gap", scene_with(ok["figure"], at=0.3), False))
+        cases.append(("bad:tail", scene_with(ok["figure"], at=1.0), False))
+        cases.append(("bad:with-diagram", scene_with(ok["figure"], diagram={"nodes": [{"id": "a", "label": "A", "x": 50, "y": 50}], "edges": []}), False))
+        with_assets = scene_with(ok["figure"]); with_assets["scenes"][0]["asset_ids"] = ["visual0"]; with_assets["scenes"][0]["beats"] = [{"at": 0, **ok["figure"]}]
+        cases.append(("bad:with-asset-ids", with_assets, False))
+        many = scene_with(ok["figure"]); many["scenes"][0]["beats"] = [{"at": 0, "kind": "image", "asset_id": "visual0"}] + [{"at": 0, **ok["figure"]}] * 5
+        cases.append(("bad:six-beats", many, False))
+        return cases
+
+    def test_beats_follow_the_same_rules_in_python_and_remotion(self):
+        cases = self.beat_cases()
+        python = [not milla.validate(project, self.root)["errors"] for _, project, _ in cases]
+        self.assertEqual([expected for _, _, expected in cases], python, [name for (name, _, e), p in zip(cases, python) if e != p])
+        bundle = self.root / "beats.json"
+        bundle.write_text(json.dumps([project for _, project, _ in cases]), encoding="utf-8")
+        validator = (Path(__file__).parents[1] / "assets" / "remotion-template" / "src" / "manifest-validation.mjs").resolve().as_uri()
+        script = ("import fs from 'node:fs';"
+                  f"import {{beatKinds,validateManifest}} from {json.dumps(validator)};"
+                  f"const all = JSON.parse(fs.readFileSync({json.dumps(str(bundle))}, 'utf8'));"
+                  "console.log(JSON.stringify({kinds: beatKinds, ok: all.map((m) => { try { validateManifest(m); return true; } catch { return false; } })}));")
+        result = json.loads(subprocess.run(["node", "--input-type=module", "-e", script], check=True, capture_output=True, text=True).stdout)
+        self.assertEqual(milla.BEAT_KINDS, set(result["kinds"]))
+        self.assertEqual(python, result["ok"], [name for (name, _, _), p, j in zip(cases, python, result["ok"]) if p != j])
+
+    def test_anchor_beats_takes_times_from_the_real_words(self):
+        project = copy.deepcopy(self.project)
+        scene = project["scenes"][0]
+        scene.update(asset_ids=[], end=4.2)
+        project["scenes"] = [scene]
+        project["output"]["durationSeconds"] = 4.2
+        words = [("Hacienda", 0.2, 0.6), ("tiene", 0.7, 0.9), ("quince", 1.5, 1.9), ("días", 2.0, 2.2), ("hábiles.", 2.3, 2.8)]
+        project["subtitleCues"] = [{"start": 0, "end": 3, "text": "Hacienda tiene quince días hábiles.",
+                                    "words": [{"text": w, "start": a, "end": b} for w, a, b in words]}]
+        scene["beats"] = [{"kind": "image", "asset_id": "visual0"},
+                          {"kind": "calendar", "days": 15, "anchor": "quince", "note": {"text": "días hábiles", "anchor": "hábiles"}}]
+        with self.assertRaises(ValueError):
+            milla.anchor_beats(copy.deepcopy(project))  # sin tiempos de palabra verificados no se ancla nada
+        project["wordTimestampsVerified"] = True
+        report = milla.anchor_beats(project)
+        self.assertEqual("anchored", report["status"])
+        self.assertEqual(0, scene["beats"][0]["at"])
+        self.assertAlmostEqual(1.37, scene["beats"][1]["at"])  # 0.13 s antes de «quince»
+        self.assertAlmostEqual(2.17, scene["beats"][1]["note"]["at"])
+        missing = copy.deepcopy(project)
+        missing["scenes"][0]["beats"][1]["anchor"] = "veinte"
+        with self.assertRaises(ValueError):
+            milla.anchor_beats(missing)
+
     def test_init_never_overwrites(self):
         child = self.root / "new"
         milla.init_project(child, "Draft")

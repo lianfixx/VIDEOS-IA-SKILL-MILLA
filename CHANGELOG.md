@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · MILLA Video Studio 1.3.0: planos animados en el compositor de pizarra
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: «tenemos dos formas de crear videos aquí, por vox y con pizarra estilo motion»; las mejoras debían llegar también a la segunda, que solo había recibido documentación. Sobre la voz del video aprobado: dejarla como está.
+- Cambios: (1) `beats` por escena en el compositor de MILLA: `quote`, `list`, `calendar`, `figure`, `timeline`, `bars`, `image` y `note`, con entrada y salida por plano, en marfil, azul y dorado, sin partículas ni anillos. (2) Las mismas reglas en `milla.py` y `manifest-validation.mjs`. (3) Comando `milla.py anchor-beats`: fija `at` de cada plano y pieza desde la palabra real de la voz (`subtitleCues[].words`, con `wordTimestampsVerified`). (4) Documentación en `references/rendering.md` y `references/narrative-motion.md`; manual regenerado. (5) Lección general: no cambiar la voz de un video aprobado.
+- Archivos: `skills/milla-video-studio/assets/remotion-template/src/{MillaVideo.tsx,types.ts,manifest-validation.mjs}`, `skills/milla-video-studio/assets/remotion-template/test/timeline.test.mjs`, `skills/milla-video-studio/assets/remotion-template/{package.json,package-lock.json}`, `skills/milla-video-studio/scripts/{milla.py,test_milla.py}`, `skills/milla-video-studio/{SKILL.md,references/rendering.md,references/narrative-motion.md}`, `MANUAL_COMPLETO.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas Python de milla-video-studio 45/45 → aprobado; pruebas del compositor 17/17 → aprobado; paridad Python–Remotion sobre 30 manifiestos con planos válidos e inválidos → aprobado; `tsc --noEmit` → aprobado; `check_skill` → aprobado. Ocho cuadros de prueba y un render técnico de 24.4 s sin audio (1080×1920, H.264) revisados por la IA → aprobado técnicamente. Render con voz, música y subtítulos reales, y `anchor-beats` sobre una narración real → no ejecutado: no hay todavía una producción de MILLA con voz aprobada. Aprobación estética de Emi → no ejecutado.
+- Pendiente: primer video real de pizarra con planos; decidir si se portan el duo, las etiquetas y el sello de remate.
+
 ## 2026-11-11 · Vox Studio 0.11.0 y MILLA Video Studio 1.2.0: voz con ritmo, segunda voz, foto real, pizarra, lecciones para todos los espacios y auditoría
 
 - Agente: Claude Code (sesión en la nube), con un subagente revisor independiente para la auditoría
