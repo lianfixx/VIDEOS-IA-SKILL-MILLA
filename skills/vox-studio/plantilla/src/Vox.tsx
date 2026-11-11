@@ -17,6 +17,9 @@ export type Plano = {
   tipo: string; desde: number; dur: number; imagen?: string; texto?: string; resaltar?: string; origen?: string;
   items?: {texto: string; marca: string; desde: number}[]; celdas?: {t: string; estado: string}[]; etiqueta?: string;
   dato?: string; tachar?: boolean; imagenes?: string[]; entre?: string;
+  pasos?: {texto: string; nota?: string; desde: number}[]; hitos?: {fecha: string; texto: string; desde: number}[];
+  barras?: {etiqueta: string; valor: number; texto?: string; desde: number}[];
+  etiquetas?: {texto: string; x: number; y: number; desde: number}[]; apunte?: {texto: string; desde: number};
 };
 export type Escena = {
   planos?: Plano[]; remateEn?: number | null;
@@ -365,11 +368,145 @@ const Duo: React.FC<{p: Plano; c: Colores; t: number; alto: number; ancho: numbe
   );
 };
 
+/** Diagrama de flujo: cada caja cae con su palabra y la flecha se dibuja hacia la siguiente. */
+const Flujo: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: number}> = ({p, c, real, alto, ancho}) => {
+  const {fps} = useVideoConfig();
+  const pasos = p.pasos ?? [];
+  const n = pasos.length;
+  const flecha = 54;
+  const caja = Math.min(132, (alto - 10 - (n - 1) * flecha) / n);
+  const largo = Math.max(...pasos.map((x) => x.texto.length), 4);
+  const tam = Math.min(caja * 0.66, (ancho * 0.62) / (largo * 0.5));
+  return (
+    <div style={{width: ancho - 40, display: 'flex', flexDirection: 'column', alignItems: 'flex-start', paddingLeft: 40}}>
+      {pasos.map((x, m) => {
+        const t = real - x.desde;
+        const ultimo = m === n - 1;
+        const dib = m > 0 ? interpolate(real - (x.desde - 7), [0, 7], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}) : 0;
+        return (
+          <React.Fragment key={m}>
+            {m > 0 && (
+              <svg width={80} height={flecha} viewBox="0 0 80 54" style={{marginLeft: 70}}>
+                <path d="M40 2 L40 44 M40 48 l-15 -17 M40 48 l15 -17" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />
+              </svg>
+            )}
+            <div style={{position: 'relative', height: caja, display: 'flex', alignItems: 'center', ...entrar(m % 2 ? 'desliza-der' : 'sello', t, fps)}}>
+              <div style={{fontFamily: 'Anton', fontSize: tam, lineHeight: 1, letterSpacing: 1, whiteSpace: 'nowrap', padding: `${caja * 0.13}px 34px ${caja * 0.17}px`, color: ultimo ? c.papel : m % 2 ? c.tinta : c.papel, background: ultimo ? c.acento : m % 2 ? '#FFFDF7' : c.tinta, border: `7px solid ${c.tinta}`, boxShadow: `9px 9px 0 ${ultimo ? c.tinta : c.acento}`, transform: `rotate(${m % 2 ? 1.5 : -1.5}deg)`}}>{x.texto}</div>
+              {x.nota && <div style={{marginLeft: 26, width: 300, fontFamily: 'Caveat', fontSize: 50, lineHeight: 0.95, color: c.tinta, transform: 'rotate(-3deg)', clipPath: `inset(-10% ${(1 - interpolate(t, [8, 20], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})) * 100}% -10% 0)`}}>{x.nota}</div>}
+            </div>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Barras que crecen hasta su valor; la mayor va en el color de acento. */
+const Barras: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: number}> = ({p, c, real, alto, ancho}) => {
+  const {fps} = useVideoConfig();
+  const barras = p.barras ?? [];
+  const max = Math.max(...barras.map((x) => x.valor), 1);
+  const fila = Math.min(215, (alto - 70) / Math.max(1, barras.length));
+  const pista = ancho - 300;
+  return (
+    <div style={{width: ancho - 40}}>
+      {barras.map((x, m) => {
+        const t = real - x.desde;
+        const sube = spring({frame: t, fps, config: {damping: 200, stiffness: 70}});
+        const largo = Math.max(14, (x.valor / max) * pista * sube);
+        const visto = x.texto || String(Math.round(x.valor * sube));
+        return (
+          <div key={m} style={{height: fila, ...entrar('desliza-izq', t, fps)}}>
+            <div style={{fontFamily: 'Anton', fontSize: Math.min(56, fila * 0.28), lineHeight: 1.1, letterSpacing: 1, color: c.tinta}}>{x.etiqueta}</div>
+            <div style={{display: 'flex', alignItems: 'center', gap: 18, marginTop: 6}}>
+              <div style={{width: largo, height: fila * 0.4, background: x.valor === max ? c.acento : c.tinta, boxShadow: `7px 7px 0 ${x.valor === max ? c.tinta : c.apoyo}`}} />
+              <div style={{fontFamily: 'Anton', fontSize: fila * 0.4, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'}}>{sube > 0.6 || !x.texto ? visto : ''}</div>
+            </div>
+          </div>
+        );
+      })}
+      <div style={{fontFamily: 'Caveat', fontSize: 42, lineHeight: 1, color: c.tinta, marginTop: 4}}>Fuente: {p.origen}</div>
+    </div>
+  );
+};
+
+/** Línea de tiempo: la línea baja hasta cada hito cuando la voz llega a él. */
+const LineaTiempo: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: number}> = ({p, c, real, alto, ancho}) => {
+  const {fps} = useVideoConfig();
+  const hitos = p.hitos ?? [];
+  const fila = Math.min(192, (alto - 10) / Math.max(1, hitos.length));
+  // La línea avanza de hito en hito: llega a cada uno justo cuando aparece.
+  let avance = 0;
+  hitos.forEach((h, m) => {
+    if (m > 0) avance += interpolate(real, [h.desde - 9, h.desde], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  });
+  return (
+    <div style={{position: 'relative', width: ancho - 40, height: fila * hitos.length}}>
+      <div style={{position: 'absolute', left: 31, top: fila * 0.5, width: 10, height: fila * (hitos.length - 1), background: `${c.tinta}22`}} />
+      <div style={{position: 'absolute', left: 31, top: fila * 0.5, width: 10, height: fila * avance, background: c.tinta}} />
+      {hitos.map((h, m) => {
+        const t = real - h.desde;
+        const salta = spring({frame: t, fps, config: {damping: 11, stiffness: 200, mass: 0.6}});
+        if (t < 0) return null;
+        return (
+          <div key={m} style={{position: 'absolute', left: 0, top: fila * m, height: fila, width: '100%', display: 'flex', alignItems: 'center', gap: 28}}>
+            <div style={{flex: 'none', width: 72, height: 72, borderRadius: '50%', background: m === hitos.length - 1 ? c.acento : c.papel, border: `9px solid ${c.tinta}`, transform: `scale(${salta})`}} />
+            <div style={entrar('desliza-der', t, fps)}>
+              <div style={{display: 'inline-block', fontFamily: 'Anton', fontSize: Math.min(50, fila * 0.3), lineHeight: 1, letterSpacing: 1.5, color: c.papel, background: c.tinta, padding: '5px 16px 7px', transform: 'rotate(-1.5deg)'}}>{h.fecha}</div>
+              <div style={{fontFamily: 'Gelasio', fontWeight: 700, fontSize: Math.min(48, fila * 0.29), lineHeight: 1.12, color: c.tinta, marginTop: 8, maxWidth: ancho - 190}}>{h.texto}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Etiquetas que señalan partes de una imagen: explican a la par, no después. */
+const Etiquetas: React.FC<{p: Plano; c: Colores; real: number}> = ({p, c, real}) => {
+  const {fps} = useVideoConfig();
+  return (
+    <>
+      {(p.etiquetas ?? []).map((x, m) => {
+        const t = real - x.desde;
+        if (t < 0) return null;
+        const izq = x.x > 0.5;
+        const linea = interpolate(t, [0, 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+        return (
+          <div key={m} style={{position: 'absolute', left: `${x.x * 100}%`, top: `${x.y * 100}%`, zIndex: 2}}>
+            <div style={{position: 'absolute', left: -13, top: -13, width: 26, height: 26, borderRadius: '50%', background: c.acento, border: `5px solid ${c.papel}`, outline: `4px solid ${c.tinta}`}} />
+            <div style={{position: 'absolute', top: -3, [izq ? 'right' : 'left']: 16, width: 70 * linea, height: 6, background: c.tinta}} />
+            <div style={{position: 'absolute', top: -34, [izq ? 'right' : 'left']: 84, ...entrar('sello', t - 5, fps)}}>
+              <div style={{fontFamily: 'Anton', fontSize: 42, lineHeight: 1, letterSpacing: 1, whiteSpace: 'nowrap', color: c.papel, background: c.tinta, padding: '8px 18px 10px', border: `5px solid ${c.papel}`, transform: `rotate(${izq ? 2 : -2}deg)`}}>{x.texto}</div>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+};
+
+/** Apunte a mano junto al plano: la aclaración que acompaña, con su flecha. */
+const Apunte: React.FC<{p: Plano; c: Colores; real: number; der: boolean; arriba: number}> = ({p, c, real, der, arriba}) => {
+  const {fps} = useVideoConfig();
+  if (!p.apunte) return null;
+  const t = spring({frame: real - p.apunte.desde, fps, config: {damping: 200, stiffness: 110}});
+  if (real < p.apunte.desde) return null;
+  return (
+    <div style={{position: 'absolute', top: arriba, [der ? 'right' : 'left']: 20, width: 560, transform: `rotate(${der ? -4 : 4}deg)`, zIndex: 3}}>
+      <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
+        <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
+      </svg>
+      <div style={{fontFamily: 'Caveat', fontSize: 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(-10% ${(1 - t) * 100}% -10% 0)`}}>{p.apunte.texto}</div>
+    </div>
+  );
+};
+
 /** Los planos de una escena: cada uno entra con su palabra y el anterior sale de cuadro. Nunca por opacidad. */
 const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: number; arriba: number}> = ({e, c, f, real, indice, arriba}) => {
   const {fps} = useVideoConfig();
   const planos = e.planos ?? [];
-  const alto = (e.nota ? 1150 : 1265) - arriba;
+  const alto = (e.nota || planos.some((x) => x.apunte) ? 1150 : 1265) - arriba;
   const ancho = DER_BAJO - SEGURO.izq;
   const verbos = ['cae', 'desliza-der', 'sello', 'desliza-izq', 'desdobla'];
   return (
@@ -381,7 +518,7 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
         if (t < 0 || s > SALIDA) return null;
         const lado = (indice + j) % 2 ? 1 : -1;
         const sale = s > 0 ? {transform: `translateX(${lado * Math.pow(s / SALIDA, 2) * 1500}px) rotate(${lado * s * 1.6}deg)`} : {};
-        const propio = p.tipo === 'lista' || p.tipo === 'duo'; // sus piezas entran una por una
+        const propio = ['lista', 'duo', 'flujo', 'barras', 'linea'].includes(p.tipo); // sus piezas entran una por una
         const fondo = p.tipo === 'imagen' || p.tipo === 'dato' || p.tipo === 'duo';
         const crece = spring({frame: t + 4, fps, config: {damping: 200, stiffness: 120}});
         return (
@@ -399,6 +536,7 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
                 <div style={{position: 'relative', transform: `translateY(${Math.sin(t / 24) * 5}px) rotate(${((indice + j) % 2 ? 2 : -2) + Math.sin(t / 37 + j) * 0.7}deg)`}}>
                   <Img src={staticFile(p.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: ancho - 60, objectFit: 'contain', filter: recorteCss(c)}} />
                   <Cinta c={c} />
+                  <Etiquetas p={p} c={c} real={real} />
                 </div>
               )}
               {p.tipo === 'cita' && <CitaDoc p={p} c={c} t={t} ancho={ancho} />}
@@ -406,7 +544,11 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
               {p.tipo === 'calendario' && <Calendario p={p} c={c} t={t} alto={alto} ancho={ancho} />}
               {p.tipo === 'dato' && <DatoGrande p={p} c={c} t={t} alto={alto} />}
               {p.tipo === 'duo' && <Duo p={p} c={c} t={t} alto={alto} ancho={ancho} />}
+              {p.tipo === 'flujo' && <Flujo p={p} c={c} real={real} alto={alto} ancho={ancho} />}
+              {p.tipo === 'barras' && <Barras p={p} c={c} real={real} alto={alto} ancho={ancho} />}
+              {p.tipo === 'linea' && <LineaTiempo p={p} c={c} real={real} alto={alto} ancho={ancho} />}
             </div>
+            <Apunte p={p} c={c} real={real} der={(indice + j) % 2 === 0} arriba={alto + 38} />
           </div>
         );
       })}
@@ -605,6 +747,9 @@ export const Vox: React.FC<VideoVox> = (v) => {
               {j > 0 && <Audio src={staticFile(`sfx/${['papel', 'pop', 'deslizar'][j % 3]}.wav`)} from={e.desde + p.desde} volume={0.2} />}
               {p.tipo === 'cita' && p.resaltar && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + p.desde + (j === 0 ? 4 : 12)} volume={0.2} />}
               {p.tipo === 'lista' && (p.items ?? []).map((it, m) => m > 0 && <Audio key={m} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
+              {[...(p.pasos ?? []), ...(p.hitos ?? []), ...(p.barras ?? [])].map((it, m) => m > 0 && <Audio key={`m${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
+              {(p.etiquetas ?? []).map((it, m) => <Audio key={`e${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
+              {p.apunte && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + p.apunte.desde} volume={0.16} />}
             </React.Fragment>
           ))}
         </React.Fragment>

@@ -46,6 +46,11 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 | `calendario` | días que se tachan o celdas marcadas | plazos, cómputos, vigencias |
 | `dato` | cifra que cuenta hasta su valor, con etiqueta y tachado opcional | montos, artículos, años |
 | `duo` | dos recortes con una ficha en medio | disyuntivas y comparaciones |
+| `flujo` | cajas unidas por flechas que se dibujan | quién decide, qué pasa después, causa y efecto |
+| `linea` | línea de tiempo con hitos | plazos encadenados, vigencias, historia de un asunto |
+| `barras` | barras que crecen, con fuente | comparar montos o cantidades |
+
+Añadidos a cualquier plano: `apunte` (nota a mano con flecha) y, en imágenes, `etiquetas` que señalan una parte.
 
 Cada plano entra con la palabra ancla (`en`) en su tiempo real de voz y suena al entrar (papel, pop o deslizar; marcador en las citas). `remate_en` ancla el sello a una palabra.
 

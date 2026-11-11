@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.10.0: narrativa investigada y más motion con código
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: «aprende todo lo que hicimos»; poner más elementos explicando a la par de las imágenes; generar piezas con motion hecho con código; aprender storytelling viral tras investigar, analizar y razonar. Calificó el video aprobado con un 10.
+- Cambios: (1) `skills/vox-studio/NARRATIVA.md`: investigación con fuentes y grado de certeza (señales de Instagram y TikTok, principios de Mayer, Berger y Milkman sobre lo que se comparte, visionado sin sonido, oficio de gancho y bucle, estilo Vox), análisis de por qué funcionó el video aprobado y reglas de guion, imagen y difusión. (2) Planos nuevos dibujados con código: `flujo`, `linea` (línea de tiempo) y `barras`; añadidos a cualquier plano: `apunte` (nota a mano anclada) y `etiquetas` sobre la imagen. (3) Guion: `bucle` (pregunta abierta y escena que la responde) y avisos nuevos (guion sin bucle, gancho sin segundo plano, plano quieto más de 4.5 s). (4) Muestra `productions/castorena/pagos-digitales-v3` con las piezas nuevas, misma voz e imágenes: sin gasto. El video aprobado no se tocó. (5) Seis lecciones nuevas, entre ellas el proceso completo que llevó al video aprobado.
+- Archivos: `skills/vox-studio/{NARRATIVA.md,SKILL.md,CATALOGO.md,TECNICA.md}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/plantilla/guion.ejemplo.json`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 50/50 → aprobado; `tsc --noEmit` → aprobado; `check_skill` → aprobado. Cuadros de prueba de flujo, barras, línea de tiempo, etiquetas y apunte → aprobado. Render de la muestra: 56.09 s, −14.09 LUFS, pico −2.19 dBTP, un aviso de imagen (0.5 % bajo la descripción de TikTok, escena 08) → aprobado técnicamente con ese aviso; tira de 35 cuadros revisada por la IA → aprobado. La línea de tiempo solo se probó en un cuadro, no en un render completo → no ejecutado. Las reglas de narrativa salen de fuentes generales; no hay datos propios de retención ni envíos → no ejecutado. Opinión de Emi sobre la muestra → no ejecutado.
+- Pendiente: que Emi diga si la muestra mejora o no al video aprobado; medir retención y envíos al publicar; referencias de X que mencionó; probar las piezas en Anton.
+
 ## 2026-11-11 · Vox Studio 0.9.1: primer video aprobado (Castorena)
 
 - Agente: Claude Code (sesión en la nube)

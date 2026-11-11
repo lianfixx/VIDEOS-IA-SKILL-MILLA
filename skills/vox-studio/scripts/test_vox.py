@@ -302,9 +302,11 @@ class Oficio(unittest.TestCase):
         self.assertIn("anchoLinea(l, fuente, m.ancho)", tsx)  # el titular se mide con el ancho real de las letras
         self.assertIn("tildeAlta(p, fuente)", tsx)  # el resaltador sube para cubrir la tilde de la mayúscula
         self.assertIn("kicker && tildeAlta(", tsx)  # la etiqueta no tapa la tilde de la primera línea
-        for pieza in ("const Planos", "const CitaDoc", "const Lista", "const Calendario", "const DatoGrande", "const Duo"):
+        for pieza in ("const Planos", "const CitaDoc", "const Lista", "const Calendario", "const DatoGrande", "const Duo",
+                      "const Flujo", "const Barras", "const LineaTiempo", "const Etiquetas", "const Apunte"):
             self.assertIn(pieza, tsx)  # cada tipo de plano del guion tiene su componente
-        self.assertEqual(set(vox.PLANOS), {"imagen", "cita", "lista", "calendario", "dato", "duo"})
+        for tipo in vox.PLANOS:
+            self.assertIn(f"p.tipo === '{tipo}'", tsx)  # ningún tipo validado se queda sin dibujar
 
 
 class ImagenAuditada(unittest.TestCase):
@@ -400,6 +402,47 @@ class Tiempos(unittest.TestCase):
         self.assertIn("remate_en", errores([{"tipo": "dato", "dato": "1"}], remate="ZAS", sonido="boom", remate_en="nueve"))
         self.assertEqual(vox.imagenes_de({"imagen_archivo": "img/a.png", "planos": [{"imagen_archivo": "img/a.png"}, {"imagenes": ["img/b.png", "img/c.png"]}]}),
                          ["img/a.png", "img/b.png", "img/c.png"])
+
+    def test_motion_con_codigo_y_explicacion_a_la_par(self):
+        g = guion(); e = g["escenas"][1]
+        e["narracion"] = "La ley manda, Hacienda decide y tú pagas veinte pesos por cada copia simple."
+        e["planos"] = [
+            {"tipo": "flujo", "pasos": [{"texto": "La ley"}, {"texto": "Hacienda", "en": "Hacienda", "nota": "decide después"}, {"texto": "Tú", "en": "tú"}]},
+            {"en": "veinte", "tipo": "barras", "origen": "Fuente de prueba", "barras": [{"etiqueta": "Copia", "valor": 20, "texto": "$20"}, {"etiqueta": "Costo real", "valor": 2}],
+             "apunte": {"texto": "diez veces más", "en": "copia"}},
+        ]
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g, paso=0.4)
+        esc = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])["escenas"][1]
+        flujo, barras = esc["planos"]
+        self.assertEqual([x["texto"] for x in flujo["pasos"]], ["LA LEY", "HACIENDA", "TÚ"])
+        tiempos = [x["desde"] for x in flujo["pasos"]]
+        self.assertEqual(tiempos, sorted(tiempos))
+        k = [w["t"] for w in palabras].index("Hacienda")
+        self.assertEqual(flujo["pasos"][1]["desde"], round(palabras[k]["a"] * vox.FPS) - esc["desde"] - 4)
+        self.assertGreater(barras["apunte"]["desde"], barras["desde"])
+        self.assertEqual(barras["origen"], "Fuente de prueba")
+        def errores(plano):
+            g2 = guion(); g2["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=[plano])
+            return " | ".join(vox.validar_guion(g2))
+        self.assertIn("origen", errores({"tipo": "barras", "barras": [{"etiqueta": "a", "valor": 1}, {"etiqueta": "b", "valor": 2}]}))
+        self.assertIn("valor", errores({"tipo": "barras", "origen": "x y z", "barras": [{"etiqueta": "a", "valor": 0}, {"etiqueta": "b", "valor": 2}]}))
+        self.assertIn("de 2 a 4", errores({"tipo": "flujo", "pasos": [{"texto": "solo"}]}))
+        self.assertIn("fecha", errores({"tipo": "linea", "hitos": [{"texto": "a"}, {"texto": "b"}]}))
+        self.assertIn("solo va en planos de imagen", errores({"tipo": "dato", "dato": "1", "etiquetas": [{"texto": "a", "x": 0.5, "y": 0.5}]}))
+        self.assertIn("entre 0 y 1", errores({"tipo": "imagen", "imagen_archivo": "img/a.png", "etiquetas": [{"texto": "a", "x": 2, "y": 0.5}]}))
+        self.assertIn("apunte", errores({"tipo": "dato", "dato": "1", "apunte": {"texto": "x" * 60}}))
+
+    def test_bucle_abierto(self):
+        g = guion()
+        self.assertIn("falta `bucle`", " | ".join(vox.avisos_guion(g)))
+        g["bucle"] = {"pregunta": "¿Quién decide los sectores?", "cierra": g["escenas"][1]["id"]}
+        self.assertEqual(vox.validar_guion(g), [])
+        self.assertNotIn("falta `bucle`", " | ".join(vox.avisos_guion(g)))
+        g["bucle"]["cierra"] = g["escenas"][0]["id"]
+        self.assertIn("bucle.cierra", " | ".join(vox.validar_guion(g)))
+        g["bucle"] = {"pregunta": "corta", "cierra": "no-existe"}
+        self.assertIn("bucle:", " | ".join(vox.validar_guion(g)))
 
     def test_aviso_de_imagen_quieta(self):
         g = guion(); g["escenas"][1]["narracion"] = "Una frase de trece palabras que se queda mirando un solo recorte muy quieto."

@@ -71,7 +71,9 @@ COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
 ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lento
 LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
 # Planos: lo que se ve dentro de una escena. Cada uno entra cuando la voz dice su palabra ancla (`en`).
-PLANOS = ("imagen", "cita", "lista", "calendario", "dato", "duo")
+PLANOS = ("imagen", "cita", "lista", "calendario", "dato", "duo", "flujo", "barras", "linea")
+PLANO_VIVO = {"cita", "lista", "calendario", "flujo", "barras", "linea"}  # se mueven solos mientras duran
+PLANO_QUIETO = 4.5  # segundos; un recorte o una cifra sin nada nuevo se siente detenido
 MAX_PLANOS = 5
 MIN_PLANO = 18  # frames; con menos no da tiempo de leerlo
 
@@ -215,6 +217,54 @@ def validar_planos(s: dict, p: str) -> list[str]:
                 e.append(f"{q}: dato de 1 a {LIMITES['dato']} caracteres")
             if len(str(pl.get("etiqueta", ""))) > 30:
                 e.append(f"{q}: etiqueta de hasta 30 caracteres")
+        def piezas(nombre: str, campo: str, minimo: int, maximo: int, tope: int) -> list[dict]:
+            """Lista de piezas (pasos, hitos, barras, etiquetas) con texto corto y ancla opcional, en orden."""
+            xs = pl.get(nombre)
+            if not isinstance(xs, list) or not minimo <= len(xs) <= maximo or not all(isinstance(x, dict) for x in xs):
+                e.append(f"{q}: `{nombre}` lleva de {minimo} a {maximo} objetos")
+                return []
+            ipos = pos
+            for x in xs:
+                if not 1 <= len(str(x.get(campo, ""))) <= tope:
+                    e.append(f"{q}: cada elemento de `{nombre}` lleva `{campo}` de hasta {tope} caracteres")
+                if x.get("en"):
+                    k = buscar_ancla(narr, x["en"], max(0, ipos - 1))
+                    if k < 0:
+                        e.append(f"{q}: `{nombre}` pide una palabra que la narración no dice después ({x['en']!r})")
+                    else:
+                        ipos = k + 1
+            return xs
+        if tipo == "flujo":
+            for x in piezas("pasos", "texto", 2, 4, 14):
+                if len(str(x.get("nota", ""))) > 22:
+                    e.append(f"{q}: la nota de un paso lleva hasta 22 caracteres")
+        if tipo == "linea":
+            for x in piezas("hitos", "texto", 2, 4, 24):
+                if not 1 <= len(str(x.get("fecha", ""))) <= 10:
+                    e.append(f"{q}: cada hito lleva `fecha` de hasta 10 caracteres")
+        if tipo == "barras":
+            for x in piezas("barras", "etiqueta", 2, 4, 16):
+                v = x.get("valor")
+                if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
+                    e.append(f"{q}: cada barra lleva `valor` numérico mayor que cero")
+                if len(str(x.get("texto", ""))) > 9:
+                    e.append(f"{q}: el texto de una barra lleva hasta 9 caracteres")
+            if not 3 <= len(str(pl.get("origen", ""))) <= 40:
+                e.append(f"{q}: una gráfica exige `origen` (de dónde salen las cifras), de hasta 40 caracteres")
+        if pl.get("etiquetas") is not None:
+            if tipo != "imagen":
+                e.append(f"{q}: `etiquetas` solo va en planos de imagen")
+            for x in piezas("etiquetas", "texto", 1, 3, 16):
+                if not all(isinstance(x.get(c), (int, float)) and not isinstance(x.get(c), bool) and 0 <= x[c] <= 1 for c in ("x", "y")):
+                    e.append(f"{q}: cada etiqueta lleva `x` e `y` entre 0 y 1 (dónde señala dentro de la imagen)")
+        ap = pl.get("apunte")
+        if ap is not None:
+            if not isinstance(ap, dict) or not 1 <= len(str(ap.get("texto", ""))) <= LIMITES["nota"]:
+                e.append(f"{q}: `apunte` lleva `texto` de hasta {LIMITES['nota']} caracteres")
+            elif ap.get("en") and buscar_ancla(narr, ap["en"], max(0, pos - 1)) < 0:
+                e.append(f"{q}: el apunte pide una palabra que la narración no dice después ({ap['en']!r})")
+            if s.get("nota"):
+                e.append(f"{q}: la escena ya lleva `nota`; usa una u otra, no las dos")
         if tipo == "duo":
             imgs = pl.get("imagenes")
             if not isinstance(imgs, list) or len(imgs) != 2 or not all(isinstance(x, str) and x and ruta_segura(x) for x in imgs):
@@ -268,6 +318,34 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
             n.update(dato=str(pl["dato"]), etiqueta=str(pl.get("etiqueta", "")), tachar=bool(pl.get("tachar", False)))
         elif pl["tipo"] == "duo":
             n.update(imagenes=list(pl["imagenes"]), entre=str(pl.get("entre", "")).upper())
+
+        def con_tiempo(xs: list[dict], campos: tuple, paso: int, mayus: tuple = ()) -> list[dict]:
+            """Cada pieza entra con su ancla (tiempo real) o, sin ancla, a ritmo fijo tras la anterior."""
+            hechos, ipos = [], pos
+            for m, x in enumerate(xs):
+                t = en + 8 + paso * m
+                if x.get("en"):
+                    k = buscar_ancla(narr, x["en"], max(0, ipos - 1))
+                    if k >= 0:
+                        ipos, t = k + 1, max(cuadro(k), en + 4)
+                if hechos:
+                    t = max(t, hechos[-1]["desde"] + 6)
+                d = {c: (str(x.get(c, "")).upper() if c in mayus else x.get(c, "")) for c in campos}
+                hechos.append({**d, "desde": t})
+            return hechos
+        if pl["tipo"] == "flujo":
+            n["pasos"] = con_tiempo(pl["pasos"], ("texto", "nota"), 14, ("texto",))
+        elif pl["tipo"] == "linea":
+            n["hitos"] = con_tiempo(pl["hitos"], ("fecha", "texto"), 16, ("fecha",))
+        elif pl["tipo"] == "barras":
+            n["barras"] = con_tiempo(pl["barras"], ("etiqueta", "valor", "texto"), 10, ("etiqueta",))
+            n["origen"] = str(pl["origen"])
+        if pl.get("etiquetas"):
+            n["etiquetas"] = con_tiempo(pl["etiquetas"], ("texto", "x", "y"), 12, ("texto",))
+        if pl.get("apunte"):
+            n["apunte"] = con_tiempo([pl["apunte"]], ("texto",), 0)[0]
+            if not pl["apunte"].get("en"):
+                n["apunte"]["desde"] = en + 22
         out.append(n)
     for j, n in enumerate(out):
         n["dur"] = (out[j + 1]["desde"] if j + 1 < len(out) else dur) - n["desde"]
@@ -331,6 +409,13 @@ def validar_guion(g: dict) -> list[str]:
         e.append("musica 'ninguna' exige musica.motivo")
     if not isinstance(g.get("cierre", ""), str) or len(g.get("cierre", "")) > 16:
         e.append("cierre: texto de hasta 16 caracteres (sustituye al llamado del espacio solo en este video)")
+    bucle = g.get("bucle")
+    if bucle is not None:
+        ids = [x.get("id") for x in (g.get("escenas") or []) if isinstance(x, dict)]
+        if not isinstance(bucle, dict) or len(str(bucle.get("pregunta", ""))) < 8 or bucle.get("cierra") not in ids:
+            e.append("bucle: lleva `pregunta` (lo que el gancho deja abierto) y `cierra` (id de la escena que lo responde)")
+        elif ids.index(bucle["cierra"]) < 1 or ids.index(bucle["cierra"]) > len(ids) - 2:
+            e.append("bucle.cierra: la respuesta llega después del gancho y antes de la pregunta final")
     port = g.get("portada") or {}
     if len(str(port.get("texto", ""))) > 34 or len(partir(str(port.get("texto", "")))) > 3:
         e.append("portada.texto: máximo 34 caracteres y 3 líneas")
@@ -407,6 +492,10 @@ def avisos_guion(g: dict) -> list[str]:
         return a
     if cuenta[0] > 14:
         a.append(f"el gancho tiene {cuenta[0]} palabras; con 14 o menos detiene mejor el scroll")
+    if not g.get("bucle"):
+        a.append("falta `bucle`: escribe qué pregunta deja abierta el gancho y en qué escena se responde (NARRATIVA.md)")
+    if cuenta[0] > 6 and len(escenas[0].get("planos") or []) < 2:
+        a.append("el gancho se queda con una sola imagen: dale un segundo plano para que algo cambie en los primeros 2 s")
     total = sum(cuenta)
     if total < 55:
         a.append(f"{total} palabras en total (~{total / 2.7:.0f} s): muy corto para desarrollar una idea")
@@ -1081,6 +1170,10 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
     for e in video["escenas"]:  # ritmo real, medido en la voz
+        for j, pl in enumerate(e.get("planos") or []):
+            extra = len(pl.get("etiquetas") or []) + (1 if pl.get("apunte") else 0)
+            if pl["tipo"] not in PLANO_VIVO and not extra and pl["dur"] / FPS > PLANO_QUIETO and not (j == len(e["planos"]) - 1 and e is video["escenas"][-1]):
+                print(f"⚠ escena {e['id']}, plano {j + 1} ({pl['tipo']}): {pl['dur'] / FPS:.1f} s sin nada nuevo; añade otro plano, un apunte o etiquetas")
         if e["dur"] / FPS > ESCENA_LARGA and len(e.get("planos") or []) < 2:
             print(f"⚠ la escena {e['id']} dura {e['dur'] / FPS:.1f} s: divídela o acepta el pulso automático a media escena")
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)

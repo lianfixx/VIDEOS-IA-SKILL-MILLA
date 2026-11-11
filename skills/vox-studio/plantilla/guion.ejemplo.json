@@ -3,6 +3,10 @@
   "titulo": "Título interno del video",
   "opinion_emi": "Lo que Emi piensa del tema, en sus palabras. Se le pregunta antes de escribir.",
   "cta_pregunta": "¿Tú de qué lado estás?",
+  "bucle": {
+    "pregunta": "La duda que el gancho deja abierta.",
+    "cierra": "02"
+  },
   "musica": {
     "animo": "tension"
   },

@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.9.1"
+  version: "0.10.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -20,6 +20,7 @@ Cada marca vive en [su carpeta](../../espacios/README.md) y no se mezcla: `espac
 1. Leer lo aprendido: `$V aprendizajes --espacio E`. Son reglas vigentes, no sugerencias.
 2. Preguntar a Emi, en cada video y sea cual sea el tema: **¿cuál es tu postura?**, qué quiere criticar o defender y qué chiste o referencia le gustaría. Se guarda en `opinion_emi`; el validador rechaza un guion sin ella.
 3. Investigar el tema en fuentes verificables y poner la fuente en pantalla (`fuente`) junto a cada dato.
+4. Leer [NARRATIVA.md](NARRATIVA.md): qué hace que un video se vea completo y se comparta, con sus fuentes, y las reglas de guion e imagen que salen de ahí. Declarar en el guion el `bucle` (qué pregunta deja abierta el gancho y qué escena la responde).
 
 ## Voz del guion
 
@@ -37,8 +38,13 @@ Una escena con un solo recorte quieto no cuenta nada: Emi lo rechazó en el prim
 - `calendario`: `dias` que se tachan uno a uno, o `celdas` propias (`t`, `estado: tachado | marcado`) para plazos y cómputos.
 - `dato`: cifra que cuenta hasta su valor, con `etiqueta` y, si se pide, `tachar`.
 - `duo`: dos recortes frente a frente con una ficha en medio (`entre`: O, VS, +).
+- `flujo`: de 2 a 4 `pasos` en cajas unidas por flechas que se dibujan (quién decide, qué sigue), con `nota` a mano opcional.
+- `linea`: línea de tiempo de 2 a 4 `hitos` (`fecha`, `texto`); la línea baja hasta cada uno cuando la voz llega.
+- `barras`: de 2 a 4 barras que crecen hasta su `valor`; exige `origen` de las cifras.
 
-Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
+Cualquier plano puede llevar además un `apunte` (aclaración a mano con flecha, anclada a una palabra) y los de imagen, `etiquetas` que señalan una parte (`x`, `y` de 0 a 1). Así la explicación va a la par de lo que se ve, no después. Motion hecho con código primero: si un diagrama explica mejor que una foto, se dibuja.
+
+Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen, del gancho sin segundo plano y del guion sin `bucle`; `armar` avisa de cualquier plano quieto más de 4.5 s en la voz real. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
 
 ## Música, efectos y remates (siempre)
 
