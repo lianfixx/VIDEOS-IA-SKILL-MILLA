@@ -38,7 +38,7 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 | 1188–1250 | nota manuscrita con flecha |
 | 1320–1440 | subtítulos; al terminar la voz, el cierre |
 
-**Titular en bloque.** El texto se parte en líneas de hasta 11 caracteres (máximo 3). Cada línea crece hasta llenar 870 px: `tamaño = 870 / (letras × ancho_medio)`, con `ancho_medio` 0.47 para Anton y 0.64 para Gelasio, tope por línea y sin que una línea supere 1.7 veces a la menor. Una palabra de hasta 16 letras siempre cabe.
+**Titular en bloque.** El texto se parte en líneas de hasta 11 caracteres (máximo 3). Cada línea crece hasta llenar 870 px: `tamaño = 870 / (letras × ancho_medio)`, con `ancho_medio` 0.47 para Anton y 0.64 para Gelasio, tope por línea y sin que una línea supere 1.7 veces a la menor. Una palabra de hasta 16 letras siempre cabe. El resaltado es una caja del color de acento con la palabra en color papel; si la palabra lleva mayúscula con tilde o Ñ, la caja sube 0.13 del tamaño de letra para cubrirla, y cada línea se pinta encima de la siguiente.
 
 **Cámara.** Las escenas viven en un lienzo continuo, separadas 2400 px en vertical y ±620 px en horizontal, con giros de −3°, 2.5°, −2° y 3.5°. En `viaje` la cámara se mueve con un resorte (amortiguación 26, rigidez 140), sale 9 frames antes del corte y retrocede un 14 % a mitad del trayecto. Dentro de cada escena hay una deriva de zoom de 1.00 a 1.05 que se funde con la de la escena anterior para que no haya salto.
 

@@ -140,15 +140,16 @@ const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({
         const verbo = j === 0 ? e.entrada : verbos[(indice + j) % verbos.length];
         const temblor = `rotate(${(azar(indice * 7 + j) - 0.5) * 1.2}deg)`; // inclinación fija por línea; no vibra
         return (
-          <div key={j} style={{...entrar(verbo, f - 3 - j * 4, fps), height: tam * 1.06}}>
+          <div key={j} style={{...entrar(verbo, f - 3 - j * 4, fps), height: tam * 1.06, position: 'relative', zIndex: lineas.length - j}}>{/* la línea de arriba queda encima del resaltado de la de abajo */}
             <div style={{transform: temblor, fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: tam, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', letterSpacing: espacio}}>
               {linea.split(' ').map((p, k) => {
                 const marca = !!e.resaltar && sinSignos(p) === sinSignos(e.resaltar);
                 const trazo = spring({frame: f - 16 - j * 4, fps, config: {damping: 200, stiffness: 140}});
                 return (
                   <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * 0.22}}>
+                    {/* Una mayúscula con tilde sobresale de la caja y, en color papel, se perdía: ahí la caja sube. */}
                     {marca && (
-                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
+                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: /[ÁÉÍÓÚÜÑ]/.test(p) ? -tam * 0.13 : fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
                     )}
                     <span style={{position: 'relative'}}>{p}</span>
                     {marca && <span style={{position: 'absolute', left: 0, top: 0, color: c.papel, clipPath: `inset(-20% ${(1 - trazo) * 100}% -20% 0)`}}>{p}</span>}
