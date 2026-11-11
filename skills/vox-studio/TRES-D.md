@@ -1,76 +1,103 @@
-# 3D, sombreadores, Blender y ComfyUI: cuándo sí y cuándo no
+# 3D, sombreadores, Blender y ComfyUI: el momento exacto de cada uno
 
-Cuatro recursos disponibles por decisión de Emi (11/11/2026). Ninguno es el estilo: son acentos. Se usan cuando explican algo mejor que un recorte plano, y cada uso se justifica por escrito (`porque`). Si la frase no sale, no se usa.
+Emi pidió tener estos recursos «cuando sea necesario, para eso hay que razonar» (11/11/2026). El primer demo los metió en cuatro de cinco escenas y a Emi **le gustó menos** que el anterior. Esta guía existe para que eso no vuelva a pasar.
 
-## Primero la pregunta, después la herramienta
+## El principio
 
-| Lo que la escena necesita mostrar | Recurso | Costo |
+Lo que hace que estos videos se vean hechos por una persona es el **recorte ilustrado**: tiene trazo, carácter y humor. Un objeto 3D es más limpio y más frío. Cada vez que un 3D ocupa el lugar de un recorte, el video pierde algo de eso.
+
+Por eso la respuesta por defecto es **no**. Lo normal es un video sin ninguno de estos recursos; a veces uno; nunca más de uno salvo que Emi lo pida. Y cuando se usa, es porque en ese segundo exacto **el movimiento es la idea**: algo que crece, que se acumula o que gira dice lo que la narración está diciendo, y un dibujo quieto no podría.
+
+## Las cinco preguntas (en orden; al primer «no», recorte)
+
+1. **¿Qué dice la voz en esa escena?** Solo hay tres cosas que el 3D explica mejor: una **comparación de cantidades**, una **acumulación** y un **objeto real que hay que ver por todos lados**. Si la frase habla de otra cosa (una persona, una emoción, una crítica, un chiste), va recorte.
+2. **¿El movimiento es la idea?** Las barras suben *mientras* se dice «el triple»; las monedas se apilan *mientras* se dice «cada mes se suma». Si el objeto podría estar quieto y decir lo mismo, va recorte.
+3. **¿Qué se pierde?** Si esa escena carga el humor, la crítica o la postura de Emi, se pierde demasiado: va recorte.
+4. **¿Es el mejor momento del video para gastarlo?** Hay un solo 3D por video. Va donde el argumento depende de una magnitud, casi siempre la escena de `dato` o de `prueba`. Si hay dos candidatas, se queda la que más explica y la otra vuelve a recorte o a `dato`.
+5. **¿Emi lo vio y lo eligió?** Antes de rendir el video se le enseña la escena de las dos formas (`comparar`, abajo). Si duda, gana la versión plana.
+
+La respuesta a las preguntas 1 y 2 es el `porque` que el guion exige. Un `porque` que no menciona lo que dice la voz («se ve más dinámico», «llama la atención») no es una razón.
+
+## El momento de cada recurso
+
+| Recurso | Va cuando… | En qué escena | No va cuando… | En su lugar |
+|---|---|---|---|---|
+| **Barras 3D** | la voz compara 2 a 5 cantidades reales de la misma unidad y lo que importa es **la diferencia** | `dato`, `prueba` | hay una sola cifra; las cantidades se parecen (la mayor no llega a 1.3 veces la menor); no hay fuente | `dato` (la cifra en recuadro) |
+| **Monedas 3D** | la voz describe dinero que **se acumula o se suma** y apilarlo es la idea | `dato`, `prueba`, `giro` | el dinero es solo el tema («es caro», «cobran de más») | recorte ilustrado (billete, cartera, mano) |
+| **Globo 3D** | la idea es **«en todas partes»** y que gire lo dice | `contexto`, `dato` | se habla de un país o una ciudad concretos | recorte de mapa o de lugar |
+| **Caja 3D** | casi nunca: solo si «un paquete cerrado» es la idea y no hay recorte que lo diga | `contexto`, `giro` | se puede ilustrar el producto real | recorte del producto |
+| **Semitono / duotono** | hay una **foto real** (persona, documento, hecho) que debe convivir con el papel | cualquiera | la imagen es una ilustración: ya está en estilo y la trama la ensucia | la imagen tal cual |
+| **Blender, modelo propio** | Emi tiene el modelo de un **objeto real** y verlo girar enseña algo que una foto no | `contexto`, `dato`, `prueba`, `giro` | solo adornaría; no hay modelo de Emi | foto real o recorte |
+| **Blender, texto con volumen** | una cifra o palabra es el tema entero del video y Emi lo pide para la portada o el gancho | `gancho` | en cualquier otro caso: el titular y `dato` ya hacen ese trabajo y están en estilo | titular o `dato` |
+| **Blender, acabado real** | espacios de foto (Castorena, PAN) y un objeto serio que debe verse verdadero | las de arriba | espacios de ilustración (personal, MILLA): rompe la unidad | acabado plano o recorte |
+| **ComfyUI** | hace falta el mismo personaje o un estilo entrenado que Kie no conserva, y Emi tiene servidor | — | Kie lo resuelve | `imagen` (Kie) |
+
+**Nunca**, sea cual sea el recurso: en la escena de `opinion` ni en la de `cierre`. Ese momento es de Emi, no de un objeto. Y los objetos del compositor tampoco en el `gancho`: el primer cuadro necesita un sujeto con carácter.
+
+**Por espacio.** `personal` y `milla`: barras o monedas cuando el dato lo pide; fotos reales con semitono. `castorena`: sobrio; si acaso barras o un duotono, y Blender real solo con un objeto del despacho; nada que salte o gire de adorno. `pan`: barras para cifras públicas con fuente; duotono para fotos de archivo.
+
+## Ejemplos razonados
+
+| La voz dice | Decisión | Por qué |
 |---|---|---|
-| Un sujeto, una persona, un objeto con carácter | Recorte de imagen (`imagen`, Kie) | 4 a 5.5 créditos |
-| Una cifra sola | `dato` (recuadro) | nada |
-| Cantidades que se comparan (2 a 5 valores reales) | `objeto3d: barras` | nada; unos segundos de horno |
-| Dinero, acumulación, «se junta» | `objeto3d: monedas` o `moneda` | nada |
-| Un paquete, un producto genérico, «lo que hay dentro» | `objeto3d: caja` | nada |
-| Alcance mundial o territorial | `objeto3d: globo` | nada |
-| Una foto real que debe convivir con el papel | `tratamiento: semitono` o `duotono` | nada |
-| Un objeto que necesita luz y material de verdad, texto con volumen, o un modelo 3D que Emi tiene | `blender` | minutos de CPU |
-| Una imagen que Kie no puede dar (estilo entrenado, control fino de composición) y Emi tiene servidor | `comfy` | el del servidor de Emi |
+| «Un juicio laboral tarda hoy 3 años; en 2019 tardaba 1.» | Barras `[1, 3]` | Dos cantidades, misma unidad, la diferencia es el punto. La barra crece cuando se oye «3 años». |
+| «El 73 % nunca reclama.» | `dato` «73 %» | Una sola cifra: no hay nada que comparar. |
+| «Cada quincena te descuentan 200. En un año son casi 5 mil.» | Monedas | La idea es la suma que crece; la pila sube con la frase. |
+| «Los abogados cobran carísimo.» | Recorte | El dinero es el tema, no un proceso. Un recorte con carácter (y chiste) dice más. |
+| «Esto pasa en todo el mundo.» | Globo, si es el contexto del video | Girar dice «en todas partes». |
+| «En México pasa esto.» | Recorte | Un lugar concreto: el globo girando no añade nada. |
+| «Yo creo que esto es un abuso.» | Recorte, siempre | Es la opinión de Emi. |
+| Foto real de una sesión del Congreso | Semitono | Es fotográfica y debe convivir con el papel. |
+| Ilustración de un mazo generada con Kie | Sin tratamiento | Ya está en estilo. |
 
-Orden de preferencia cuando dos sirven: el más simple. Recorte antes que 3D del compositor; 3D del compositor antes que Blender; Kie antes que ComfyUI.
+Los ejemplos son para razonar; las cifras de un video real siempre salen de una fuente.
 
-## Señales de que NO va
+## Lo que el validador exige
 
-- Es para «que se vea más pro». Eso no es una razón.
-- Más de una de cada tres escenas en 3D: `validar` avisa. El video deja de parecer papel y empieza a parecer render.
-- Un objeto 3D que solo gira de adorno, sin dato ni idea detrás.
-- Acabado `real` de Blender en un espacio de ilustración (personal, MILLA): rompe la unidad visual. `real` es para los espacios con estilo de foto (Castorena, PAN) y solo si el objeto lo pide.
-- En `castorena`: nada de monedas saltando ni cajas girando. Si acaso, barras sobrias o un duotono.
-- Barras con valores inventados o sin `fuente`: el validador las rechaza. Unas barras son un dato.
+- `objeto3d` y `secuencia` llevan `porque`; sin él, error.
+- **Como mucho una escena con 3D por video.** Más, solo si Emi lo pidió: se escribe su pedido, con sus palabras y la fecha, en `excepcion_3d`. No se usa por iniciativa propia.
+- Cada objeto, solo en las escenas de la tabla; ninguno en `opinion` ni `cierre`.
+- Barras: 2 a 5 valores reales y `fuente`. Aviso si se parecen demasiado.
+- Un solo tratamiento por video (no mezclar semitono y duotono). Aviso si se aplica a algo que no es `foto_real`.
+- Aviso si la escena con 3D no dice cómo se vería en plano (`alternativa_plana`).
 
-## 1. 3D dentro del compositor (`objeto3d`)
-
-Three.js con sombreado de dos tonos en los colores del espacio y contorno de tinta. `render` lo hornea aparte y lo pega en el video (ver «Cómo se rinde»); no hay que generar nada a mano.
+## Enseñárselo a Emi antes de rendir: `comparar`
 
 ```json
 {"id": "03", "funcion": "dato", "narracion": "...", "keyword": "...", "fuente": "INEGI, 2025",
- "objeto3d": {"tipo": "barras", "valores": [12, 19, 31], "resaltar": 2,
-              "porque": "la diferencia entre los tres años se entiende de un vistazo con altura"}}
+ "objeto3d": {"tipo": "barras", "valores": [1, 3], "resaltar": 1,
+              "porque": "la voz compara 1 y 3 años: la diferencia se ve cuando la barra crece"},
+ "alternativa_plana": {"dato": "x3"}}
 ```
 
-Tipos: `moneda`, `monedas` (`valores[0]` = cuántas, entero de 2 a 8; tres si se omite), `barras` (2 a 5 valores; `resaltar` = índice desde 0 de la barra en color de acento, por defecto la última), `caja`, `globo`. Ocupa el lugar del recorte: no se combina con `imagen_archivo`, `dato` ni `secuencia`.
+```bash
+$V comparar $D --escena 03     # out/comparacion-03.png: A con el recurso, B en plano
+```
 
-## 2. Sombreadores de imprenta (`tratamiento`)
+`alternativa_plana` es cómo se vería la escena sin 3D: `{"dato": "..."}` o `{"imagen_archivo": "img/..."}`. Si falta, unas barras se comparan contra su cifra en recuadro y una foto tratada contra la foto sin tratar. Se le enseña la hoja a Emi y se deja la que elija; su elección se guarda con `aprender`.
 
-Para que una foto o un recorte realista se vea impreso en el mismo papel que lo demás.
+## Cómo se escribe cada uno
 
-- `semitono`: trama de puntos a 45° en tinta sobre papel. Para fotos documentales, retratos de prensa, archivo.
-- `duotono`: sombras en tinta, medios tonos en el acento, luces en papel. Para dar unidad de marca a una foto.
+**Objetos del compositor.** `"objeto3d": {"tipo": ..., "valores": [...], "resaltar": n, "porque": "..."}`. Tipos: `moneda`, `monedas` (`valores[0]` = cuántas, entero de 2 a 8; tres si se omite), `barras` (2 a 5 valores; `resaltar` = índice desde 0 de la barra en color de acento, por defecto la última), `caja`, `globo`. Ocupa el lugar del recorte: no se combina con `imagen_archivo`, `dato` ni `secuencia`.
 
-Se añade a una escena que ya tiene `imagen_archivo`: `"tratamiento": "semitono"`. Una foto real (`foto_real`) conserva su marco blanco y deja de pasarse a grises; si es la imagen de la portada, la portada también sale tratada. No usar en ilustraciones: ya están en estilo y la trama las ensucia.
+**Tratamientos.** `"tratamiento": "semitono"` (trama de puntos a 45° en tinta sobre papel; fotos documentales, prensa, archivo) o `"duotono"` (sombras en tinta, medios en el acento, luces en papel; unidad de marca) en una escena con `imagen_archivo`. Una foto real conserva su marco blanco; si es la imagen de la portada, la portada también sale tratada.
 
-## 3. Blender (`blender`)
-
-Render aparte, con fondo transparente, que entra al video como un recorte más (o como secuencia que gira).
+**Blender.**
 
 ```bash
 $V blender-instalar                      # una vez por máquina; descarga unos 430 MB
-$V blender --dir $D --perfil personal --tipo texto --texto "73%" --out public/img/cifra.png \
-   --porque "la cifra es el gancho y necesita peso físico en pantalla"
 $V blender --dir $D --perfil castorena --tipo modelo --modelo mazo.glb --acabado real --giro 48 \
-   --out public/seq/mazo --porque "el objeto real del despacho, visto por todos sus lados"
+   --out public/seq/mazo --porque "es el objeto real del despacho y verlo girar enseña el grabado del reverso"
 ```
 
-- Tipos: `texto` (letras con volumen), `moneda`, `caja`, `modelo` (un `.glb`, `.gltf`, `.obj` o `.stl` que Emi proporcione; no se descargan modelos de terceros sin licencia comprobada).
+- Tipos: `texto`, `moneda`, `caja`, `modelo` (un `.glb`, `.gltf`, `.obj` o `.stl` que Emi proporcione; no se descargan modelos de terceros sin licencia comprobada).
 - `--acabado plano` (por defecto): dos tonos con el color de la marca y contorno de tinta. `--acabado real`: materiales físicos y luz de estudio.
-- `--out` siempre dentro de `public/`. Sin `--giro`: un archivo `.png` que se usa como `imagen_archivo` (`img/cifra.png`, sin el `public/`). Con `--giro N`: una carpeta con N cuadros a velocidad constante que cierran en bucle; en la escena, `"secuencia": {"carpeta": "seq/mazo", "cuadros": 48}`. Repetir el comando sobre la misma carpeta borra los cuadros anteriores.
+- `--out` siempre dentro de `public/`. Sin `--giro`: un `.png` que se usa como `imagen_archivo` (`img/x.png`, sin el `public/`). Con `--giro N`: una carpeta con N cuadros a velocidad constante que cierran en bucle; en la escena, `"secuencia": {"carpeta": "seq/mazo", "cuadros": 48, "porque": "..."}`. Repetir el comando sobre la misma carpeta borra los cuadros anteriores.
 - Un modelo con varias piezas o con nodo padre se centra y gira completo. En acabado `real` se respetan sus materiales; una pieza sin material recibe el color de acento.
-- El texto usa la tipografía de Blender salvo que se pase `--fuente` con un archivo `.ttf` u `.otf`.
-- El resultado se recorta a su contenido; los tiempos están más abajo.
+- El texto usa la tipografía de Blender salvo que se pase `--fuente` con un `.ttf` u `.otf`.
 - Cada uso queda en `estados/blender.json` con su `porque`.
 
-## 4. ComfyUI (`comfy`)
-
-ComfyUI necesita tarjeta gráfica y modelos de varios gigas. **Este entorno en la nube no tiene tarjeta gráfica**, así que aquí no se instala: la herramienta se conecta al servidor de ComfyUI que Emi tenga (su computadora o uno rentado).
+**ComfyUI.** Necesita tarjeta gráfica y modelos de varios gigas. **Este entorno en la nube no tiene tarjeta gráfica**: la herramienta se conecta al servidor que Emi tenga.
 
 ```bash
 export COMFY_URL=https://direccion-del-servidor     # y COMFY_TOKEN si lo protege una llave
@@ -79,11 +106,11 @@ $V comfy --dir $D --flujo flujos/retrato.json --out public/img/04.png \
    --porque "necesita el mismo personaje que el video anterior y Kie no lo conserva" --execute
 ```
 
-- `--flujo` es el JSON que ComfyUI exporta con «Export (API)». Debe tener un nodo que guarde imagen (`SaveImage`). Sin `--execute` el comando solo comprueba servidor y flujo; no envía nada.
+- `--flujo` es el JSON de «Export (API)» y debe tener un nodo que guarde imagen. Sin `--execute` solo comprueba servidor y flujo.
 - Sin `COMFY_URL` el comando se detiene y lo dice; nunca simula un resultado.
 - El dominio del servidor debe estar permitido en la red del entorno; si no, se le pide a Emi autorizarlo.
-- Lo generado se revisa igual que una imagen de Kie y sigue las mismas reglas (sin logos ni texto inventado; en `milla`, nada de modelos de OpenAI).
-- Estado: el cliente está probado contra un servidor simulado. **No se ha probado contra un ComfyUI real** porque Emi aún no tiene uno conectado.
+- Lo generado sigue las reglas de cualquier imagen (sin logos ni texto inventado; en `milla`, nada de modelos de OpenAI).
+- Estado: probado solo contra un servidor simulado. **No se ha probado contra un ComfyUI real.**
 
 ## Cómo se rinde: el horno
 
@@ -99,8 +126,8 @@ El 3D del compositor y los sombreadores necesitan WebGL. Rendir todo el video co
 
 Los colores salen exactos: sin mapeo de tonos, la cara iluminada de un objeto es el color del espacio y la sombra es una sola banda más oscura; el sombreador escribe papel, tinta y acento tal como están en el perfil.
 
-Tiempos medidos (4 núcleos, sin tarjeta gráfica): hornear 30 cuadros, 8 s; el demo de 21 s con dos objetos 3D, una foto tratada y dos piezas de Blender, 4 min 29 s en total. Blender: imagen de 1024 px en acabado plano, 6 s; secuencia de 24 cuadros de 640 px, 43 s en plano y 129 s en real.
+Tiempos medidos (4 núcleos, sin tarjeta gráfica): hornear 30 cuadros, 8 s; un video de 21 s, unos 4 min 30 s en total. Blender: imagen de 1024 px en acabado plano, 6 s; secuencia de 24 cuadros de 640 px, 43 s en plano y 129 s en real.
 
 ## Revisión
 
-Se revisan como cualquier escena: `revisar`, hoja de transiciones y hoja a tamaño teléfono. Un objeto 3D debe seguir leyéndose en el teléfono; si no, es demasiado detalle.
+Se revisan como cualquier escena: `revisar`, hoja de transiciones y hoja a tamaño teléfono. Un objeto 3D debe seguir leyéndose en el teléfono; si no, es demasiado detalle. Después de cada video con uno de estos recursos se le pregunta a Emi si le sumó, y la respuesta se guarda con `aprender`: esta guía se corrige con lo que él diga.

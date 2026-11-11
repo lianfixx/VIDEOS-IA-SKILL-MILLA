@@ -52,14 +52,14 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 - Fondo de recorte (`--croma`): `verde`, `magenta`, `ninguno`.
 - Fotos reales: `foto` y `foto-bajar` (Apify), solo con fuente y licencia comprobadas.
 
-## 3D y tratamientos (solo con un `porque`)
+## 3D y tratamientos (por defecto no; como mucho uno por video)
 
 - Objetos 3D del compositor (`objeto3d.tipo`): `moneda`, `monedas`, `barras`, `caja`, `globo`.
 - Tratamientos de imprenta (`tratamiento`): `semitono`, `duotono`.
 - Blender (`blender --tipo`): `texto`, `moneda`, `caja`, `modelo`; acabados `plano` y `real`; imagen fija o giro (`secuencia`).
 - ComfyUI (`comfy`): flujos exportados por Emi, con su servidor.
 
-Cuándo sí y cuándo no: [TRES-D.md](TRES-D.md).
+El momento exacto de cada uno, las cinco preguntas previas y la comparación con y sin (`comparar`): [TRES-D.md](TRES-D.md).
 
 ## Tipografías
 

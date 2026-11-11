@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.11.0: guía del momento exacto para 3D, tratamientos, Blender y ComfyUI
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras ver el demo con 3D: «este último me gustó menos. Debes tener perfecta y bien razonada la guía para saber el momento perfecto de cuándo usar cada cosa».
+- Cambios: `TRES-D.md` reescrita como procedimiento de decisión: el estilo es el recorte ilustrado y la respuesta por defecto es no; cinco preguntas en orden (qué dice la voz, si el movimiento es la idea, qué se pierde, si es el mejor momento del video, si Emi lo eligió); tabla del momento de cada recurso con la escena donde va, cuándo no va y qué usar en su lugar; ejemplos razonados y reglas por espacio. El validador lo exige: como mucho una escena con 3D por video, cada objeto solo en las funciones que le corresponden, ninguno en `opinion` ni `cierre`, `porque` también en `secuencia`, un solo tratamiento por video; más de uno solo con el pedido de Emi escrito en `excepcion_3d`. Avisos nuevos: barras demasiado parecidas, tratamiento sobre algo que no es foto real, 3D sin `alternativa_plana`. Comando nuevo `comparar`: deja la escena con el recurso y en plano lado a lado para que Emi elija antes de rendir; queda como compuerta en `SKILL.md`. El demo 2 volvió a recortes ilustrados.
+- Archivos: `skills/vox-studio/{SKILL.md,TRES-D.md,CATALOGO.md,TECNICA.md,scripts/vox.py,scripts/test_vox.py}`, `docs/REFERENCIAS-EXTERNAS.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 71/71 (cinco nuevas: momento de cada objeto, uno por video y excepción, un tratamiento, avisos, comparar) → aprobado; pizarra-studio, milla-video-studio e `ia/test_guard.py` → aprobado; `tsc --noEmit` → aprobado; el guion de ejemplo sigue siendo válido. `comparar` con ejecución real en tres escenas del demo (monedas contra recorte, barras contra cifra, semitono contra ilustración): 15 s por escena → aprobado, y en las tres la versión plana se ve mejor, que es lo que Emi notó. El guion del demo con 3D ya no pasa `validar` (cuatro escenas con 3D, una en opinión y otra en cierre) → rechazado, como debe; devuelto a recortes → válido, rendido sin avisos (20.97 s, −14.05 LUFS).
+- Pendiente: que Emi confirme qué fue lo que menos le gustó (la interpretación anotada en los aprendizajes es de Claude); que vea la comparación y el demo restaurado; fusionar a `main`.
+
 ## 2026-11-11 · Vox Studio 0.10.1: el resaltado cubre las tildes y verificación final del demo
 
 - Agente: Claude Code (sesión en la nube)

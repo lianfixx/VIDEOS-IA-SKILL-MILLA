@@ -446,6 +446,8 @@ class TresDe(unittest.TestCase):
         g = guion(); g["escenas"][1]["secuencia"] = {"carpeta": "../fuera", "cuadros": 4}
         self.assertIn("secuencia necesita", self.err(g))
         g["escenas"][1]["secuencia"] = {"carpeta": "seq/x", "cuadros": 3}
+        self.assertIn("secuencia.porque", self.err(g))
+        g["escenas"][1]["secuencia"]["porque"] = "el objeto real se entiende al verlo por todos sus lados"
         self.assertEqual(vox.validar_guion(g), [])
         palabras, fin = alinear(g)
         with tempfile.TemporaryDirectory() as d:
@@ -459,6 +461,85 @@ class TresDe(unittest.TestCase):
             v = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], Path(d))
             self.assertEqual(v["escenas"][1]["secuencia"], {"carpeta": "seq/x", "cuadros": 3})
             self.assertIsNone(v["escenas"][0]["secuencia"])
+
+    PORQUE = "la diferencia entre cantidades se entiende con altura"
+
+    def test_cada_objeto_en_su_momento(self):
+        # El gancho necesita un sujeto con carácter; la opinión y el cierre son de Emi: ahí no va 3D.
+        for tipo, lugar, vale in (("barras", 1, True), ("barras", 0, False), ("monedas", 2, False), ("caja", 1, False), ("globo", 1, True), ("globo", 3, False)):
+            g = guion()
+            g["escenas"][lugar].update(objeto3d={"tipo": tipo, "valores": [2, 6] if tipo == "barras" else [], "porque": self.PORQUE}, fuente="INEGI, 2025")
+            e = self.err(g)
+            self.assertEqual("no va en una escena" in e, not vale, (tipo, lugar, e))
+        g = guion(); g["escenas"][2]["secuencia"] = {"carpeta": "seq/x", "cuadros": 3, "porque": self.PORQUE}
+        self.assertIn("ese momento es de Emi", self.err(g))
+
+    def test_un_solo_3d_por_video_salvo_que_emi_pida_mas(self):
+        g = guion(); g["escenas"].insert(2, {"id": "09", "narracion": "Otra frase de prueba.", "keyword": "OTRA", "funcion": "prueba"})
+        for i in (1, 2):
+            g["escenas"][i].update(objeto3d={"tipo": "barras", "valores": [2, 6], "porque": self.PORQUE}, fuente="INEGI, 2025")
+        self.assertIn("como mucho 1 por video", self.err(g))
+        g["excepcion_3d"] = "sí"
+        self.assertIn("excepcion_3d", self.err(g))                 # la excepción se justifica con el pedido de Emi
+        g["excepcion_3d"] = "Emi, 12/11/2026: «en este quiero dos gráficas en 3D»"
+        self.assertEqual(vox.validar_guion(g), [])
+        g["escenas"][0].update(objeto3d={"tipo": "caja", "porque": self.PORQUE})   # con excepción también se levanta el lugar
+        self.assertEqual(vox.validar_guion(g), [])
+
+    def test_un_solo_tratamiento_por_video(self):
+        g = guion()
+        g["escenas"][1].update(imagen_archivo="img/a.png", tratamiento="semitono", foto_real=True)
+        g["escenas"][2].update(imagen_archivo="img/b.png", tratamiento="duotono", foto_real=True)
+        self.assertIn("un solo tratamiento", self.err(g))
+        g["escenas"][2]["tratamiento"] = "semitono"
+        self.assertEqual(vox.validar_guion(g), [])
+        self.assertEqual([a for a in vox.avisos_guion(g) if "tratamiento" in a], [])
+        g["escenas"][2]["foto_real"] = False
+        self.assertIn("no es foto real", " | ".join(vox.avisos_guion(g)))
+
+    def test_avisos_de_oficio_del_3d(self):
+        g = guion(); g["escenas"][1].update(objeto3d={"tipo": "barras", "valores": [10, 11], "porque": self.PORQUE}, fuente="INEGI, 2025")
+        a = " | ".join(vox.avisos_guion(g))
+        self.assertIn("se parecen demasiado", a); self.assertIn("alternativa_plana", a)
+        g["escenas"][1]["objeto3d"]["valores"] = [10, 30]; g["escenas"][1]["alternativa_plana"] = {"dato": "x3"}
+        a = " | ".join(vox.avisos_guion(g))
+        self.assertNotIn("se parecen", a); self.assertNotIn("alternativa_plana", a)
+        self.assertEqual(vox.validar_guion(g), [])
+        for malo in ({"dato": ""}, {"otra": "x"}, {"imagen_archivo": "../x.png"}, "x3"):
+            g["escenas"][1]["alternativa_plana"] = malo
+            self.assertIn("alternativa_plana", self.err(g), malo)
+        g = guion(); g["escenas"][1]["alternativa_plana"] = {"dato": "7"}
+        self.assertIn("solo tiene sentido", self.err(g))
+
+    def test_comparar_con_y_sin(self):
+        import json
+        from PIL import Image
+        g = guion()
+        g["escenas"][1].update(objeto3d={"tipo": "barras", "valores": [2, 6.5], "porque": self.PORQUE}, fuente="INEGI, 2025")
+        palabras, fin = alinear(g)
+        vistos = []
+        def falso(cmd, cwd=None, **kw):
+            props = json.loads((Path(cwd) / next(c for c in cmd if c.startswith("--props=")).split("=", 1)[1]).read_text())
+            vistos.append(props["escenas"][1])
+            Image.new("RGB", (108, 192), (200, 0, 0) if props["escenas"][1].get("secuencia") else (0, 0, 200)).save(Path(cwd) / cmd[5])
+        real_c, real_h = vox._correr, vox.hornear
+        vox._correr, vox.hornear = falso, lambda *a, **k: 0
+        try:
+            with tempfile.TemporaryDirectory() as d:
+                d = Path(d); (d / "src" / "data").mkdir(parents=True); (d / "out").mkdir(); (d / "public").mkdir()
+                (d / "src" / "data" / "video.json").write_text(json.dumps(vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], d / "public")))
+                f = vox.comparar(d, "02")
+                with Image.open(f) as im:
+                    self.assertEqual(im.size, (1110, 1030))
+                    self.assertEqual((im.getpixel((270, 500)), im.getpixel((840, 500))), ((200, 0, 0), (0, 0, 200)))   # A con, B sin
+                self.assertEqual(sorted(x.name for x in (d / "out").iterdir()), ["comparacion-02.png"])
+                with self.assertRaises(vox.ErrorVox):
+                    vox.comparar(d, "01")                           # esa escena no lleva nada que comparar
+        finally:
+            vox._correr, vox.hornear = real_c, real_h
+        con, sin = vistos
+        self.assertTrue(con["secuencia"] and not con["dato"])
+        self.assertEqual((sin["secuencia"], sin["dato"]), (None, "6.5"))   # sin alternativa escrita, las barras se vuelven su cifra
 
     def test_demasiado_3d_avisa(self):
         g = guion()

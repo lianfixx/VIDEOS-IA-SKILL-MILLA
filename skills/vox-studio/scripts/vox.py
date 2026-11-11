@@ -19,6 +19,7 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
                                            objeto 3D rendido con Blender (PNG transparente o secuencia que gira)
   blender-instalar                         instala Blender como módulo de Python (solo cuando haga falta)
   comfy --dir D --flujo F.json --out RUTA --porque "..." [--execute]   imagen desde el servidor ComfyUI de Emi (COMFY_URL)
+  comparar DIR --escena ID                 la misma escena con 3D (o tratamiento) y en plano, lado a lado, para que Emi elija
   revisar DIR                              hojas de transiciones y de tamaño teléfono + informe de revisión (obligatorio antes de `cierre`)
   referencia ARCHIVO --dir DIR             convierte una imagen o video de referencia de Emi en una hoja para mirarla
   render DIR                               render + portada + master a -14 LUFS + hoja de fotogramas para auditar
@@ -84,6 +85,12 @@ ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lent
 OBJETOS_3D = ["moneda", "monedas", "barras", "caja", "globo"]   # Three.js dentro del compositor, colores planos + contorno
 TRATAMIENTOS = ["semitono", "duotono"]                             # sombreadores de imprenta para fotos y recortes
 BLENDER_TIPOS = ["texto", "moneda", "caja", "modelo"]             # render fuera del compositor: PNG o secuencia con transparencia
+# En qué momento del guion cabe cada objeto 3D (por la `funcion` de la escena). Fuera de ahí estorba:
+# el gancho necesita un sujeto con carácter, y la opinión y el cierre son de Emi, no de un render.
+LUGAR_3D = {"barras": {"dato", "prueba"}, "monedas": {"dato", "prueba", "giro"}, "moneda": {"dato", "prueba", "giro"},
+            "caja": {"contexto", "giro"}, "globo": {"contexto", "dato"}}
+SIN_3D = {"opinion", "cierre"}   # tampoco una secuencia de Blender
+MAX_3D = 1                       # escenas con 3D por video, salvo que Emi pida otra cosa (`excepcion_3d`)
 MODELOS_3D = {".glb", ".gltf", ".obj", ".stl"}                    # formatos de modelo que Blender importa aquí
 # Para qué existe cada escena. Si no se puede decir, la escena sobra.
 FUNCIONES = ["gancho", "contexto", "dato", "giro", "prueba", "opinion", "remate", "cierre"]
@@ -183,6 +190,7 @@ def validar_guion(g: dict) -> list[str]:
         conocidos = perfiles()
     except ErrorVox as exc:
         return [str(exc)]
+    excepcion = len(str(g.get("excepcion_3d", "")).strip()) >= 15  # Emi pidió expresamente más 3D del que marca la guía
     if g.get("perfil") not in conocidos:
         e.append(f"perfil desconocido: {g.get('perfil')!r}; usa uno de {sorted(conocidos)}")
     if len(str(g.get("opinion_emi", "")).strip()) < 20:
@@ -271,6 +279,9 @@ def validar_guion(g: dict) -> list[str]:
                     e.append(f"{p}: objeto3d.porque: di en una frase qué explica mejor en 3D que en plano; si no hay respuesta, no va en 3D")
                 if o3["tipo"] == "barras" and not str(s.get("fuente", "")).strip():
                     e.append(f"{p}: unas barras son datos: la escena necesita `fuente`")
+                if not excepcion and s.get("funcion") in FUNCIONES and s["funcion"] not in LUGAR_3D[o3["tipo"]]:
+                    e.append(f"{p}: {o3['tipo']} en 3D no va en una escena de `{s['funcion']}`; solo en {sorted(LUGAR_3D[o3['tipo']])}. "
+                             "Ahí funciona mejor un recorte (ver TRES-D.md)")
             if s.get("imagen_archivo") or s.get("dato"):
                 e.append(f"{p}: objeto3d ocupa el lugar del recorte; quita imagen_archivo o dato")
         sec = s.get("secuencia")
@@ -280,6 +291,17 @@ def validar_guion(g: dict) -> list[str]:
                 e.append(f"{p}: secuencia necesita `carpeta` (relativa a public/) y `cuadros` (2 a 240)")
             if s.get("imagen_archivo") or s.get("dato") or s.get("objeto3d"):
                 e.append(f"{p}: secuencia ocupa el lugar del recorte; quita imagen_archivo, dato u objeto3d")
+            if isinstance(sec, dict) and len(str(sec.get("porque", "")).strip()) < 15:
+                e.append(f"{p}: secuencia.porque: di en una frase qué explica el giro que no explica una imagen fija")
+            if not excepcion and s.get("funcion") in SIN_3D:
+                e.append(f"{p}: una secuencia 3D no va en una escena de `{s['funcion']}`: ese momento es de Emi, no de un objeto")
+        alt = s.get("alternativa_plana")
+        if alt is not None:
+            if not (isinstance(alt, dict) and alt and set(alt) <= {"dato", "imagen_archivo"} and all(isinstance(v, str) and v.strip() for v in alt.values())
+                    and ruta_segura(alt.get("imagen_archivo", "x"))):
+                e.append(f"{p}: alternativa_plana es {{\"dato\": \"...\"}} o {{\"imagen_archivo\": \"img/...png\"}}: cómo se vería la escena sin 3D")
+            elif not (s.get("objeto3d") or s.get("secuencia")):
+                e.append(f"{p}: alternativa_plana solo tiene sentido en una escena con objeto3d o secuencia")
         tr3 = s.get("tratamiento")
         if tr3:
             if tr3 not in TRATAMIENTOS:
@@ -305,6 +327,15 @@ def validar_guion(g: dict) -> list[str]:
             e.append(f"{p}: transicion {tr!r} no existe; opciones {sorted(set(TRANSICIONES))}")
         if i > 1 and trs[i] == trs[i - 1]:
             e.append(f"{p}: repite la transición de la escena anterior ({trs[i]})")
+    con_3d = [i + 1 for i, s in enumerate(escenas) if s.get("objeto3d") or s.get("secuencia")]
+    if len(con_3d) > MAX_3D and not excepcion:
+        e.append(f"escenas {con_3d} llevan 3D: va como mucho {MAX_3D} por video, en el momento en que más explica. "
+                 "Deja la mejor y vuelve las demás a recorte o dato. Si Emi pidió más, escribe su pedido en `excepcion_3d`")
+    trats = {s.get("tratamiento") for s in escenas if s.get("tratamiento") in TRATAMIENTOS}
+    if len(trats) > 1:
+        e.append("el video mezcla semitono y duotono: las fotos de un mismo video llevan un solo tratamiento")
+    if "excepcion_3d" in g and not excepcion:
+        e.append("excepcion_3d: escribe lo que Emi pidió, con sus palabras y la fecha (mínimo 15 caracteres); no se usa por iniciativa propia")
     funs = [s.get("funcion") for s in escenas]
     if escenas and all(f in FUNCIONES for f in funs):
         if funs[0] != "gancho":
@@ -339,6 +370,15 @@ def avisos_guion(g: dict) -> list[str]:
     n3d = sum(1 for s in escenas if s.get("objeto3d") or s.get("secuencia"))
     if n3d > max(1, len(escenas) // 3):
         a.append(f"{n3d} escenas en 3D de {len(escenas)}: el 3D es un acento, no el estilo; deja solo las que de verdad lo necesitan")
+    for i, s in enumerate(escenas):
+        o3 = s.get("objeto3d") if isinstance(s.get("objeto3d"), dict) else {}
+        vals = [v for v in o3.get("valores", []) if isinstance(v, (int, float)) and not isinstance(v, bool)] if isinstance(o3.get("valores", []), list) else []
+        if o3.get("tipo") == "barras" and len(vals) >= 2 and min(vals) > 0 and max(vals) / min(vals) < 1.3:
+            a.append(f"escena {i + 1}: las barras se parecen demasiado (la mayor es {max(vals) / min(vals):.2f} veces la menor): la diferencia no se verá; di la cifra con `dato`")
+        if (o3 or s.get("secuencia")) and not s.get("alternativa_plana"):
+            a.append(f"escena {i + 1}: lleva 3D sin `alternativa_plana`; anota cómo se vería en plano y enséñale a Emi las dos con `comparar`")
+        if s.get("tratamiento") and not s.get("foto_real"):
+            a.append(f"escena {i + 1}: `tratamiento` sobre una imagen que no es foto real; en una ilustración la trama ensucia. Úsalo solo si la imagen es fotográfica")
     if sin_imagen:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
     if sum(1 for s in escenas if s.get("imagen_archivo") or s.get("objeto3d") or s.get("secuencia")) < max(2, len(escenas) // 2):
@@ -411,6 +451,8 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             "sonido": s.get("sonido", ""), "remate": str(s.get("remate", "")).upper(),
             "objeto3d": ({k: v for k, v in s["objeto3d"].items() if k in ("tipo", "valores", "resaltar")} if isinstance(s.get("objeto3d"), dict) else None),
             "tratamiento": s.get("tratamiento", ""),
+            "alternativa": ({"dato": s["alternativa_plana"].get("dato", ""), "imagen": s["alternativa_plana"].get("imagen_archivo", "")}
+                            if isinstance(s.get("alternativa_plana"), dict) else None),
             "secuencia": ({"carpeta": s["secuencia"]["carpeta"].strip("/"), "cuadros": s["secuencia"]["cuadros"]} if isinstance(s.get("secuencia"), dict) else None),
         })
     port = g.get("portada") or {}
@@ -896,6 +938,7 @@ def plan_horno(datos: dict, publico: Path) -> tuple[dict, list[dict]]:
             e["imagen"], e["tratada"] = destino, True  # `foto` se conserva: una foto real tratada sigue llevando su marco
         e.pop("objeto3d", None)
         e.pop("tratamiento", None)
+        e.pop("alternativa", None)
     port = listo.get("portada") or {}
     if port.get("imagen") in tratadas:  # la portada muestra la misma imagen que el video, ya tratada
         port["imagen"] = tratadas[port["imagen"]]
@@ -987,6 +1030,55 @@ def rendir(d: Path) -> dict:
                         "render": {"codec": "h264", "crf": 16, "jpeg_quality": 95, "color": "bt709", "audio": "aac 192k 48 kHz"},
                         "medido": {"lufs": m["lufs"], "pico_dbtp": m["pico_dbtp"], "duracion_s": m["duracion_s"]}})
     return m
+
+
+def comparar(d: Path, escena_id: str) -> Path:
+    """La misma escena con el recurso (3D, secuencia o tratamiento) y sin él, lado a lado, para que Emi elija.
+
+    «Sin» es la `alternativa_plana` del guion; si no hay, unas barras se vuelven su cifra en un recuadro,
+    una foto tratada vuelve a ser la foto, y lo demás queda solo con el titular.
+    """
+    from PIL import Image, ImageDraw
+    datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
+    k = next((i for i, e in enumerate(datos["escenas"]) if e["id"] == escena_id), None)
+    if k is None:
+        raise ErrorVox(f"no hay escena {escena_id!r}; existen {[e['id'] for e in datos['escenas']]}")
+    orig = datos["escenas"][k]
+    if not (orig.get("objeto3d") or orig.get("secuencia") or orig.get("tratamiento")):
+        raise ErrorVox(f"la escena {escena_id} no lleva 3D, secuencia ni tratamiento: no hay nada que comparar")
+    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
+    con, trabajos = plan_horno(datos, d / "public")
+    hornear(d, trabajos, navegador if Path(navegador).exists() else "")
+    sin = json.loads(json.dumps(con))
+    e, alt = sin["escenas"][k], orig.get("alternativa") or {}
+    e["secuencia"], e["tratada"] = None, False
+    e["imagen"] = alt.get("imagen") or (orig.get("imagen", "") if orig.get("tratamiento") else "")
+    e["dato"] = alt.get("dato", "")
+    if not e["imagen"] and not e["dato"] and (orig.get("objeto3d") or {}).get("tipo") == "barras":
+        vals = orig["objeto3d"].get("valores", [])
+        v = vals[orig["objeto3d"].get("resaltar", len(vals) - 1)]
+        e["dato"] = str(int(v)) if float(v).is_integer() else str(v)
+    cuadro = orig["desde"] + int(orig["dur"] * 0.75)
+    piezas = []
+    for nombre, version in (("con", con), ("sin", sin)):
+        props = d / "out" / f"_cmp_{nombre}.json"
+        props.write_text(json.dumps(version, ensure_ascii=False), encoding="utf-8")
+        try:
+            _correr(["npx", "remotion", "still", "src/index.ts", "Vox", f"out/_cmp_{nombre}.png", f"--frame={cuadro}", f"--props=out/_cmp_{nombre}.json", "--log=error"]
+                    + ([f"--browser-executable={navegador}"] if Path(navegador).exists() else []), cwd=d)
+            with Image.open(d / "out" / f"_cmp_{nombre}.png") as im:
+                piezas.append(im.convert("RGB").resize((540, 960)))
+        finally:
+            props.unlink(missing_ok=True)
+            (d / "out" / f"_cmp_{nombre}.png").unlink(missing_ok=True)
+    hoja = Image.new("RGB", (540 * 2 + 30, 960 + 70), (20, 20, 20))
+    dib = ImageDraw.Draw(hoja)
+    for n, (pieza, rotulo) in enumerate(zip(piezas, ("A · CON EL RECURSO", "B · EN PLANO"))):
+        hoja.paste(pieza, (n * 570, 70))
+        dib.text((n * 570 + 16, 22), rotulo, fill=(255, 255, 255), font_size=30)
+    salida = d / "out" / f"comparacion-{escena_id}.png"
+    hoja.save(salida)
+    return salida
 
 
 # ---------- revisión del render (lo que se entrega se miró) ----------
@@ -1346,6 +1438,7 @@ def main(argv=None) -> int:
     p.add_argument("--giro", type=int, default=0); p.add_argument("--tam", type=int, default=1024); p.add_argument("--fuente", default="")
     p = sub.add_parser("comfy"); p.add_argument("--flujo", required=True); p.add_argument("--out", required=True); p.add_argument("--dir", required=True)
     p.add_argument("--porque", required=True); p.add_argument("--execute", action="store_true")
+    p = sub.add_parser("comparar"); p.add_argument("dir"); p.add_argument("--escena", required=True)
     p = sub.add_parser("revisar"); p.add_argument("dir")
     p = sub.add_parser("referencia"); p.add_argument("archivo"); p.add_argument("--dir", required=True)
     p = sub.add_parser("sonido"); p.add_argument("guion")
@@ -1600,6 +1693,9 @@ def main(argv=None) -> int:
             hechos.append({"salida": a.out, "flujo": huella(json.dumps(flujo, sort_keys=True)), "porque": a.porque.strip(), **info})
             reg.write_text(json.dumps(hechos, ensure_ascii=False, indent=1))
             print(f"Imagen de ComfyUI en {a.out}. Mírala antes de montar: es generada, se revisa igual que las de Kie.")
+        elif a.cmd == "comparar":
+            f = comparar(Path(a.dir), a.escena)
+            print(f"Comparación en {f}: A con el recurso, B en plano. Enséñasela a Emi y deja la que él elija; si duda, gana B.")
         elif a.cmd == "revisar":
             d = Path(a.dir)
             datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))

@@ -38,7 +38,7 @@ Render determinista cuadro por cuadro, datos separados del código, hoja de cont
 
 ### Adoptado después, con condiciones (decisión de Emi, 11/11/2026)
 
-Three.js, sombreadores, Blender y ComfyUI se habían descartado por el riesgo de aspecto «render». Emi pidió tenerlos disponibles **para cuando hagan falta, razonando cada uso**. Quedaron así en Vox Studio 0.10.0: son acentos con los colores y el contorno de tinta del espacio, cada uso lleva un `porque` escrito, `validar` avisa si pasan de una de cada tres escenas, y ComfyUI solo funciona con el servidor de Emi. Guía: `skills/vox-studio/TRES-D.md`.
+Three.js, sombreadores, Blender y ComfyUI se habían descartado por el riesgo de aspecto «render». Emi pidió tenerlos disponibles **para cuando hagan falta, razonando cada uso**. Quedaron así en Vox Studio 0.10.0: son acentos con los colores y el contorno de tinta del espacio, cada uso lleva un `porque` escrito y ComfyUI solo funciona con el servidor de Emi. El primer demo que los usó en cuatro de cinco escenas le gustó menos a Emi, y desde la 0.11.0 la regla es más estricta: por defecto no, como mucho uno por video, cada objeto solo en su momento del guion y Emi elige viendo la escena con y sin el recurso. Guía: `skills/vox-studio/TRES-D.md`.
 
 ### Descartado, con motivo
 
