@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.3"
+  version: "0.9.0"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -19,11 +19,13 @@ Cada marca vive en [su carpeta](../../espacios/README.md) y no se mezcla: `espac
 
 1. Leer lo aprendido: `$V aprendizajes --espacio E`. Son reglas vigentes, no sugerencias.
 2. Preguntar a Emi, en cada video y sea cual sea el tema: **¿cuál es tu postura?**, qué quiere criticar o defender y qué chiste o referencia le gustaría. Se guarda en `opinion_emi`; el validador rechaza un guion sin ella.
-3. Investigar el tema en fuentes verificables y poner la fuente en pantalla (`fuente`) junto a cada dato.
+3. Investigar el tema en fuentes verificables y poner la fuente en pantalla (`fuente`) junto a cada dato. Una cifra en la narración sin `fuente` en su escena hace fallar la validación: un dato sin fuente no se publica.
+4. Proponer a Emi **2 o 3 ganchos** distintos para ese tema (`ganchos_propuestos`) y anotar cuál eligió (`gancho_elegido`). El gancho es lo que más pesa en que el video se vea; no se decide por él.
+5. Si Emi tiene una imagen o un video de referencia, `$V referencia ARCHIVO --dir $D` lo convierte en una hoja: se mira y se le dice qué se toma de ahí (ritmo, tipografía, transiciones) antes de seguir.
 
 ## Voz del guion
 
-Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
+Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas, cada una con su `funcion` (para qué existe): `gancho`, `contexto`, `dato`, `giro`, `prueba`, `opinion`, `remate` o `cierre`. La primera es el gancho, la última el cierre y al menos una es `opinion`: la postura de Emi tiene que oírse, no solo guiar el guion. Si no se puede decir para qué está una escena, sobra. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
 
 `validar` añade avisos de oficio (⚠) que no bloquean pero deben atenderse o justificarse: gancho de más de 14 palabras, escena de más de 22 palabras sin cambio de plano, video fuera de 55–200 palabras (unos 20–75 s), escenas sin nada que ver, cifras sin fuente y keywords que arrancan igual. `armar` avisa además de cualquier escena que dure más de 7 s en la voz real.
 
@@ -79,7 +81,8 @@ $V imagen --perfil personal --prompt-file $D/prompts/01.txt --out $D/originales/
 $V recorte $D/originales/01.jpg $D/public/img/01.png
 $V voz $D/guion.json --dir $D --execute # narra una vez y guarda la alineación
 $V armar $D/guion.json --dir $D         # tras cambiar textos o imágenes: no vuelve a pagar la voz
-$V render $D                            # render + portada + master + hoja de fotogramas
+$V render $D                            # render + portada + master + hojas + auditorías + manifiesto
+$V revisar $D                           # transiciones y tamaño teléfono + informe; sin él no hay cierre
 $V cierre $D                            # saldos: gastado y restante
 $V catalogar $D                         # guarda los recortes en la biblioteca
 ```
@@ -99,6 +102,21 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 ## Auditar y corregir
 
 `render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena, y `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok sombreadas en rojo: ningún texto ni rostro debe quedar debajo. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. `render` imprime los avisos de `out/auditoria-audio.json` y `out/auditoria-video.json` (formato del archivo, contenido bajo la interfaz de TikTok, cuadros vacíos, niveles): se corrigen todos antes de entregar. Sin avisos significa en rango, no aprobado: **en cada video se le pide a Emi que escuche voz, música y efectos** y se guarda lo que diga. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
+
+## Revisar el render (obligatorio antes de cerrar)
+
+Nunca se dice que un video quedó bien sin haber mirado el archivo rendido. Después de `render`:
+
+1. `$V revisar $D` crea `out/hoja-transiciones.png` (cada cambio de escena: 6 y 3 cuadros antes, el corte, y 3, 6 y 12 después) y `out/hoja-telefono.png` (el video al tamaño en que se ve en un teléfono).
+2. Mirar las dos. En las transiciones: texto encimado, algo que tapa el titular al entrar, elementos que saltan o desaparecen, un cuadro vacío. En el teléfono: todo lo que no se lea ahí, no se lee.
+3. Anotar en `out/revision.json` cada `hallazgo` (segundo, problema, arreglo), los `pendientes` y `revisado_por`. Corregir primero los tres peores, volver a rendir y volver a revisar: la revisión solo vale para el render actual.
+4. `cierre` se niega si falta el informe, si es de un render anterior o si no dice quién revisó.
+
+Una IA puede revisar imagen; no puede oír. `visto_y_escuchado_por_emi` solo lo marca Emi.
+
+## Compuertas: cuándo detenerse y preguntar
+
+Se trabaja de corrido salvo en estos puntos, donde se para y se le pregunta a Emi: falta su postura o no eligió gancho; un dato no tiene fuente verificable; falta una imagen real (captura, logo, foto) que no debe inventarse; la referencia que dio no queda clara (se le enseña un cuadro de prueba antes de hacer todo el video); el gasto pasaría de lo ya autorizado. Mejor una pregunta que un video entero bien hecho sobre una suposición.
 
 ## Aprender de cada video (obligatorio)
 
@@ -132,4 +150,4 @@ El paquete para la app se genera con `python3 tools/empaquetar_vox.py` y lleva l
 
 ## Terminado
 
-`validar` sin errores, `render` completo, hoja de fotogramas revisada, audio en rango, tabla de saldos entregada, aprendizajes guardados y visto bueno de Emi sobre el MP4. No publicar en redes sin que lo pida.
+`validar` sin errores, `render` completo, `revisar` hecho y `out/revision.json` firmado sobre el render actual, audio en rango, tabla de saldos entregada, aprendizajes guardados y visto bueno de Emi sobre el MP4. No publicar en redes sin que lo pida.

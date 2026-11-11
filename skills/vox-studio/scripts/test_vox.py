@@ -12,7 +12,9 @@ def guion():
         "perfil": "personal", "titulo": "Prueba", "cta_pregunta": "¿Tú qué opinas?",
         "opinion_emi": "Postura de prueba suficientemente larga para pasar.",
         "musica": {"animo": "tension"},
-        "escenas": [{"id": f"0{i}", "narracion": f"Frase número {i} de prueba.", "keyword": f"CLAVE {i}", "resaltar": "CLAVE"} for i in range(1, 5)],
+        "ganchos_propuestos": ["Te mintieron.", "Nadie te lo dijo."], "gancho_elegido": 0,
+        "escenas": [{"id": f"0{i}", "narracion": f"Frase número {i} de prueba.", "keyword": f"CLAVE {i}", "resaltar": "CLAVE",
+                     "funcion": ["gancho", "dato", "opinion", "cierre"][i - 1]} for i in range(1, 5)],
     }
     g["escenas"][0]["sonido"] = "boom"
     g["escenas"][-1]["narracion"] = "¿Tú qué opinas de esto?"
@@ -274,9 +276,8 @@ class Oficio(unittest.TestCase):
     def test_avisos_de_guion(self):
         g = guion()
         g["escenas"][0]["narracion"] = " ".join(["palabra"] * 30)
-        g["escenas"][1]["narracion"] = "El 73 por ciento lo ignora."
         avisos = " | ".join(vox.avisos_guion(g))
-        for esperado in ("el gancho tiene 30 palabras", "escena 1: 30 palabras", "sin imagen ni dato", "ninguna escena muestra `fuente`", "empiezan igual"):
+        for esperado in ("el gancho tiene 30 palabras", "escena 1: 30 palabras", "sin imagen ni dato", "empiezan igual"):
             self.assertIn(esperado, avisos)
         self.assertEqual(vox.validar_guion(g), [])  # son avisos: no bloquean
 
@@ -309,6 +310,88 @@ class ImagenAuditada(unittest.TestCase):
             self.assertIn("botones de la derecha", " | ".join(vox.auditar_video(d, datos)["avisos"]))
             subprocess.run(base + [str(d / "out" / "final.mp4")], check=True)
             self.assertIn("casi vacío", " | ".join(vox.auditar_video(d, datos)["avisos"]))
+
+
+class Estructura(unittest.TestCase):
+    def err(self, g):
+        return " | ".join(vox.validar_guion(g))
+
+    def test_cada_escena_dice_para_que_existe(self):
+        g = guion(); g["escenas"][1].pop("funcion")
+        self.assertIn("falta `funcion`", self.err(g))
+        g = guion(); g["escenas"][0]["funcion"] = "dato"
+        self.assertIn("primera escena debe ser el `gancho`", self.err(g))
+        g = guion(); g["escenas"][-1]["funcion"] = "remate"
+        self.assertIn("última escena debe ser el `cierre`", self.err(g))
+
+    def test_la_opinion_de_emi_tiene_que_oirse(self):
+        g = guion(); g["escenas"][2]["funcion"] = "prueba"
+        self.assertIn("funcion `opinion`", self.err(g))
+
+    def test_emi_elige_el_gancho(self):
+        g = guion(); g["ganchos_propuestos"] = ["solo uno"]
+        self.assertIn("ganchos_propuestos", self.err(g))
+        g = guion(); g["gancho_elegido"] = 5
+        self.assertIn("gancho_elegido", self.err(g))
+        g = guion(); g["gancho_elegido"] = True
+        self.assertIn("gancho_elegido", self.err(g))
+
+    def test_una_cifra_sin_fuente_no_pasa(self):
+        for frase in ("El 73 % lo ignora.", "Te cuesta $500 al mes.", "Son 3 millones de personas.", "Pasó en 2019."):
+            g = guion(); g["escenas"][1]["narracion"] = frase
+            self.assertIn("no muestra `fuente`", self.err(g), frase)
+            g["escenas"][1]["fuente"] = "INEGI, 2025"
+            self.assertEqual(vox.validar_guion(g), [], frase)
+        g = guion(); g["escenas"][1]["narracion"] = "Son 3 pasos y 1 idea."   # contar no es un dato
+        self.assertEqual(vox.validar_guion(g), [])
+        g = guion(); g["escenas"][1]["narracion"] = "El 73 % lo ignora."; g["cifras_sin_fuente"] = "es una cifra de ejemplo que el video declara como hipotética"
+        self.assertEqual(vox.validar_guion(g), [])
+
+
+class Revision(unittest.TestCase):
+    def test_tempo_ajustado_a_los_cortes(self):
+        cortes = [3.1, 6.3, 9.8, 13.2]
+        def error(bpm):
+            n = 60 / bpm
+            return sum(min(c % n, n - c % n) for c in cortes) / len(cortes)
+        nuevo = vox.SON.ajustar_bpm(120, cortes)
+        self.assertTrue(120 * 0.92 <= nuevo <= 120 * 1.08)
+        self.assertLessEqual(error(nuevo), error(120))
+        self.assertEqual(vox.SON.ajustar_bpm(120, []), 120.0)
+        self.assertEqual(vox.SON.plan_musica("energia", 4, cortes), vox.SON.plan_musica("energia", 4, cortes))
+
+    def test_no_se_cierra_sin_revisar_el_render_actual(self):
+        import shutil, subprocess, json
+        if not shutil.which("ffmpeg"):
+            self.skipTest("sin ffmpeg")
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp); (d / "out").mkdir()
+            final = d / "out" / "final.mp4"
+            hacer = lambda color: subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", f"color=c={color}:s=270x480:r=30:d=4",
+                                                  "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo", "-shortest", "-pix_fmt", "yuv420p", str(final)], check=True)
+            with self.assertRaises(vox.ErrorVox):
+                vox.exigir_revision(d, final)                      # ni siquiera hay render
+            hacer("red")
+            with self.assertRaises(vox.ErrorVox):
+                vox.exigir_revision(d, final)                      # render sin revisar
+            f = vox.crear_revision(d, final, [1.5, 3.0])
+            self.assertTrue((d / "out" / "hoja-transiciones.png").is_file() and (d / "out" / "hoja-telefono.png").is_file())
+            with self.assertRaises(vox.ErrorVox):
+                vox.exigir_revision(d, final)                      # nadie firmó la revisión
+            r = json.loads(f.read_text()); r["revisado_por"] = "IA"; r["hallazgos"] = [{"segundo": 1.5, "problema": "texto encimado"}]
+            f.write_text(json.dumps(r))
+            with self.assertRaises(vox.ErrorVox):
+                vox.exigir_revision(d, final)                      # hallazgo sin arreglo
+            r["hallazgos"][0]["arreglo"] = "se bajó el recorte"; f.write_text(json.dumps(r))
+            self.assertEqual(vox.exigir_revision(d, final)["revisado_por"], "IA")
+            vox.crear_revision(d, final, [1.5, 3.0])           # repetir no borra lo anotado
+            self.assertEqual(vox.exigir_revision(d, final)["revisado_por"], "IA")
+            hacer("blue")
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.exigir_revision(d, final)                      # se volvió a rendir: la revisión ya no vale
+            self.assertIn("render anterior", str(cm.exception))
+            m = json.loads(vox.escribir_manifiesto(d, final, {"motor": "x"}).read_text())
+            self.assertEqual(len(m["sha256"]), 64)
 
 
 class Tiempos(unittest.TestCase):

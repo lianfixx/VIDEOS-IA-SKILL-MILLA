@@ -60,19 +60,29 @@ const Papel: React.FC<{c: Colores; cuadricula: boolean}> = ({c, cuadricula}) => 
 };
 
 /** Entrada de un elemento según su "verbo de papel". Devuelve estilos; nunca usa opacidad. */
-const entrar = (verbo: string, f: number, fps: number): React.CSSProperties => {
-  const s = spring({frame: f, fps, config: {damping: 18, stiffness: 170, mass: 0.8}});
+// Cada clase de objeto tiene su física. Si todo rebota igual, nada se siente preciso.
+const RESORTES = {
+  titular: {damping: 26, stiffness: 230, mass: 0.8}, // cae firme y se queda quieto para leerse
+  recorte: {damping: 13, stiffness: 150, mass: 1},   // tiene peso: se pasa un poco y asienta
+  rotulo: {damping: 200, stiffness: 300, mass: 0.6}, // chico y seco, sin rebote
+} as const;
+const entrar = (verbo: string, f: number, fps: number, clase: keyof typeof RESORTES = 'titular'): React.CSSProperties => {
+  const s = spring({frame: f, fps, config: RESORTES[clase]});
   const duro = spring({frame: f, fps, config: {damping: 200, stiffness: 260}});
   if (f < 0) return {transform: 'translateX(-3000px)'};
   switch (verbo) {
     case 'sello':
-      return {transform: `scale(${interpolate(duro, [0, 1], [1.9, 1])}) rotate(${interpolate(duro, [0, 1], [-9, 0])}deg)`, clipPath: duro < 0.02 ? 'inset(50%)' : undefined};
+      // Un recorte grande no puede caer desde 1.9x: taparía el titular mientras entra.
+      return {transform: `scale(${interpolate(duro, [0, 1], [clase === 'recorte' ? 1.25 : 1.9, 1])}) rotate(${interpolate(duro, [0, 1], [-9, 0])}deg)`, clipPath: duro < 0.02 ? 'inset(50%)' : undefined};
     case 'desliza-izq':
       return {transform: `translateX(${interpolate(s, [0, 1], [-1300, 0])}px) rotate(${interpolate(s, [0, 1], [-8, 0])}deg)`};
     case 'desliza-der':
       return {transform: `translateX(${interpolate(s, [0, 1], [1300, 0])}px) rotate(${interpolate(s, [0, 1], [8, 0])}deg)`};
     case 'cae':
       return {transform: `translateY(${interpolate(s, [0, 1], [-1500, 0])}px) rotate(${interpolate(s, [0, 1], [6, 0])}deg)`};
+    case 'sube': // solo para recortes: entra desde abajo y nunca cruza el titular
+      // Sube sin pasarse: un rebote hacia arriba pisaría la última línea del titular.
+      return {transform: `translateY(${interpolate(spring({frame: f, fps, config: {damping: 24, stiffness: 170, mass: 0.9}}), [0, 1], [1300, 0])}px) rotate(${interpolate(duro, [0, 1], [-5, 0])}deg)`};
     case 'desdobla':
       return {transform: `perspective(1400px) rotateX(${interpolate(s, [0, 1], [-96, 0])}deg)`, transformOrigin: 'top center'};
     case 'mordidas': {
@@ -162,8 +172,9 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   const alto = (e.nota ? 1150 : 1265) - arriba;
   // Flotación lenta y continua (antes vibraba a 12 fps: Emi lo percibió como temblor).
   const vaiven = `translateY(${Math.sin(f / 24) * 5}px) rotate(${(indice % 2 ? 2 : -2) + Math.sin(f / 37 + indice) * 0.7}deg)`;
-  const verbos = ['cae', 'desliza-der', 'sello', 'desliza-izq'];
-  const entrada = entrar(verbos[indice % verbos.length], f - 8, fps);
+  const verbos = ['sube', 'desliza-der', 'sello', 'desliza-izq']; // ninguno pasa por encima del titular
+  const entrada = entrar(verbos[indice % verbos.length], f - 8, fps, 'recorte');
+
   const medio = spring({frame: f - 4, fps, config: {damping: 200, stiffness: 120}});
   // Escenas de más de 5 s: a la mitad el recorte da un pulso para que el plano no se quede quieto.
   const golpe = e.dur > 150 ? spring({frame: f - Math.round(e.dur / 2), fps, config: {damping: 200, stiffness: 90}}) : 0;
@@ -233,7 +244,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
   return (
     <div style={{position: 'absolute', width: W, height: H}}>
       {e.kicker && (
-        <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba + 22, ...entrar('mordidas', f, fps)}}>
+        <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba + 22, ...entrar('mordidas', f, fps, 'rotulo')}}>
           <div style={{fontFamily: 'Anton', fontSize: 44, letterSpacing: 2, color: c.papel, background: c.tinta, padding: '6px 22px', transform: 'rotate(-2deg)', textTransform: 'uppercase'}}>{e.kicker}</div>
         </div>
       )}
@@ -241,7 +252,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = 
       <Sticker e={e} c={c} f={f} indice={indice} arriba={finTitular + 62} />
       <Remate e={e} c={c} f={f} arriba={finTitular + 62} />
       <div style={{position: 'absolute', inset: 0, zIndex: 3}}><Nota e={e} c={c} f={f} indice={indice} /></div>
-      {e.fuente && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 30, maxWidth: 520, textAlign: 'right', fontFamily: 'Caveat', fontSize: 42, lineHeight: 1, color: c.tinta}}>Fuente: {e.fuente}</div>}
+      {e.fuente && <div style={{position: 'absolute', right: W - SEGURO.der, top: SEGURO.arriba + 30, maxWidth: 520, textAlign: 'right', fontFamily: 'Anton', fontSize: 32, lineHeight: 1.1, letterSpacing: 0.5, color: c.tinta, textTransform: 'uppercase'}}>Fuente: {e.fuente}</div>}
     </div>
   );
 };

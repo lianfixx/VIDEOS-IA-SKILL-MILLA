@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.2.1"
+  version: "0.3.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -55,7 +55,7 @@ Datos en fuentes verificables, cada cifra con su fuente; nada de cifras derivada
 
 ## 3. Storyboard y aprobación
 
-`STORYBOARD.md` en la producción: por escena, fondo, herramienta, texto en pantalla, qué se dibuja y qué le pasa (la acción) y transición de salida. A Emi se le muestra una línea por escena. Solo con su visto bueno se marca `aprobaciones.storyboard: true`. `render` se niega a producir un entregable sin las dos aprobaciones, y `voz --execute` no gasta un solo carácter sin ellas ni si Emi no pidió la voz del espacio.
+`STORYBOARD.md` en la producción: por escena, **para qué existe** (gancho, contexto, dato, giro, prueba, opinión, remate o cierre), fondo, herramienta, texto en pantalla, qué se dibuja y qué le pasa (la acción) y transición de salida. Si no se puede decir para qué está una escena, sobra; y al menos una lleva la opinión de Emi. A Emi se le muestra una línea por escena. Solo con su visto bueno se marca `aprobaciones.storyboard: true`. `render` se niega a producir un entregable sin las dos aprobaciones, y `voz --execute` no gasta un solo carácter sin ellas ni si Emi no pidió la voz del espacio.
 
 ## 4. Flujo de producción
 
@@ -68,7 +68,8 @@ $P voz $D --execute                                         # una sola toma; dev
 # construir scenes.js (pizarrón) o video.js (estilos) con esas duraciones exactas
 $P musica $D --animo energia                                # música original por código + rejilla de beats exacta (mide el video)
 $P qa $D                                                    # cuadros de prueba + zonas que tapa TikTok, con la misma línea de tiempo del render
-$P render $D                                                # render, mezcla, master, auditoría y copia ligera
+$P render $D                                                # render, mezcla, master, auditoría, manifiesto y copia ligera
+$P revisar $D                                               # transiciones y tamaño teléfono + informe; sin él no hay cierre
 $P cierre $D                                                # saldos: gastado y restante
 ```
 
@@ -99,7 +100,8 @@ Gancho escrito en pantalla antes de 0.3 s. Una idea por escena, de 8 a 10 escena
 
 1. `qa`: mirar **todos** los cuadros de `out/hoja.jpg`: texto cortado o encimado, dibujos tapando texto, escenas vacías, algo bajo las zonas rojas. Para cada transición, cuadros cada 0.2 s alrededor (`node render.mjs --stills ...`).
 2. `render`: corregir todos los avisos de `out/auditoria.json` (formato, duración frente a lo pedido, voz que se corta o video que sobra, sonoridad −14 ± 1 LUFS, pico, música corta, silencios).
-3. Ver el MP4 completo. Lo que una IA no puede juzgar (cómo suena la voz, si el chiste funciona, si se siente natural) se le pregunta a Emi con el video delante, en cada video.
+3. `revisar`: mirar `out/hoja-transiciones.png` (cada cambio de escena antes, durante y después) y `out/hoja-telefono.png` (tamaño real de un teléfono); anotar en `out/revision.json` cada hallazgo con su arreglo, los pendientes y quién revisó. Corregir los tres peores, volver a rendir y a revisar. `cierre` se niega si el informe falta o es de un render anterior.
+4. Ver el MP4 completo. Lo que una IA no puede juzgar (cómo suena la voz, si el chiste funciona, si se siente natural) se le pregunta a Emi con el video delante, en cada video.
 
 ## 8. Entregar, saldos y aprendizaje
 

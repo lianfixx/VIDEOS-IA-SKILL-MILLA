@@ -6,7 +6,7 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 
 | Qué | Cómo cambia de un video a otro |
 |---|---|
-| Música | La semilla sale del título y la narración: cambian tonalidad (±3 semitonos), tempo (±6 %), progresión de acordes (5 por modo) y patrón del arpegio. El arreglo sigue los cambios de escena: escenas alternas más ligeras y final a pleno en todos los ánimos; barrido en cada corte y, salvo en `serio`, un golpe. Queda registrada en `estados/musica.json`. |
+| Música | La semilla sale del título y la narración: cambian tonalidad (±3 semitonos), tempo (±6 %, y luego ajustado hasta ±8 % para que los cambios de escena caigan en pulso), progresión de acordes (5 por modo) y patrón del arpegio. El arreglo sigue los cambios de escena: escenas alternas más ligeras y final a pleno en todos los ánimos; barrido en cada corte y, salvo en `serio`, un golpe. Queda registrada en `estados/musica.json`. |
 | Efectos | Mismo carácter, los ocho afinados a la tonalidad de la música de ese video y todos al mismo nivel (−20 dBFS RMS). |
 | Voz, subtítulos | De la narración de ese guion, con tiempos reales. |
 | Portada | Del titular y el recorte de ese video. |
@@ -38,7 +38,9 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 
 ## Movimiento
 
-- Entradas (`entrada`): `sello`, `desliza-izq`, `cae`, `desliza-der`, `desdobla`, `mordidas`.
+- Entradas (`entrada`): `sello`, `desliza-izq`, `cae`, `desliza-der`, `desdobla`, `mordidas`. Los recortes usan además `sube` y nunca cruzan el titular.
+- Física por clase: titular firme (sin rebote), recorte con peso (se pasa un poco y asienta), rótulo seco.
+- Función de escena (`funcion`): `gancho`, `contexto`, `dato`, `giro`, `prueba`, `opinion`, `remate`, `cierre`.
 - Transiciones (`transicion`): `viaje` (cámara sobre el lienzo), `barrido` (panel de color), `rasgado` (papel).
 - Cierre: sello con el llamado del espacio y flecha a comentarios al terminar la voz. Pulso del recorte a media escena en escenas de más de 5 s.
 - Detalles fijos: resaltador que se dibuja, rayos tras el recorte, semitono, cinta, nota manuscrita con flecha, barra de avance, subtítulos por palabra.

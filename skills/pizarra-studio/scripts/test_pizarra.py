@@ -212,6 +212,24 @@ class Navegador(unittest.TestCase):
                 os.environ["CHROME_PATH"] = previo
 
 
+class Cortes(unittest.TestCase):
+    def test_cortes_de_la_voz_o_de_los_golpes_del_motor(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp); (d / "audio").mkdir()
+            self.assertEqual(pizarra.cortes_del_video(d), [])
+            (d / "hits.json").write_text(json.dumps([{"t": 9.5}, {"t": 4.25}]))
+            self.assertEqual(pizarra.cortes_del_video(d), [4.25, 9.5])
+            (d / "tiempos.json").write_text(json.dumps({"escenas": [{"inicio": 0}, {"inicio": 3.2}, {"inicio": 7.0}]}))
+            self.assertEqual(pizarra.cortes_del_video(d), [4.25, 9.5])   # sin voz, la voz no manda
+            (d / "audio" / "vo.wav").write_bytes(b"x")
+            self.assertEqual(pizarra.cortes_del_video(d), [3.2, 7.0])
+
+    def test_cierre_exige_revision(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "out").mkdir()
+            self.assertEqual(pizarra.main(["cierre", tmp]), 2)
+
+
 class Hoja(unittest.TestCase):
     def test_hoja_de_contacto_con_guia(self):
         from PIL import Image

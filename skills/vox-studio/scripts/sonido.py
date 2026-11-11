@@ -82,7 +82,25 @@ PROGRESIONES = {"mayor": [[0, 4, 5, 3], [0, 3, 4, 0], [0, 3, 5, 4], [0, 5, 3, 4]
                 "menor": [[0, 5, 3, 4], [0, 3, 5, 4], [0, 6, 5, 4], [0, 5, 2, 6], [0, 3, 6, 4]]}
 
 
-def plan_musica(animo: str, semilla: int) -> dict:
+def ajustar_bpm(bpm: float, cortes: list[float]) -> float:
+    """Tempo, dentro de ±8 %, que hace caer los cambios de escena lo más cerca posible de un pulso.
+
+    La imagen sigue a la voz y no se puede mover; lo que se mueve es la música. Así el
+    sonido y el corte comparten reloj sin tocar la narración.
+    """
+    if not cortes:
+        return float(bpm)
+    mejor, error_mejor = float(bpm), None
+    for paso in range(int(bpm * 0.92 * 2), int(bpm * 1.08 * 2) + 1):
+        cand = paso / 2.0
+        negra = 60.0 / cand
+        error = sum(min(c % negra, negra - c % negra) for c in cortes) / len(cortes)
+        if error_mejor is None or error < error_mejor - 1e-9 or (abs(error - error_mejor) < 1e-9 and abs(cand - bpm) < abs(mejor - bpm)):
+            mejor, error_mejor = cand, error
+    return mejor
+
+
+def plan_musica(animo: str, semilla: int, cortes: list[float] | None = None) -> dict:
     """Decisiones musicales propias de cada video: tonalidad, tempo, progresión y patrón.
 
     La semilla sale del texto del guion, así que cada video tiene su pista y el mismo
@@ -96,7 +114,7 @@ def plan_musica(animo: str, semilla: int) -> dict:
     return {
         "animo": animo, "modo": modo, "semilla": int(semilla),
         "tonica": int(tonica + rng.integers(-3, 4)),
-        "bpm": int(round(bpm * (1 + rng.uniform(-0.06, 0.06)))),
+        "bpm": ajustar_bpm(int(round(bpm * (1 + rng.uniform(-0.06, 0.06)))), cortes or []),
         "progresion": opciones[int(rng.integers(0, len(opciones)))],
         "patron": [int(x) for x in rng.permutation(3)],
     }
@@ -108,7 +126,7 @@ def componer(animo: str, segundos: float, semilla: int = 7, cortes: list[float] 
     `cortes` son los segundos donde cambia cada escena: el arreglo respira con el video
     (escenas alternas más ligeras, golpe y barrido en cada cambio, final a pleno).
     """
-    plan = plan_musica(animo, semilla)
+    plan = plan_musica(animo, semilla, cortes)
     bpm, tonica, modo, prog, patron = plan["bpm"], plan["tonica"], plan["modo"], plan["progresion"], plan["patron"]
     rng = np.random.default_rng(semilla + 1)
     negra = 60.0 / bpm

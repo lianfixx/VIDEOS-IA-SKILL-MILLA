@@ -15,6 +15,7 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
   musica DIR --animo A [--segundos N]       música original por código + rejilla de beats exacta
   qa DIR [--cada 1.2]                       cuadros de prueba de todo el video + hoja con guía de TikTok
   render DIR [--prueba]                     render + mezcla + master a -14 LUFS + auditoría + copia ligera
+  revisar DIR [--prueba]                    hojas de transiciones y de tamaño teléfono + informe de revisión (obligatorio antes de `cierre`)
   cierre DIR                                tabla de gastado y restante por proveedor
   aprender "TEXTO" [--espacio E] / aprendizajes [--espacio E]
 
@@ -504,7 +505,24 @@ def rendir(d: Path, prueba: bool = False) -> dict:
                "ganancia_master_db": ganancia_master, "motor": str(marca.get("motor") or commit_instalado())[:7],
                "mb": round(final.stat().st_size / 1e6, 1), "avisos": avisos}
     (d / "out" / "auditoria.json").write_text(json.dumps(informe, ensure_ascii=False, indent=1))
+    vox.escribir_manifiesto(d, final, {"skill_md": str(RAIZ / "SKILL.md"), "motor": f"santmun/video-pizarra@{informe['motor']} ({modo})",
+                            "render": {"codec": "h264", "audio": "aac 192k 48 kHz", "voz": hay_voz, "musica": hay_musica, "efectos": informe["efectos"]},
+                            "medido": {"lufs": m["lufs"], "pico_dbtp": m["pico_dbtp"], "duracion_s": informe["duracion_s"]}})
     return informe
+
+
+def cortes_del_video(d: Path) -> list[float]:
+    """Dónde cambia cada escena: de la voz si la hay; si no, de los golpes de transición que anotó el motor."""
+    tf = d / "tiempos.json"
+    if tf.is_file() and (d / "audio" / "vo.wav").is_file():
+        return [t["inicio"] for t in json.loads(tf.read_text())["escenas"][1:]]
+    hf = d / "hits.json"
+    if hf.is_file():
+        try:
+            return sorted(float(h["t"] if isinstance(h, dict) else h) for h in json.loads(hf.read_text()))
+        except (ValueError, KeyError, TypeError):
+            return []
+    return []
 
 
 # ---------- producción ----------
@@ -579,6 +597,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("voz"); p.add_argument("dir"); p.add_argument("--execute", action="store_true"); p.add_argument("--prueba", action="store_true")
     p = sub.add_parser("musica"); p.add_argument("dir"); p.add_argument("--animo", choices=sorted(SON.ANIMOS), required=True)
     p.add_argument("--segundos", type=float, default=None)
+    p = sub.add_parser("revisar"); p.add_argument("dir"); p.add_argument("--prueba", action="store_true")
     p = sub.add_parser("qa"); p.add_argument("dir"); p.add_argument("--cada", type=float, default=1.2)
     p = sub.add_parser("aprender"); p.add_argument("texto"); p.add_argument("--espacio", default="")
     p = sub.add_parser("aprendizajes"); p.add_argument("--espacio", default="")
@@ -641,8 +660,17 @@ def main(argv=None) -> int:
             if not i["avisos"]:
                 print("  Sin avisos automáticos.")
             print("Copia ligera junto al archivo (-movil). Pide a Emi que lo vea y lo escuche; termina con `cierre`.")
+        elif a.cmd == "revisar":
+            d = Path(a.dir)
+            video = d / "out" / ("prueba.mp4" if a.prueba else "final.mp4")
+            if not video.is_file():
+                raise ErrorVox(f"no existe {video}: falta rendir")
+            f = vox.crear_revision(d, video, cortes_del_video(d))
+            print(f"Mira {d}/out/hoja-transiciones.png (cada cambio de escena: antes, durante y después) y {d}/out/hoja-telefono.png (tamaño real de un teléfono).")
+            print(f"Luego llena {f}: `hallazgos` (segundo, problema, arreglo), `pendientes` y `revisado_por`. Corrige los 3 peores y vuelve a rendir.")
         elif a.cmd == "cierre":
             d = Path(a.dir)
+            vox.exigir_revision(d, d / "out" / "final.mp4")
             ini = d / "estados" / "saldo-inicio.json"
             ahora = vox.saldo()
             (d / "estados").mkdir(exist_ok=True)

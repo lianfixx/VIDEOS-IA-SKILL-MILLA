@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.9.0 y Pizarra Studio 0.3.0: mejoras tomadas de cuatro referencias de X
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: leer y analizar cuatro publicaciones de X y, si algo mejora las skills de video, implementarlo todo, auditar a fondo y corregir.
+- Cambios: análisis completo en `docs/REFERENCIAS-EXTERNAS.md` (qué se adoptó, qué ya estaba y qué se descartó con motivo). Vox Studio: `funcion` obligatoria por escena (primera gancho, última cierre, al menos una opinión); `ganchos_propuestos` y `gancho_elegido`; una cifra sin `fuente` en su escena es error; el tempo de la música se ajusta ±8 % a los cambios de escena; aviso de audio plano; resortes distintos para titular, recorte y rótulo; los recortes ya no cruzan el titular al entrar (`sube`, sello desde 1.25×); línea de fuente legible; comandos `revisar` (hojas de transiciones y de tamaño teléfono + `out/revision.json`) y `referencia`; `cierre` exige la revisión del render actual; `out/manifiesto.json`. Pizarra Studio: `revisar`, la misma exigencia en `cierre`, manifiesto, función por escena en el storyboard y tempo ajustado.
+- Archivos: `docs/REFERENCIAS-EXTERNAS.md`, `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md,plantilla/guion.ejemplo.json,plantilla/src/Vox.tsx,scripts/vox.py,scripts/sonido.py,scripts/test_vox.py}`, `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 49/49 y de pizarra-studio 21/21 → aprobado; `tsc --noEmit` → aprobado; demo 2 reconstruido sin gasto y rendido tres veces: sin avisos de audio ni de imagen; la hoja de transiciones nueva mostró dos fallas reales (recorte sobre el titular, fuente ilegible en teléfono) → corregidas y comprobadas en el render siguiente; `cierre` sin revisión → rechazado, con revisión firmada → aprobado; `revisar` en una producción de pizarra → aprobado. Los videos adjuntos a las publicaciones no se vieron; el repositorio de «475 videos» no se pudo verificar (el enlace es un Discord).
+- Pendiente: formatos 1:1 y 16:9 en Vox Studio (propuesto, sin hacer); que Emi vea y escuche; fusionar a `main`.
+
 ## 2026-11-11 · Vox Studio 0.8.3 y Pizarra Studio 0.2.1: qué hacer si se llaman donde no se puede producir
 
 - Agente: Claude Code (sesión en la nube)

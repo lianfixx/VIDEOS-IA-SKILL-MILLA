@@ -15,6 +15,8 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
   biblioteca [--buscar TEXTO] [--espacio E]  qué hay para reciclar
   reciclar ID --dir DIR                    copia un recurso de la biblioteca a una producción
   sonido GUION                             analiza el guion y propone música, efectos y remates
+  revisar DIR                              hojas de transiciones y de tamaño teléfono + informe de revisión (obligatorio antes de `cierre`)
+  referencia ARCHIVO --dir DIR             convierte una imagen o video de referencia de Emi en una hoja para mirarla
   render DIR                               render + portada + master a -14 LUFS + hoja de fotogramas para auditar
   cierre DIR                               tabla de gastado y restante del video (obligatoria al entregar)
   saldo                                    cuánto queda en Kie, ElevenLabs y Apify
@@ -69,6 +71,9 @@ SIGNOS = "¿¡?!.,;:"
 MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
 COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
 ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lento
+# Para qué existe cada escena. Si no se puede decir, la escena sobra.
+FUNCIONES = ["gancho", "contexto", "dato", "giro", "prueba", "opinion", "remate", "cierre"]
+CIFRA = re.compile(r"\d+\s*%|\$\s*\d|\d[\d.,]*\s*(?:mil|millones|pesos|dólares|años|veces|por ciento)\b|\b\d{2,}[\d.,]*\b", re.I)
 LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -182,6 +187,11 @@ def validar_guion(g: dict) -> list[str]:
         e.append("portada.texto: máximo 34 caracteres y 3 líneas")
     if port.get("imagen_archivo") and not ruta_segura(port["imagen_archivo"]):
         e.append("portada.imagen_archivo debe ser relativa a public/")
+    ganchos = g.get("ganchos_propuestos")
+    if not (isinstance(ganchos, list) and len(ganchos) >= 2 and all(isinstance(x, str) and x.strip() for x in ganchos)):
+        e.append("faltan ganchos_propuestos: al menos 2 aperturas distintas para que Emi elija")
+    elif not (isinstance(g.get("gancho_elegido"), int) and not isinstance(g.get("gancho_elegido"), bool) and 0 <= g["gancho_elegido"] < len(ganchos)):
+        e.append("falta gancho_elegido: el número (desde 0) del gancho que eligió Emi")
     escenas = g.get("escenas") or []
     if not any(s.get("sonido") for s in escenas):
         e.append("ninguna escena tiene `sonido`: propone al menos un efecto que subraye el contenido")
@@ -219,6 +229,10 @@ def validar_guion(g: dict) -> list[str]:
             if not isinstance(s.get(campo, ""), str):
                 e.append(f"{p}: {campo} debe ser texto")
                 s[campo] = ""
+        if s.get("funcion") not in FUNCIONES:
+            e.append(f"{p}: falta `funcion` (para qué existe la escena); opciones {FUNCIONES}")
+        if CIFRA.search(n) and not str(s.get("fuente", "")).strip() and len(str(g.get("cifras_sin_fuente", "")).strip()) < 10:
+            e.append(f"{p}: la narración trae una cifra y la escena no muestra `fuente`. Un dato sin fuente no se publica")
         if s.get("remate") and not s.get("sonido"):
             e.append(f"{p}: un remate cae con su sonido; elige `sonido` para esta escena")
         if s.get("remate") and i == 0:
@@ -238,6 +252,14 @@ def validar_guion(g: dict) -> list[str]:
             e.append(f"{p}: transicion {tr!r} no existe; opciones {sorted(set(TRANSICIONES))}")
         if i > 1 and trs[i] == trs[i - 1]:
             e.append(f"{p}: repite la transición de la escena anterior ({trs[i]})")
+    funs = [s.get("funcion") for s in escenas]
+    if escenas and all(f in FUNCIONES for f in funs):
+        if funs[0] != "gancho":
+            e.append("la primera escena debe ser el `gancho`")
+        if funs[-1] != "cierre":
+            e.append("la última escena debe ser el `cierre`")
+        if "opinion" not in funs:
+            e.append("ninguna escena tiene funcion `opinion`: la postura de Emi debe oírse en el video, no solo guiarlo")
     if escenas and "?" not in str(escenas[-1].get("narracion", "")):
         e.append("la última escena debe narrar la pregunta de cierre (cta_pregunta)")
     return e
@@ -265,8 +287,6 @@ def avisos_guion(g: dict) -> list[str]:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
     if sum(1 for s in escenas if s.get("imagen_archivo")) < max(2, len(escenas) // 2):
         a.append("menos de la mitad de las escenas lleva imagen; el estilo pide algo que ver casi siempre")
-    if not any(s.get("fuente") for s in escenas) and any(ch.isdigit() for s in escenas for ch in str(s.get("narracion", ""))):
-        a.append("hay cifras en la narración y ninguna escena muestra `fuente`")
     primeras = [str(s.get("keyword", "")).split()[:1] for s in escenas]
     if len({tuple(x) for x in primeras}) < len(primeras) - 1:
         a.append("varios keywords empiezan igual; varía el arranque")
@@ -680,6 +700,13 @@ def auditar_audio(d: Path, datos: dict, final: dict, ganancia_master: float = 0.
         if sobre_voz < -16:
             avisos.append(f"el efecto {nombre} queda {-sobre_voz:.1f} dB bajo la voz: apenas se oirá")
     informe["efectos_respecto_a_voz_db"] = niveles
+    try:  # prueba «a ojos cerrados»: un audio sin altibajos no tiene forma propia
+        lra = float(_loudnorm(d / "out" / "final.mp4")["input_lra"])
+        informe["rango_dinamico_lu"] = lra
+        if lra < 1.5:
+            avisos.append(f"el audio es plano (rango {lra} LU): sin la imagen no se distinguiría un momento de otro")
+    except (ErrorVox, KeyError, ValueError):
+        pass
     silencio = subprocess.run(["ffmpeg", "-hide_banner", "-i", str(d / "out" / "final.mp4"), "-af", "silencedetect=n=-45dB:d=1.2", "-f", "null", "-"],
                               capture_output=True, text=True).stderr.count("silence_start")
     if silencio:
@@ -756,7 +783,119 @@ def rendir(d: Path) -> dict:
     m = medir(d / "out" / "final.mp4")
     m["audio"] = auditar_audio(d, datos, m, tipo)
     m["video"] = auditar_video(d, datos)
+    escribir_manifiesto(d, d / "out" / "final.mp4", {"skill_md": str(RAIZ / "SKILL.md"), "motor": "remotion 4.0.540",
+                        "render": {"codec": "h264", "crf": 16, "jpeg_quality": 95, "color": "bt709", "audio": "aac 192k 48 kHz"},
+                        "medido": {"lufs": m["lufs"], "pico_dbtp": m["pico_dbtp"], "duracion_s": m["duracion_s"]}})
     return m
+
+
+# ---------- revisión del render (lo que se entrega se miró) ----------
+
+def sha_archivo(ruta: Path, n: int = 16) -> str:
+    h = hashlib.sha256()
+    with ruta.open("rb") as fh:
+        for trozo in iter(lambda: fh.read(1 << 20), b""):
+            h.update(trozo)
+    return h.hexdigest()[:n]
+
+
+def hojas_de_revision(video: Path, cortes_s: list[float], salida: Path, fps: int = FPS) -> list[float]:
+    """Evidencia para revisar un render: cada transición antes, durante y después, y el video a tamaño de teléfono.
+
+    Una hoja a intervalos regulares no ve una transición rota; por eso se muestrea alrededor de cada corte.
+    """
+    dur = duracion_audio(video)
+    total = max(1, int(dur * fps) - 1)
+    if not cortes_s:  # sin cortes conocidos: un punto cada 2.5 s
+        cortes_s = [x * 2.5 for x in range(1, int(dur / 2.5) + 1)]
+    cortes = [c for c in cortes_s if 0.3 < c < dur - 0.2][:12]
+    desfases = [-6, -3, 0, 3, 6, 12]
+    cuadros = sorted({min(total, max(0, int(round(c * fps)) + o)) for c in cortes for o in desfases})
+    salida.mkdir(parents=True, exist_ok=True)
+    vertical = True
+    sonda = json.loads(_correr(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", str(video)],
+                               capture_output=True, text=True).stdout)["streams"][0]
+    vertical = sonda["height"] > sonda["width"]
+    if cuadros:
+        sel = "+".join(f"eq(n\\,{c})" for c in cuadros)
+        filas = -(-len(cuadros) // len(desfases))
+        _correr(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vf", f"select='{sel}',scale={200 if vertical else 360}:-1,tile={len(desfases)}x{filas}",
+                 "-vsync", "0", "-frames:v", "1", str(salida / "hoja-transiciones.png")])
+    # Tamaño teléfono: así de chico lo ve la gente. Lo que aquí no se lee, no se lee.
+    medios = [0.4] + [(a + b) / 2 for a, b in zip([0.0] + cortes, cortes + [dur])]
+    cuadros_t = sorted({min(total, int(m * fps)) for m in medios})[:14]
+    sel = "+".join(f"eq(n\\,{c})" for c in cuadros_t)
+    _correr(["ffmpeg", "-y", "-v", "error", "-i", str(video), "-vf", f"select='{sel}',scale={150 if vertical else 280}:-1,tile={len(cuadros_t)}x1",
+             "-vsync", "0", "-frames:v", "1", str(salida / "hoja-telefono.png")])
+    return sorted({round(c / fps, 2) for c in cuadros + cuadros_t})
+
+
+def crear_revision(d: Path, video: Path, cortes_s: list[float]) -> Path:
+    tiempos = hojas_de_revision(video, cortes_s, d / "out")
+    f = d / "out" / "revision.json"
+    if f.is_file():  # repetir `revisar` sobre el mismo render no borra lo ya anotado
+        try:
+            if json.loads(f.read_text(encoding="utf-8")).get("render") == sha_archivo(video):
+                return f
+        except ValueError:
+            pass
+    f.write_text(json.dumps({
+        "_doc": "Informe de revisión del render. Lo llena quien miró las hojas y el video; sin él no hay cierre.",
+        "render": sha_archivo(video), "archivo": video.name, "segundos_revisados": tiempos,
+        "hallazgos": [], "pendientes": [], "revisado_por": "", "visto_y_escuchado_por_emi": False,
+    }, ensure_ascii=False, indent=1), encoding="utf-8")
+    return f
+
+
+def exigir_revision(d: Path, video: Path) -> dict:
+    """No se cierra un video cuyo render actual no se revisó."""
+    f = d / "out" / "revision.json"
+    if not video.is_file():
+        raise ErrorVox(f"no existe {video}: falta rendir")
+    if not f.is_file():
+        raise ErrorVox("falta revisar el render: ejecuta `revisar`, mira las hojas y llena out/revision.json")
+    r = json.loads(f.read_text(encoding="utf-8"))
+    if r.get("render") != sha_archivo(video):
+        raise ErrorVox("out/revision.json es de un render anterior: vuelve a ejecutar `revisar` y revisa el video actual")
+    if not (isinstance(r.get("revisado_por"), str) and r["revisado_por"].strip()):
+        raise ErrorVox("out/revision.json no dice quién revisó (`revisado_por`)")
+    if not isinstance(r.get("hallazgos"), list) or not isinstance(r.get("pendientes"), list):
+        raise ErrorVox("out/revision.json: `hallazgos` y `pendientes` deben ser listas")
+    for h in r["hallazgos"]:
+        if not (isinstance(h, dict) and str(h.get("problema", "")).strip() and str(h.get("arreglo", "")).strip()):
+            raise ErrorVox("out/revision.json: cada hallazgo lleva `segundo`, `problema` y `arreglo` (si ya no aplica, quítalo)")
+    return r
+
+
+def escribir_manifiesto(d: Path, final: Path, extra: dict) -> Path:
+    """Con qué se hizo exactamente este archivo: para repetirlo o corregirlo sin usar material viejo."""
+    def sha(rel: str):
+        f = d / rel
+        return sha_archivo(f) if f.is_file() else None
+    skill = (Path(extra.pop("skill_md")).read_text(encoding="utf-8") if extra.get("skill_md") else "")
+    version = re.search(r'version:\s*"([^"]+)"', skill)
+    imagenes = sorted(str(f.relative_to(d)) for carpeta in ("public/img", "assets") for f in (d / carpeta).glob("*") if f.is_file())
+    m = {"fecha": time.strftime("%Y-%m-%d %H:%M:%S"), "archivo": final.name, "sha256": sha_archivo(final, 64),
+         "skill_version": version.group(1) if version else None,
+         "fuentes": {rel: sha(rel) for rel in ("guion.json", "brief.json", "src/data/video.json", "scenes.js", "video.js", "estados/voz.json", "estados/musica.json") if sha(rel)},
+         "imagenes": {rel: sha(rel) for rel in imagenes}, **extra}
+    f = d / "out" / "manifiesto.json"
+    f.write_text(json.dumps(m, ensure_ascii=False, indent=1), encoding="utf-8")
+    return f
+
+
+def hoja_de_referencia(origen: Path, destino: Path) -> Path:
+    """Convierte una imagen o un video de referencia de Emi en una hoja para mirarla y decir qué se toma de ella."""
+    if not origen.is_file():
+        raise ErrorVox(f"no existe {origen}")
+    destino.mkdir(parents=True, exist_ok=True)
+    salida = destino / f"referencia-{sha_archivo(origen, 8)}.jpg"
+    if origen.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}:
+        _correr(["ffmpeg", "-y", "-v", "error", "-i", str(origen), "-vf", "scale='min(900,iw)':-2", str(salida)])
+    else:
+        dur = duracion_audio(origen)
+        _correr(["ffmpeg", "-y", "-v", "error", "-i", str(origen), "-vf", f"fps={8 / max(dur, 1):.4f},scale=240:-2,tile=8x1", "-frames:v", "1", str(salida)])
+    return salida
 
 
 # ---------- fotos reales (Apify) ----------
@@ -881,7 +1020,8 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     video["voz"] = "audio/voz-n.wav"
     # Sonido nuevo para cada video: la semilla sale de su propio texto.
     semilla = int(huella(g["titulo"], texto_completo(g))[:8], 16)
-    plan = SON.plan_musica(video["animo"], semilla) if video["musica"] else {"tonica": 48}
+    cortes_s = [e["desde"] / FPS for e in video["escenas"][1:]]
+    plan = SON.plan_musica(video["animo"], semilla, cortes_s) if video["musica"] else {"tonica": 48}
     SON.sintetizar_efectos(d / "public" / "sfx", semilla, plan["tonica"])
     video["volEfecto"] = VOL_EFECTO
     pista, receta = d / "public" / "audio" / "musica.wav", d / "estados" / "musica.json"
@@ -918,6 +1058,8 @@ def main(argv=None) -> int:
     p.add_argument("--croma", choices=sorted(CROMAS) + ["ninguno"], default="verde")
     p = sub.add_parser("recorte"); p.add_argument("entrada"); p.add_argument("salida")
     p = sub.add_parser("render"); p.add_argument("dir")
+    p = sub.add_parser("revisar"); p.add_argument("dir")
+    p = sub.add_parser("referencia"); p.add_argument("archivo"); p.add_argument("--dir", required=True)
     p = sub.add_parser("sonido"); p.add_argument("guion")
     p = sub.add_parser("foto"); p.add_argument("--consulta", required=True); p.add_argument("--dir", required=True)
     p.add_argument("--max", type=int, default=5); p.add_argument("--tope-usd", type=float, default=0.12)
@@ -1097,8 +1239,17 @@ def main(argv=None) -> int:
             if not au["avisos"] and not m["video"]["avisos"]:
                 print("  Sin avisos automáticos de audio ni de imagen.")
             print(f"Audita {a.dir}/out/hoja.png, {a.dir}/out/hoja-tiktok.png (zonas que tapa TikTok en rojo) y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
+        elif a.cmd == "revisar":
+            d = Path(a.dir)
+            datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
+            f = crear_revision(d, d / "out" / "final.mp4", [e["desde"] / FPS for e in datos["escenas"][1:]])
+            print(f"Mira {d}/out/hoja-transiciones.png (cada cambio de escena: antes, durante y después) y {d}/out/hoja-telefono.png (tamaño real de un teléfono).")
+            print(f"Luego llena {f}: `hallazgos` (segundo, problema, arreglo), `pendientes` y `revisado_por`. Corrige los 3 peores y vuelve a rendir.")
+        elif a.cmd == "referencia":
+            print(f"Hoja en {hoja_de_referencia(Path(a.archivo), Path(a.dir) / 'referencias')}. Mírala y dile a Emi qué tomas de ella (ritmo, tipografía, transiciones) antes de seguir.")
         elif a.cmd == "cierre":
             d = Path(a.dir)
+            exigir_revision(d, d / "out" / "final.mp4")
             ini = d / "estados" / "saldo-inicio.json"
             ahora = saldo()
             (d / "estados").mkdir(exist_ok=True)
