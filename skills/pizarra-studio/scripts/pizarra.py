@@ -237,15 +237,23 @@ def rejilla_beats(plan: dict, segundos: float, cortes: list[float]) -> dict:
             "sections": [0.0] + [round(c, 2) for c in cortes]}
 
 
+def duracion_del_video(d: Path) -> float:
+    """Duración real que calcula el motor al construir las escenas (los dos motores la imprimen distinto)."""
+    import re
+    tmp = "_medir"
+    salida = _node(d, "--stills", "0.3", *(["--outdir", tmp] if modo_de(d) == "estilos" else []))
+    shutil.rmtree(d / tmp, ignore_errors=True)
+    m = re.search(r"(?:duration|duración)\s*([0-9]+(?:\.[0-9]+)?)\s*s", salida)
+    if not m:
+        raise ErrorVox("no se pudo medir la duración del video: indica --segundos")
+    return float(m.group(1))
+
+
 def componer_musica(d: Path, animo: str, segundos: float | None) -> dict:
     tf = d / "tiempos.json"
     tiempos = json.loads(tf.read_text()) if tf.is_file() else None
     if segundos is None:  # la duración real la da el propio motor al dibujar las escenas
-        salida = _node(d, "--stills", "0.3")
-        try:
-            segundos = float(salida.split("duration")[-1].strip().rstrip("s").split()[0].rstrip("s")) + 0.6
-        except (ValueError, IndexError) as exc:
-            raise ErrorVox("no se pudo medir la duración del video: indica --segundos") from exc
+        segundos = duracion_del_video(d) + 0.6
     cortes = [t["inicio"] for t in tiempos["escenas"][1:]] if tiempos else []
     g = d / "guion.json"
     semilla = int(vox.huella(g.read_text(encoding="utf-8") if g.is_file() else d.name, animo)[:8], 16)

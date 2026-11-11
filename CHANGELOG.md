@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.1.2: los cinco estilos probados y duración medida en ambos motores
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: fusionar a `main`; dejar la skill terminada antes del primer video.
+- Cambios: `musica` sin `--segundos` no sabía leer la duración en el motor de estilos (lo imprime distinto) y fallaba: `duracion_del_video` lee ambos formatos y no ensucia `stills/`; prueba añadida.
+- Archivos: `skills/pizarra-studio/scripts/{pizarra.py,test_pizarra.py}`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 14/14 → aprobado; cuadros reales de acuarela, acuarela viva, cuaderno (vertical) y minimal (horizontal) con la marca de Castorena, revisados como imagen → aprobado; render técnico completo del motor de estilos: 43.0 s, 1080×1920, −14.11 LUFS, pico −2.32 dBTP, sin avisos → aprobado técnicamente.
+- Pendiente: integrar la revisión independiente del código (en curso); modo historia y render horizontal completo sin probar; primer video real.
+
 ## 2026-11-11 · Pizarra Studio 0.1.1: preferencias permanentes de Emi y entorno
 
 - Agente: Claude Code (sesión en la nube)

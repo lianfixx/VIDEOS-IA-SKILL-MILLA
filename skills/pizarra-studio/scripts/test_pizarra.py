@@ -130,6 +130,29 @@ class Sonido(unittest.TestCase):
             self.assertTrue((d / "audio" / "vo.wav").is_file() and (d / "tiempos.json").is_file())
 
 
+class Duracion(unittest.TestCase):
+    def test_lee_la_duracion_de_los_dos_motores(self):
+        real = pizarra._node
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                d = Path(tmp)
+                pizarra._node = lambda d, *a: "stills done (1), duration 60.33s\n"
+                self.assertAlmostEqual(pizarra.duracion_del_video(d), 60.33)
+                (d / "engine").mkdir(); (d / "video.js").write_text("")
+                visto = {}
+                def estilos(d, *a):
+                    visto["args"] = a
+                    return "stills: 1 → _medir/  (duración 43.00s)\n"
+                pizarra._node = estilos
+                self.assertAlmostEqual(pizarra.duracion_del_video(d), 43.0)
+                self.assertIn("--outdir", visto["args"])  # no ensucia stills/
+                pizarra._node = lambda d, *a: "nada"
+                with self.assertRaises(vox.ErrorVox):
+                    pizarra.duracion_del_video(d)
+        finally:
+            pizarra._node = real
+
+
 class Hoja(unittest.TestCase):
     def test_hoja_de_contacto_con_guia(self):
         from PIL import Image
