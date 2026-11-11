@@ -52,6 +52,14 @@ Registrar el problema, su evidencia y el alcance; proponer cambio; probar regres
 
 Recapitulación de material disponible, no certificación de que se recuperó cada palabra del historial original. `video-vox` de santmun fue un antecedente; no se copió su código. Las marcas y contenidos audiovisuales de terceros conservan sus derechos. La publicación del método no transfiere licencias de voces, música, imágenes o marca MILLA. No se asigna una licencia general de código abierto sin decisión del titular.
 
+## Editor Studio (editar lo que Emi graba)
+
+Cuarta skill, con instrucciones propias: `skills/editor-studio/` edita un video ya grabado (a cámara, entrevista, evento, vlog) para los mismos espacios. Transcribe con tiempo por palabra, propone cortes que Emi aprueba, pone subtítulos, movimiento, apoyos, sonido y color en tres niveles que se le explican en cada video, se revisa sobre el archivo rendido y entrega sin publicar. El código es propio y el motor de render es HyperFrames (Apache 2.0). Estado: candidata, probada con un clip sintético. Empieza por `skills/editor-studio/SKILL.md`.
+
+## Cerebro de video
+
+`cerebro/CEREBRO.md` es el mapa de todas las skills que producen contenido (las cuatro de aquí, más X e Historias en sus repositorios): quién es dueña de qué, qué lee de las demás y por dónde cruzan las ideas. `cerebro/radar.py` observa cada semana qué funciona en TikTok y Reels en los temas de cada espacio y lo deja en `cerebro/tendencias/` como candidato, nunca como regla.
+
 ## Vox Studio (shorts estilo documental-collage)
 
 Segunda skill del repositorio, independiente de MILLA Video Studio: `skills/vox-studio/` produce shorts 9:16 con compositor propio, música y efectos generados por código, portada y auditoría. Cada marca de Emi tiene su espacio en `espacios/` (personal, MILLA, Castorena, PAN) y sus producciones privadas en `productions/<espacio>/`. Es candidata: ningún video suyo tiene aún aprobación estética. Empieza por `skills/vox-studio/SKILL.md` y `skills/vox-studio/CATALOGO.md`.
