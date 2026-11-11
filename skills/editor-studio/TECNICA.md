@@ -55,8 +55,10 @@ iPhone: graba en HEVC y, con HDR activado, en Dolby Vision. `ingerir` lo detecta
 | Motor | Estado | Notas |
 |---|---|---|
 | ElevenLabs Scribe (`scribe`) | Conectado y probado el 11/11/2026 con un clip en español | Tiempo por palabra; conserva «eh» y tomas repetidas; marca eventos de audio; `--hablantes` separa voces |
-| AssemblyAI (`assemblyai`) | Programado, **sin probar de punta a punta**. Emi guardó su llave el 11/11/2026: consultar responde, pero subir el audio da «Invalid API key» | Es el que recomiendan las referencias para cortar. Pide muletillas con `disfluencies`. Causa probable del rechazo (sin confirmar): la llave quedó guardada con el prefijo «Bearer» y la subida de AssemblyAI la quiere sola; se corrige en los ajustes del entorno, en sus secretos de red |
+| AssemblyAI (`assemblyai`) | Conectado y probado el 11/11/2026 con el mismo clip en español | Es el que recomiendan las referencias para cortar. Pide muletillas con `disfluencies`. La llave va en la cabecera `Authorization` sola, sin «Bearer»: con el prefijo, la subida de audio responde «Invalid API key» |
 | Archivo (`--archivo`) | Probado con JSON, SRT y VTT | Para exportaciones de Whisper Mate u otra app. Con SRT o frases los tiempos son aproximados: sirven para subtítulos por frase, no para cortar muletillas |
+
+Comparación del 11/11/2026 sobre el clip sintético de 27 s: los dos dieron 72 palabras, coinciden en 97 %, sus tiempos difieren 25 ms de mediana (75 ms en el peor décimo) y ambos conservaron el «eh» y la toma repetida. La única diferencia: AssemblyAI escribe los números con cifra («3», «8») y Scribe con letra. Con una voz sintética y limpia empatan; la diferencia que importa (voz baja, ruido, muletillas reales) solo se verá con un crudo de Emi.
 
 Para decidir entre dos motores con un crudo real: `transcribir --como scribe`, `transcribir --motor assemblyai --como assemblyai` y `comparar-motores DIR scribe assemblyai`. El número no decide: se escuchan los cortes.
 

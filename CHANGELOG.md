@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · AssemblyAI conectado y comparado con ElevenLabs
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi corrigió el secreto de red de AssemblyAI (11/11/2026) y pidió abrir el pull request de esta rama.
+- Cambios: `TECNICA.md` registra que AssemblyAI ya funciona, el detalle de la cabecera y la primera comparación entre los dos motores.
+- Archivos: `skills/editor-studio/TECNICA.md` y este registro.
+- Verificación: transcripción real con AssemblyAI del clip de prueba de 27 s → aprobado (72 palabras con tiempos, conservó la muletilla). `comparar-motores` contra Scribe → 97 % de coincidencia, 25 ms de desfase mediano; difieren solo en escribir los números con cifra o con letra. Es un clip de voz sintética: no decide cuál corta mejor una voz real.
+- Pendiente: repetir la comparación con el primer crudo de Emi y fijar el motor por defecto con lo que se oiga en los cortes.
+
 ## 2026-11-11 · AssemblyAI: llave guardada, subida de audio rechazada
 
 - Agente: Claude Code (sesión en la nube)
