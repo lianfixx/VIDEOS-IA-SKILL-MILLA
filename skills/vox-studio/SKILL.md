@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.2"
+  version: "0.8.3"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -108,9 +108,27 @@ Después de cada entrega y de cada comentario de Emi, guardar la lección: `$V a
 
 Pegar a Emi la tabla completa de `$V cierre`: lo gastado en ese video y lo que queda en Kie, ElevenLabs y Apify. Un proveedor sin conexión se informa como «no conectado», nunca se estima. El consumo de Claude no se puede consultar desde aquí; decirlo así.
 
-## Dónde funciona
+## Dónde funciona y qué hacer si se llama en otro lado
 
-En Claude Code con este repositorio la skill produce el video completo. Como skill personal de claude.ai (paquete de `python3 tools/empaquetar_vox.py`, que lleva los espacios dentro) sirve para guion, método y consulta: ahí no hay llaves ni render, así que se avanza el guion y se entrega para producirlo en Claude Code. No fingir un render ni un saldo que no se pudo consultar.
+Lo primero, siempre: comprobar dónde se está. Hay terminal, este repositorio y llaves si `python3 skills/vox-studio/scripts/vox.py saldo` responde con cifras. Según el resultado:
+
+| Situación | Qué se hace | Qué se le dice a Emi |
+|---|---|---|
+| Claude Code con este repositorio y el entorno `videos-ia-skill-milla` | Todo el flujo, hasta el MP4 | Nada especial |
+| Claude Code sin las llaves (`saldo` dice «no conectado» o da error) | Guion, validación, música, montaje con lo que ya exista; no voz ni imágenes nuevas | Qué proveedor falta y que se conecta en la configuración del entorno, nunca pegando la llave en el chat |
+| Claude Code en otra carpeta, sin el repositorio | Nada de producción | Que abra la sesión sobre `lianfixx/VIDEOS-IA-SKILL-MILLA` |
+| App de claude.ai u otra IA sin terminal (skill subida como `.zip`) | Solo lo que no necesita ejecutar: preguntarle su postura, investigar, escribir el guion completo en el formato de `guion.ejemplo.json`, proponer música, efectos y prompts de imagen | Al empezar, en una frase: «Aquí no puedo generar voz, imágenes ni el video; te dejo el guion listo para producirlo en Claude Code» |
+| Emi pide un video estilo pizarra | No es esta skill | Con el repositorio: usar Pizarra Studio. En la app: hacer la entrevista de `pizarra/PIZARRA.md` y entregar las respuestas para llevarlas a Claude Code |
+
+Reglas para cualquier caso que no sea el primero:
+
+- Decir el límite **antes** de trabajar, no al final. Nunca fingir un render, un saldo, una voz escuchada ni un archivo que no existe.
+- No pedir llaves por chat ni escribirlas en ningún archivo.
+- Terminar con un **paquete de traspaso** que Emi pueda pegar tal cual en Claude Code: (1) espacio, (2) `guion.json` completo y válido, (3) un prompt por imagen, (4) música y efectos elegidos, (5) lo que quedó sin decidir. Y la frase exacta para continuar: «Usa vox-studio y produce este guion en productions/ESPACIO/TEMA».
+- Si Emi llamó a la skill por error (quería otra cosa, u otro estilo), decirlo en una línea y preguntar qué quería; no producir «por si acaso».
+- Si no se puede leer `espacios/` (copia vieja o incompleta), avisar que la skill instalada está desactualizada y que la vigente está en `main` del repositorio.
+
+El paquete para la app se genera con `python3 tools/empaquetar_vox.py` y lleva los espacios y la guía de entrevista de pizarra dentro.
 
 ## Terminado
 

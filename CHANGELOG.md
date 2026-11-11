@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.8.3 y Pizarra Studio 0.2.1: qué hacer si se llaman donde no se puede producir
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: actualizar el paquete de la skill para la app y añadir instrucciones por si la ejecuta mal o solo en Claude (sin terminal).
+- Cambios: Vox Studio sustituye «Dónde funciona» por una tabla de situaciones (con todo, sin llaves, sin repositorio, app sin terminal, pedido de pizarra) con qué hacer y qué decirle a Emi, reglas de honestidad y un paquete de traspaso para continuar en Claude Code. Pizarra Studio añade la misma regla. El paquete para la app incluye ahora la guía de entrevista de pizarra (`pizarra/PIZARRA.md` y su ejemplo de brief).
+- Archivos: `skills/vox-studio/SKILL.md`, `skills/pizarra-studio/SKILL.md`, `tools/empaquetar_vox.py` y este registro.
+- Verificación: `ia/check_skill.py` de ambas skills → aprobado; paquete generado y descomprimido en limpio: `vox.py espacios`, `validar` del ejemplo y enlaces internos existentes → aprobado; pruebas de vox-studio y pizarra-studio → aprobado. Subida a la app → no ejecutado (solo puede hacerla Emi).
+- Pendiente: que Emi sustituya la copia de la app; fusionar a `main`.
+
 ## 2026-11-11 · Pizarra Studio 0.2.0: revisión independiente (15 fallas) corregida
 
 - Agente: Claude Code (sesión en la nube)

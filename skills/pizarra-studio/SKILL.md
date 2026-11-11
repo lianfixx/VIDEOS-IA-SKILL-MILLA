@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -29,7 +29,9 @@ $P motor        # dice si el autor publicó algo nuevo; no se actualiza solo
 
 Adoptar una versión nueva del motor exige leer el código nuevo, probar un render, cambiar `MOTOR_COMMIT` en `pizarra.py` y registrarlo en `CHANGELOG.md`. Su documentación de uso (API de escenas, modo historia, errores conocidos) está en la carpeta instalada, en `references/`: leerla antes de escribir escenas. El motor vive en una carpeta propia para que nadie lo actualice por su cuenta; `proyecto` se niega a usarlo si no está en el commit revisado o si tiene archivos modificados, y cada producción anota con qué versión se creó.
 
-Funciona con cualquier IA que tenga terminal: todo son comandos de `pizarra.py`, Node, Python y FFmpeg. Sin terminal se avanza entrevista, guion y storyboard, y se entrega para producir donde sí la haya. No fingir un render.
+Funciona con cualquier IA que tenga terminal: todo son comandos de `pizarra.py`, Node, Python y FFmpeg.
+
+**Si se llama donde no se puede producir** (app de claude.ai, otra IA sin terminal, una carpeta sin el repositorio, o `pizarra.py instalar` falla): decirlo en la primera respuesta, no al final. Ahí solo se hace la entrevista completa, la investigación, el guion y el storyboard, y se entrega un **paquete de traspaso** para Claude Code: el `brief.json` con las 17 respuestas (aprobaciones en `false` hasta que Emi las dé), el `guion.json` y el `STORYBOARD.md`, con la frase «Usa pizarra-studio y produce esto en productions/ESPACIO/TEMA». No fingir un render, ni marcar aprobaciones, ni pedir llaves por chat. Si Emi en realidad quería estilo vox o box, decirlo y pasar a Vox Studio.
 
 ## 1. Entrevista: todas las preguntas, siempre
 
