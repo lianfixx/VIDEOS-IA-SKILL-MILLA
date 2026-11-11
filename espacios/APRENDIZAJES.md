@@ -25,3 +25,6 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Emi: el audio del demo está bien, «pero por video compruébalo». Regla: en cada video se le pide que escuche voz, música y efectos; los niveles automáticos no cuentan como aprobación.
 - 2026-11-10 · Auditoría de imagen (nueva): la nota, el sello y un recorte caían bajo los botones de TikTok. Regla: de y=760 hacia abajo el contenido termina en x=900; `render` lo mide y avisa.
 - 2026-11-10 · Emi aprobó que las pruebas de Vox Studio corran solas antes de cada commit.
+- 2026-11-11 · Castorena 11/11/2026: la voz Laura narró 142 palabras en 75 s. Regla: en shorts con esa voz usar voz_velocidad 1.15 (62 s) y escribir menos de 140 palabras; cada escena de más de 20 palabras dura 8 s o más.
+- 2026-11-11 · Castorena 11/11/2026: la hoja de fotogramas a tamaño reducido no dejó ver que faltaban tildes en el titular. Regla: además de la hoja, recortar a tamaño real el titular de cada escena con mayúsculas acentuadas, y probar los cambios de plantilla con remotion still antes del render completo (dos renders en paralelo tardan unos 20 min).
+- 2026-11-11 · Castorena 11/11/2026: vidrio y pantallas reflejan el verde del croma (reloj de arena, laptop). Regla: revisar esos recortes y quitar el derrame verde (g = max(r, b) donde el verde domina) o generar con croma magenta.

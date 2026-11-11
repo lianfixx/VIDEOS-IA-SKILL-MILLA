@@ -298,6 +298,8 @@ class Oficio(unittest.TestCase):
             (Path(vox.__file__).resolve().parents[1] / "plantilla" / "src" / "Vox.tsx").read_text(encoding="utf-8")
         self.assertNotIn("clipPath: `inset(0 ${(1 - k) * 100}% 0 0)`", tsx)  # `mordidas` recortaba Á, Í, Ó de la primera línea
         self.assertIn("anchoLinea(l, fuente, m.ancho)", tsx)  # el titular se mide con el ancho real de las letras
+        self.assertIn("tildeAlta(p, fuente)", tsx)  # el resaltador sube para cubrir la tilde de la mayúscula
+        self.assertIn("kicker && tildeAlta(", tsx)  # la etiqueta no tapa la tilde de la primera línea
 
 
 class ImagenAuditada(unittest.TestCase):

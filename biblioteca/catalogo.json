@@ -34,5 +34,101 @@
   "origen": "productions/personal/demo-2",
   "fecha": "2026-11-10",
   "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-01-a90e5bec",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-01-a90e5bec.png",
+  "sha256": "a90e5bec5c6929b59a368394f86952c4aa7db9026f4b7e4e0633c3c15641e025",
+  "muestra": "A worn brown leather wallet, open, with several generic blue and brown paper banknotes sticking out of it, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-02-4d7089f7",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-02-4d7089f7.png",
+  "sha256": "4d7089f7fe3340c1ab7fc6ebd0e5d0485baa9ddaabefd18ac7ba405d082a75a2",
+  "muestra": "A human hand holding a smartphone close to a modern handheld card payment terminal, contactless payment gesture, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-03-daa469bf",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-03-daa469bf.png",
+  "sha256": "daa469bfc35c89cbbedb9201b54f1571b248321b53ee0108e0b8bd9b6848f312",
+  "muestra": "A classic brass and glass hourglass with sand falling, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-04-a7bccfde",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-04-a7bccfde.png",
+  "sha256": "a7bccfde08dcc50a618844b8f963767b8b4af792afb2fd6648401cfa6c6dee46",
+  "muestra": "An open bank checkbook with a blank check and an elegant black fountain pen lying across it, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-05-8a0b832a",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-05-8a0b832a.png",
+  "sha256": "8a0b832afe939cd47af3e9b2ab6512fdf33d8734b93d9151f26d31c37743d82f",
+  "muestra": "A human hand holding a smartphone whose screen shows a glowing blue fingerprint scan, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-06-b59bfe21",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-06-b59bfe21.png",
+  "sha256": "b59bfe21c2e2fed5aecc2a6b970d38c88d4b68111068416c84250f9bee6009e1",
+  "muestra": "An open silver laptop with a wooden judge's gavel leaning against it, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-sobrio-07-6592a9fa",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-sobrio-07-6592a9fa.png",
+  "sha256": "6592a9fac4987fd3f151d400bff9c7394cfb851cfa848f57b5b3b37998ec97c9",
+  "muestra": "A tall stack of white paper documents with a wooden rubber stamp on top, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-sobrio",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-suelto-05b-7e976467",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-suelto-05b-7e976467.png",
+  "sha256": "7e976467cc7b44041fae07404f827fc2a332afc306a90121c6033b6589b5bd2d",
+  "muestra": "A grey bank ATM cash machine, front three-quarter view, dark screen switched off, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-suelto",
+  "fecha": "2026-11-11",
+  "usos": 1
  }
 ]

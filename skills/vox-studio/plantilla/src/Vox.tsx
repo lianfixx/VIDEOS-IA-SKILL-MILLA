@@ -122,7 +122,10 @@ const anchoLinea = (linea: string, fuente: string, media: number): number => {
   return Math.max(letras + SEPARA * (palabras.length - 1) + 0.16, 3 * media);
 };
 const FuenteCtx = React.createContext('Anton');
-const medidas = (keyword: string, fuente: string) => {
+const ACENTUADA = /[ÁÉÍÓÚÜÑ]/;
+/** En Gelasio la tilde de una mayúscula sube unos 0.3 em sobre la letra: hay que hacerle sitio. */
+const tildeAlta = (texto: string, fuente: string) => fuente === 'Gelasio' && ACENTUADA.test(texto.toUpperCase());
+const medidas = (keyword: string, fuente: string, kicker = '') => {
   const m = FUENTES[fuente] ?? FUENTES.Anton;
   const lineas = partir(keyword);
   // Titular en bloque: cada línea crece hasta llenar el ancho útil (como una portada de revista),
@@ -131,16 +134,18 @@ const medidas = (keyword: string, fuente: string) => {
   const libres = lineas.map((l) => Math.min(tope, (SEGURO.der - SEGURO.izq) / anchoLinea(l, fuente, m.ancho)));
   const menor = Math.min(...libres);
   const tams = libres.map((v) => Math.min(v, menor * 1.7));
-  return {lineas, tams, fin: 326 + tams.reduce((a, b) => a + b * 1.06, 0), espacio: m.espacio};
+  // Con etiqueta (kicker) encima, una tilde en la primera línea quedaría tapada: el titular baja.
+  const inicio = 326 + (kicker && tildeAlta(lineas[0] ?? '', fuente) ? 44 : 0);
+  return {lineas, tams, inicio, fin: inicio + tams.reduce((a, b) => a + b * 1.06, 0), espacio: m.espacio};
 };
 
 const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, c, f, indice}) => {
   const {fps} = useVideoConfig();
   const fuente = React.useContext(FuenteCtx);
-  const {lineas, tams, espacio} = medidas(e.keyword, fuente);
+  const {lineas, tams, espacio, inicio} = medidas(e.keyword, fuente, e.kicker);
   const verbos = ['desliza-izq', 'cae', 'desliza-der', 'sello', 'mordidas', 'desdobla'];
   return (
-    <div style={{position: 'absolute', left: SEGURO.izq, top: 326, width: SEGURO.der - SEGURO.izq}}>
+    <div style={{position: 'absolute', left: SEGURO.izq, top: inicio, width: SEGURO.der - SEGURO.izq}}>
       {lineas.map((linea, j) => {
         const tam = tams[j];
         const verbo = j === 0 ? e.entrada : verbos[(indice + j) % verbos.length];
@@ -154,7 +159,7 @@ const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({
                 return (
                   <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * SEPARA}}>
                     {marca && (
-                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
+                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * (tildeAlta(p, fuente) ? -0.17 : 0.04), bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
                     )}
                     <span style={{position: 'relative'}}>{p}</span>
                     {marca && <span style={{position: 'absolute', left: 0, top: 0, color: c.papel, clipPath: `inset(-20% ${(1 - trazo) * 100}% -20% 0)`}}>{p}</span>}
@@ -245,7 +250,7 @@ const Remate: React.FC<{e: Escena; c: Colores; f: number; arriba: number}> = ({e
 
 const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number}> = ({e, c, indice, f}) => {
   const {fps} = useVideoConfig();
-  const finTitular = medidas(e.keyword, React.useContext(FuenteCtx)).fin;
+  const finTitular = medidas(e.keyword, React.useContext(FuenteCtx), e.kicker).fin;
   return (
     <div style={{position: 'absolute', width: W, height: H}}>
       {e.kicker && (

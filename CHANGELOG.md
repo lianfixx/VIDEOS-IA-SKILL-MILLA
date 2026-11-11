@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.8.4: tildes del titular en Gelasio y primer video semanal de Castorena
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: video semanal de DOF y SJF para Castorena, estilo Vox, en dos cortes (sobrio y suelto); aprobó los guiones («Está bien») antes de producir.
+- Cambios: (1) En Gelasio la tilde de una palabra resaltada quedaba fuera del resaltador (papel sobre papel, casi invisible en «ÚNICA» y «HÁBIL») y la etiqueta tapaba la de «DÍA»: el resaltador sube 0.17 em en palabras acentuadas y el titular baja 44 px cuando hay etiqueta y tilde en la primera línea. (2) Producción privada `productions/castorena/pagos-digitales-{sobrio,suelto}` (Ley de Economía Digital para Pagos Digitales y Electrónicos, DOF 4/11/2026; flashes P./J. 220/2026 y A.I. 20/2025). (3) Ocho recortes catalogados en `biblioteca/castorena/` y siete lecciones nuevas.
+- Archivos: `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/scripts/test_vox.py`, `skills/vox-studio/{SKILL.md,TECNICA.md}`, `biblioteca/`, `espacios/APRENDIZAJES.md`, `espacios/castorena/aprendizajes.md` y este registro.
+- Verificación: pruebas de vox-studio 45/45 → aprobado; `tsc --noEmit` → aprobado. Texto de la ley cotejado con dof.gob.mx (arts. 13, 15, 16 y transitorio tercero) → aprobado; las dos tesis se tomaron del reporte de Emi, sin abrir el SJF → no ejecutado. Render final: sobrio 61.87 s y suelto 56.09 s, H.264 1080×1920, −14.09 LUFS, pico −2.0 dBTP; sobrio sin avisos; suelto con un aviso (0.5 % de contenido bajo la descripción de TikTok en la escena 08) → aprobado técnicamente con ese aviso. Hojas de fotogramas y recortes a tamaño real revisados por la IA → aprobado. Escucha y visto bueno de Emi → no ejecutado.
+- Pendiente: comentarios de Emi sobre voz, música, efectos y chistes; medir Anton con el mismo método de anchos; corregir el aviso de la escena 08 del corte suelto si Emi publica en TikTok.
+
 ## 2026-11-11 · Vox Studio 0.8.3: acentos y márgenes del titular, llamado de cierre por video
 
 - Agente: Claude Code (sesión en la nube)
