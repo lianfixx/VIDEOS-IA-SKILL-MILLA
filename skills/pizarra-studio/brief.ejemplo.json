@@ -1,0 +1,29 @@
+{
+  "espacio": "personal",
+  "modo": "pizarron",
+  "estilo": "pizarron",
+  "respuestas": {
+    "tema": "Por qué firmar sin leer te sale caro. Idea única: lo que no lees también lo aceptaste.",
+    "opinion_emi": "Me parece absurdo que nos enseñen a firmar rápido para no incomodar. Quiero burlarme de eso.",
+    "publico": "18 a 30 años, primer trabajo o primera renta, no sabe de contratos.",
+    "objetivo": "ganar seguidores y abrir debate",
+    "fuentes": "investiga tú y enséñame las fuentes",
+    "formato": "9:16",
+    "duracion_s": "60",
+    "tono": "divertido y salseante, humor sarcástico",
+    "estilo": "pizarrón",
+    "personaje": "sin personaje",
+    "voz": "la voz del espacio",
+    "musica": "ironia",
+    "efectos": "sí",
+    "gancho": "Firmaste. Felicidades: acabas de aceptar algo que no leíste.",
+    "cta": "pregunta para comentar: ¿tú lees lo que firmas?",
+    "marca": "sin logo ni @ por ahora",
+    "referencias": "ninguna"
+  },
+  "decidido_por_defecto": [],
+  "aprobaciones": {
+    "resumen": false,
+    "storyboard": false
+  }
+}

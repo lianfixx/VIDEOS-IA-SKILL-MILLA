@@ -29,6 +29,7 @@ with tempfile.TemporaryDirectory() as tmp:
     for md in destino.rglob("*.md"):  # los enlaces que salían de la skill apuntan ahora adentro o quedan como texto
         t = md.read_text(encoding="utf-8")
         t = t.replace("](../../espacios/", "](espacios/").replace("](../../biblioteca/)", "](#)")
+        t = re.sub(r"\[([^\]]+)\]\(\.\./pizarra-studio/SKILL\.md\)", r"\1", t)
         t = re.sub(r"\[([^\]]+)\]\(\.\./milla-video-studio/SKILL\.md\)", r"\1", t)
         md.write_text(t, encoding="utf-8")
     r = subprocess.run([sys.executable, str(RAIZ / "ia" / "check_skill.py"), str(destino)], capture_output=True, text=True)

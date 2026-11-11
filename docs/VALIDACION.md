@@ -77,3 +77,15 @@ cd skills/vox-studio/plantilla && npm ci && npm run typecheck
 ```
 
 Comprobado con servicios reales (no simulados): narración ElevenLabs con alineación por palabra, imágenes Kie (`nano-banana-2-lite` y `seedream/5-lite-text-to-image`), búsqueda Apify y descarga de una foto de Wikimedia Commons con su licencia, y render completo de dos demos técnicos. No comprobado: escucha humana de voz, música y efectos; aprobación estética; publicación.
+
+## Pizarra Studio (11 de noviembre de 2026)
+
+Skill independiente en `skills/pizarra-studio/`; el motor de dibujo es externo (`santmun/video-pizarra`, commit `dc6adc4`) y se instala con `pizarra.py instalar` en `~/.cache/pizarra-studio/motor`.
+
+```bash
+python3 -m unittest discover -s skills/pizarra-studio/scripts -p 'test_*.py'
+python3 ia/check_skill.py skills/pizarra-studio .claude/skills/pizarra-studio .agents/skills/pizarra-studio
+python3 skills/pizarra-studio/scripts/pizarra.py instalar && python3 skills/pizarra-studio/scripts/pizarra.py motor
+```
+
+Comprobado con ejecución real: instalación del motor, creación de producción con la marca del espacio, narración ElevenLabs con tiempos por escena, música por código con rejilla de beats, cuadros de prueba y render completo de una prueba técnica en pizarrón (22.8 s, 1080×1920, −14.39 LUFS, sin avisos); cuadros de prueba del motor de estilos (minimal) con la marca de Castorena. También comprobados: cuadros de acuarela, acuarela viva y cuaderno en vertical y minimal en horizontal con la marca de Castorena, y un render técnico completo del motor de estilos (43 s, −14.11 LUFS, sin avisos). No comprobado: un video real con entrevista y storyboard aprobados por Emi; el modo historia; un render completo en horizontal.

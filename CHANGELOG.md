@@ -1,5 +1,41 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.2.0: revisión independiente (15 fallas) corregida
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: fusionar a `main` con la skill terminada antes del primer video.
+- Cambios: `pizarra.py` reescrito con las 15 correcciones de una revisión independiente: (1) `voz --execute` exige entrevista aprobada y que Emi haya pedido la voz del espacio antes de gastar; (2) medición, cuadros de prueba y render usan la misma línea de tiempo (modo B con voz); (3) una cama sin sonido ya no satura la mezcla y la respuesta «sin efectos» apaga los efectos; (4) formato y duración del brief se interpretan antes de rendir y aceptan «horizontal 16:9», «45 a 60», «1:00», «1 minuto»; (5) aviso si la voz se corta o el video sobra; (6) en estilos la marca lleva estilo, sin mascota ni persona y subtítulos con tiempos reales; (7) respuestas que no son texto no cuentan; (8) `proyecto` se arma aparte, se renombra al final y solo acepta `productions/<espacio>/`; (9) el motor vive en `~/.cache/pizarra-studio/motor`, se rechaza si tiene archivos modificados y cada producción anota su commit; (10) se borran entregables anteriores al empezar y los temporales siempre; (11) la medición no ensucia `stills/`; (12) el navegador se busca en más rutas y solo se devuelve si existe; (13) import con mensaje claro si falta Vox Studio; (14) ejemplo y textos alineados con «sin personaje», `musica` antes de `qa`; (15) límites y tiempo máximo en `qa`, primera escena en 0, ganancia final calculada desde una sola fuente.
+- Archivos: `skills/pizarra-studio/{SKILL.md,brief.ejemplo.json,scripts/pizarra.py,scripts/test_pizarra.py}`, `espacios/{ESTILOS.md,APRENDIZAJES-PIZARRA.md}`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 19/19 → aprobado; flujo real completo con el motor reinstalado en su carpeta nueva (proyecto, voz desde caché sin gasto, música, cuadros, render de prueba: 22.8 s, −14.36 LUFS, pico −2.23 dBTP) → aprobado técnicamente, con el aviso esperado de que la escena de prueba no sigue a la voz; `render` sin entrevista → rechazado, como debe.
+- Pendiente: primer video real; modo historia y render horizontal completo sin probar.
+
+## 2026-11-11 · Pizarra Studio 0.1.2: los cinco estilos probados y duración medida en ambos motores
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: fusionar a `main`; dejar la skill terminada antes del primer video.
+- Cambios: `musica` sin `--segundos` no sabía leer la duración en el motor de estilos (lo imprime distinto) y fallaba: `duracion_del_video` lee ambos formatos y no ensucia `stills/`; prueba añadida.
+- Archivos: `skills/pizarra-studio/scripts/{pizarra.py,test_pizarra.py}`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 14/14 → aprobado; cuadros reales de acuarela, acuarela viva, cuaderno (vertical) y minimal (horizontal) con la marca de Castorena, revisados como imagen → aprobado; render técnico completo del motor de estilos: 43.0 s, 1080×1920, −14.11 LUFS, pico −2.32 dBTP, sin avisos → aprobado técnicamente.
+- Pendiente: integrar la revisión independiente del código (en curso); modo historia y render horizontal completo sin probar; primer video real.
+
+## 2026-11-11 · Pizarra Studio 0.1.1: preferencias permanentes de Emi y entorno
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, respuestas a las preguntas de arranque: estilo «decidir en cada video», personaje «sin personaje», voz «la del espacio», música «preguntarme en cada video».
+- Cambios: `espacios/PREFERENCIAS-PIZARRA.json` guarda sus respuestas permanentes y `proyecto` las escribe en el brief para no repetirlas; el estilo y la música se preguntan siempre. La skill cambia la regla del personaje (la vida la dan la mano, los objetos y la cámara). `espacios/ESTILOS.md` pasa de «punto de partida» a «sugerencia». Entorno `videos-ia-skill-milla`: el script de configuración instala el motor de pizarra con `pizarra.py instalar` (aprobado por Emi en la tarjeta).
+- Archivos: `espacios/{PREFERENCIAS-PIZARRA.json,ESTILOS.md,APRENDIZAJES-PIZARRA.md}`, `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}` y este registro.
+- Verificación: pruebas de pizarra-studio 13/13 → aprobado; `pizarra.py instalar` ejecutado desde la carpeta donde arranca el script del entorno → aprobado; el script completo en un arranque nuevo → no ejecutado.
+- Pendiente: primer video real; fusionar a `main`.
+
+## 2026-11-11 · Pizarra Studio 0.1.0 (candidata): videos dibujados a mano con las mismas reglas
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: analizar el video «Contraté a Claude como animador» y el material de Drive; cuando pida estilo pizarra, producirlo de esa forma, en un apartado propio, con los mismos espacios, la misma llave, entrevista completa siempre, todo documentado en GitHub y utilizable por cualquier IA; «tienes mi permiso para todo».
+- Cambios: (1) Nueva skill `skills/pizarra-studio/` con `scripts/pizarra.py`: instala el motor público `santmun/video-pizarra` fijado al commit `dc6adc4` (no se copia su código: el repositorio no tiene licencia), crea producciones por espacio con la marca traducida al motor, controla la entrevista de 17 preguntas y las dos aprobaciones de Emi, narra con la voz del espacio y entrega tiempos por escena, compone música por código con rejilla de beats exacta, genera cuadros de prueba con guía de TikTok, rinde, mezcla (voz al frente, efectos con picos limitados), lleva a −14 LUFS midiendo y audita. Reutiliza voz, saldos, niveles, espacios y aprendizajes de Vox Studio. (2) `espacios/ESTILOS.md` (qué estilo proponer) y `espacios/APRENDIZAJES-PIZARRA.md`. (3) Vox Studio 0.8.2 remite a Pizarra Studio cuando el pedido es de pizarra. (4) Reglas comunes, con permiso expreso de Emi en este encargo: `ia/politica.json` añade dos controles previos al commit (pruebas y `check_skill` de Pizarra Studio); `ia/REGLAS.md` regenerado. (5) Entorno en la nube: se propone añadir la instalación del motor al script de configuración.
+- Archivos: `skills/pizarra-studio/**`, puentes en `.claude/skills/` y `.agents/skills/`, `espacios/{ESTILOS.md,APRENDIZAJES-PIZARRA.md,README.md}`, `skills/vox-studio/SKILL.md`, `tools/empaquetar_vox.py`, `ia/politica.json`, `ia/REGLAS.md`, `README.md`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 12/12 → aprobado; pruebas de vox-studio 43/43 y `ia/test_guard.py` → aprobado; prueba técnica real en pizarrón con la marca del espacio personal (voz de 212 caracteres, música por código, efectos): 22.8 s, 1080×1920, −14.39 LUFS, pico −2.31 dBTP, sin avisos → aprobado técnicamente; cuadros del motor de estilos con la marca de Castorena → aprobado. Fuente del análisis: transcripción y descripción del video de YouTube y texto del PDF de Drive (un manual de 19 páginas de la misma skill); la imagen del video no se vio.
+- Pendiente: respuestas de Emi sobre estilo y personaje por espacio; primer video real con entrevista y storyboard aprobados; probar acuarela, acuarela viva, cuaderno, modo historia y formato horizontal; fusionar a `main`.
+
 ## 2026-11-10 · Vox Studio 0.8.1: paquete para claude.ai
 
 - Agente: Claude Code (sesión en la nube)

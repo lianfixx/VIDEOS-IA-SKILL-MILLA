@@ -1,0 +1,11 @@
+{
+ "_doc": "Respuestas permanentes de Emi para los videos estilo pizarra. `proyecto` las escribe en el brief para no volver a preguntarlas; lo demás se pregunta en cada video. Cambiarlas solo cuando Emi lo diga, con fecha.",
+ "respuestas": {
+  "personaje": "sin personaje (preferencia de Emi, 11/11/2026)",
+  "voz": "la voz del espacio (preferencia de Emi, 11/11/2026)"
+ },
+ "preguntar_siempre": [
+  "estilo",
+  "musica"
+ ]
+}

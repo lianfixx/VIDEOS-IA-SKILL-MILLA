@@ -118,6 +118,21 @@
     },
     {
       "type": "before_git",
+      "git": "commit",
+      "staged_regex": "^(skills/pizarra-studio|skills/vox-studio/scripts|espacios)/",
+      "requires": "python3 -c 'import numpy, PIL, scipy'",
+      "run": "python3 -m unittest discover -s skills/pizarra-studio/scripts -p 'test_*.py'",
+      "reason": "Las pruebas de Pizarra Studio no pasan."
+    },
+    {
+      "type": "before_git",
+      "git": "commit",
+      "staged_regex": "^(skills/pizarra-studio|\\.claude/skills/pizarra-studio|\\.agents/skills/pizarra-studio)/SKILL\\.md$",
+      "run": "python3 ia/check_skill.py skills/pizarra-studio .claude/skills/pizarra-studio .agents/skills/pizarra-studio",
+      "reason": "El SKILL.md de Pizarra Studio o sus puentes dejarían de ser válidos."
+    },
+    {
+      "type": "before_git",
       "git": "push",
       "run": "python3 skills/milla-video-studio/scripts/milla.py secret-scan .",
       "reason": "El escaneo de secretos encontró hallazgos."
