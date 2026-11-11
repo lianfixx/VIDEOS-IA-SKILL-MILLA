@@ -1,5 +1,15 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.4.1: comando `respiros` (pausas sin tocar la velocidad)
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, sobre la versión con Laura: «está bien, pero recuerda hacer esas pausas, que seas entendido, sin perder el ritmo».
+- Motivo y evidencia: la voz a su velocidad máxima liga las listas y la dirección; bajar la velocidad ya se había rechazado por lenta.
+- Cambios: `pizarra.py respiros DIR [--frase S] [--coma S]` alarga la pausa tras cada punto y cada coma hasta la duración buscada, cortando en el punto más silencioso y solo si hay silencio real; cuenta la pausa que la voz ya traía (una respiración leve no la parte), parte siempre de la toma original (`audio/vo-toma.mp3`, `estados/voz-toma.json`) y corre los tiempos por palabra, sin volver a pagar la voz. `SKILL.md` lo añade al flujo. Producción privada ¡ACCIÓNate!: 15 respiros (+1.88 s) con `--frase 0.52 --coma 0.28`.
+- Archivos: `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}`, `espacios/{APRENDIZAJES-PIZARRA.md,pan/aprendizajes.md}` y este registro.
+- Verificación: pruebas de pizarra-studio 27/27 → aprobado; `respiros` dos veces seguidas da el mismo resultado → aprobado; `render` → sin avisos (−14.57 LUFS, pico −2.10 dBTP, 45.07 s); `sincronia` → voz a 3 ms, subtítulos de −20 a 200 ms; palabras ancla comprobadas en cuadros del MP4 → aprobado; QR leído en tres cuadros → aprobado; rango dinámico 1.6 LU → medido. Si las pausas suenan naturales → no verificable por una IA.
+- Pendiente: que Emi escuche.
+
 ## 2026-11-11 · Corrección de un aprendizaje de pizarra
 
 - Agente: Claude Code (sesión en la nube)

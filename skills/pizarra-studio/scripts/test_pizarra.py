@@ -267,5 +267,24 @@ class Sincronia(unittest.TestCase):
         self.assertLessEqual(max(pizarra.TECHOS_LIMITADOR), 0.75)
 
 
+class Respiros(unittest.TestCase):
+    def test_pausa_buscada_segun_el_signo(self):
+        self.assertEqual(pizarra.objetivo_respiro("cascarita!"), pizarra.RESPIRO_FRASE)
+        self.assertEqual(pizarra.objetivo_respiro("Tenayo:"), pizarra.RESPIRO_COMA)
+        self.assertEqual(pizarra.objetivo_respiro("catorce,"), pizarra.RESPIRO_COMA)
+        self.assertEqual(pizarra.objetivo_respiro("balón"), 0.0)
+
+    def test_los_tiempos_se_corren_solo_despues_del_corte(self):
+        pal = [{"t": "Hola.", "a": 0.0, "b": 0.5}, {"t": "Ven,", "a": 0.5, "b": 0.9}, {"t": "ya", "a": 0.9, "b": 1.2}]
+        out = pizarra.desplazar_palabras(pal, [(0, 0.3), (1, 0.1)])
+        self.assertEqual([(w["a"], w["b"]) for w in out], [(0.0, 0.5), (0.8, 1.2), (1.3, 1.6)])
+        self.assertEqual(pal[1]["a"], 0.5)  # no modifica la toma original
+
+    def test_sin_toma_no_abre_respiros(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(pizarra.ErrorVox):
+                pizarra.abrir_respiros(Path(tmp))
+
+
 if __name__ == "__main__":
     unittest.main()

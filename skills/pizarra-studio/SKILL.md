@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.4.0"
+  version: "0.4.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -65,6 +65,7 @@ $P proyecto $D --perfil personal --modo pizarron            # o --modo estilos -
 $P entrevista $D                                            # hasta que diga «completa y aprobada»
 # escribir $D/guion.json: {"escenas": [{"id": "01", "narracion": "..."}]}  (solo si lleva voz)
 $P voz $D --execute                                         # una sola toma; devuelve cuánto dura cada escena
+$P respiros $D                                              # pausas tras puntos y comas sin tocar la velocidad (Emi las pide siempre)
 # construir scenes.js (pizarrón) o video.js (estilos) con esas duraciones exactas
 $P musica $D --animo energia                                # música original por código + rejilla de beats exacta (mide el video)
 $P qa $D                                                    # cuadros de prueba + zonas que tapa TikTok, con la misma línea de tiempo del render
@@ -81,7 +82,7 @@ La marca del espacio llega al motor sola: `proyecto` escribe `marca.js` desde `e
 - **Pizarrón**: colores de la marca (este motor usa sus propias letras de trazo a mano). Se usa `bootVideo(construir, { ...window.MARCA, speed: 1 })`.
 - **Estilos**: colores, tipografía, el estilo elegido, sin mascota ni persona, y subtítulos con los tiempos reales de la voz. En `video.js`: `import marca from './marca.js'` y `...marca` **después** de las claves de la plantilla y antes de `scenes`, para que la marca mande. El `format` se escribe a mano según la respuesta de Emi (`'9:16'` o `'16:9'`).
 
-El ritmo y la expresividad de la voz se ajustan en `voz.ajustes` del perfil del espacio (`speed`, `stability`, `style`), sin cambiar de voz; si Emi dice que va rápida, se baja `speed` y se vuelve a narrar. Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed: 1`; las transiciones no se ajustan al beat (la herramienta lo aplica igual en la medición, en `qa` y en el render). Sin voz, en el pizarrón las transiciones caen en los golpes de la música; en estilos eso solo ocurre si `video.js` declara `beats: 'audio/beats.json'`, y nunca se declara cuando hay voz porque desincroniza. Si Emi respondió «sin efectos», el render los apaga.
+`respiros` abre pausas en la toma ya pagada: tras cada punto busca 0.42 s y tras cada coma 0.22 s (`--frase`, `--coma`), cortando solo donde hay silencio real y contando la pausa que la voz ya traía; parte siempre de la toma original, así que repetirlo no acumula. Emi quiere que se entienda sin perder el ritmo: primero respiros, y solo después tocar la velocidad. El ritmo y la expresividad de la voz se ajustan en `voz.ajustes` del perfil del espacio (`speed`, `stability`, `style`), sin cambiar de voz; si Emi dice que va rápida, se baja `speed` y se vuelve a narrar. Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed: 1`; las transiciones no se ajustan al beat (la herramienta lo aplica igual en la medición, en `qa` y en el render). Sin voz, en el pizarrón las transiciones caen en los golpes de la música; en estilos eso solo ocurre si `video.js` declara `beats: 'audio/beats.json'`, y nunca se declara cuando hay voz porque desincroniza. Si Emi respondió «sin efectos», el render los apaga.
 
 ## 5. Que se vea hecho por una persona
 

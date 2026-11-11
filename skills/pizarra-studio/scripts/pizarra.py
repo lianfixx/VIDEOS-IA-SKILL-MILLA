@@ -231,6 +231,81 @@ def sin_efectos(texto: str) -> bool:
 TECHOS_LIMITADOR = (0.75, 0.68, 0.62, 0.56)  # del más abierto al más cerrado; se usa el primero que deja el pico en rango
 
 
+# ---------- respiros ----------
+
+RESPIRO_FRASE, RESPIRO_COMA = 0.42, 0.22   # pausa total que se busca tras . ! ?  y tras , : ;
+
+
+def objetivo_respiro(palabra: str, frase: float = RESPIRO_FRASE, coma: float = RESPIRO_COMA) -> float:
+    fin = palabra.rstrip("»\"')")[-1:]
+    return frase if fin in ".!?" else coma if fin in ",:;" else 0.0
+
+
+def desplazar_palabras(palabras: list[dict], cortes: list[tuple[int, float]]) -> list[dict]:
+    """Corre los tiempos tras cada respiro. `cortes`: (índice de la palabra tras la que se abre la pausa, segundos añadidos)."""
+    out, suma, por_indice = [], 0.0, dict(cortes)
+    for i, w in enumerate(palabras):
+        out.append({**w, "a": round(w["a"] + suma, 3), "b": round(w["b"] + suma, 3)})
+        suma += por_indice.get(i, 0.0)
+    return out
+
+
+def abrir_respiros(d: Path, frase: float = RESPIRO_FRASE, coma: float = RESPIRO_COMA) -> dict:
+    """Abre pausas en la toma de voz sin tocar su velocidad: tras cada signo busca el punto más silencioso y lo alarga
+    hasta la pausa buscada. Si ahí no hay silencio real (la voz liga las palabras) no corta. Parte siempre de la toma
+    original, así que repetirlo no acumula pausas. No vuelve a pagar la voz."""
+    import numpy as np
+    cache, cruda = d / "estados" / "voz.json", d / "audio" / "vo-cruda.mp3"
+    toma, toma_j = d / "audio" / "vo-toma.mp3", d / "estados" / "voz-toma.json"
+    if not cache.is_file() or not cruda.is_file():
+        raise ErrorVox("primero hay que narrar (`voz --execute`)")
+    actual = json.loads(cache.read_text())
+    if not toma_j.is_file() or json.loads(toma_j.read_text()).get("firma") != actual.get("firma"):
+        shutil.copyfile(cruda, toma); toma_j.write_text(json.dumps(actual))   # toma nueva: se guarda intacta
+    orig = json.loads(toma_j.read_text())
+    pal, sr = orig["palabras"], 44100
+    x = np.frombuffer(subprocess.run(["ffmpeg", "-v", "error", "-i", str(toma), "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"],
+                                     capture_output=True, check=True).stdout, dtype=np.int16).astype(np.float32)
+    v = sr // 100                                                             # ventanas de 10 ms
+    env = np.sqrt((x[:len(x) // v * v].reshape(-1, v) ** 2).mean(1))
+    umbral = 0.06 * float(np.percentile(env, 95))
+    cortes, puntos = [], []
+    for i, w in enumerate(pal[:-1]):
+        meta = objetivo_respiro(w["t"], frase, coma)
+        if not meta:
+            continue
+        lim = int(pal[i + 1]["a"] * 100)
+        zona = range(max(1, lim - 30), min(len(env) - 1, lim + 6))
+        j = min(zona, key=lambda k: env[k])
+        if env[j] > umbral:
+            continue                                                          # sin silencio real: no se corta a media voz
+        a = b = j                                                             # pausa que ya existe: una respiración leve no la parte
+        while a > 0 and env[a - 1] <= 3 * umbral: a -= 1
+        while b < len(env) - 1 and env[b + 1] <= 3 * umbral: b += 1
+        falta = round(meta - (b - a + 1) / 100, 2)
+        if falta >= 0.04:
+            cortes.append((i, falta)); puntos.append(j * v + v // 2)
+    trozos, prev, f = [], 0, int(0.008 * sr)
+    for (i, falta), pt in zip(cortes, puntos):
+        seg = x[prev:pt].copy(); seg[-f:] *= np.linspace(1, 0, f)
+        if trozos: seg[:f] *= np.linspace(0, 1, f)
+        trozos += [seg, np.zeros(int(falta * sr), dtype=np.float32)]; prev = pt
+    seg = x[prev:].copy()
+    if trozos: seg[:f] *= np.linspace(0, 1, f)
+    trozos.append(seg)
+    wav = d / "audio" / "_respiros.wav"
+    try:
+        import wave
+        with wave.open(str(wav), "wb") as h:
+            h.setnchannels(1); h.setsampwidth(2); h.setframerate(sr); h.writeframes(np.concatenate(trozos).astype(np.int16).tobytes())
+        vox._correr(["ffmpeg", "-y", "-v", "error", "-i", str(wav), "-b:a", "160k", str(cruda)])
+    finally:
+        wav.unlink(missing_ok=True)
+    cache.write_text(json.dumps({"firma": orig["firma"], "palabras": desplazar_palabras(pal, cortes), "respiros": cortes}))
+    return {"abiertos": len(cortes), "segundos": round(sum(c[1] for c in cortes), 2),
+            "donde": [(pal[i]["t"], s_) for i, s_ in cortes]}
+
+
 # ---------- sincronía ----------
 
 def desfase_ms(a, b, paso_ms: float = 1.0, maximo: int = 300) -> int:
@@ -660,6 +735,7 @@ def main(argv=None) -> int:
         p = sub.add_parser(nombre); p.add_argument("dir")
     p = sub.add_parser("render"); p.add_argument("dir"); p.add_argument("--prueba", action="store_true")
     p = sub.add_parser("sincronia"); p.add_argument("dir")
+    p = sub.add_parser("respiros"); p.add_argument("dir"); p.add_argument("--frase", type=float, default=RESPIRO_FRASE); p.add_argument("--coma", type=float, default=RESPIRO_COMA)
     p = sub.add_parser("voz"); p.add_argument("dir"); p.add_argument("--execute", action="store_true"); p.add_argument("--prueba", action="store_true")
     p = sub.add_parser("musica"); p.add_argument("dir"); p.add_argument("--animo", choices=sorted(SON.ANIMOS), required=True)
     p.add_argument("--segundos", type=float, default=None)
@@ -685,6 +761,13 @@ def main(argv=None) -> int:
                           "cambiar MOTOR_COMMIT y registrarlo en CHANGELOG.md. No se actualiza solo.")
             except (ErrorVox, IndexError) as exc:
                 print(f"No se pudo consultar el repositorio del autor: {str(exc)[:80]}")
+        elif a.cmd == "respiros":
+            d = Path(a.dir)
+            r = abrir_respiros(d, a.frase, a.coma)
+            t = narrar_guion(d, False)
+            print(f"{r['abiertos']} respiros abiertos (+{r['segundos']} s) sin tocar la velocidad; la voz dura ahora {t['total']} s.")
+            print("  " + " · ".join(f"{w} +{s_}" for w, s_ in r["donde"]))
+            print("Las duraciones cambiaron: vuelve a atar la animación a la voz, luego `musica`, `qa`, `render` y `sincronia`.")
         elif a.cmd == "sincronia":
             i = medir_sincronia(Path(a.dir))
             t = i["subtitulos_ms"]
