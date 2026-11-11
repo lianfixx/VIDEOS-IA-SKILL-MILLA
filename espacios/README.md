@@ -12,3 +12,5 @@ Cada marca tiene su carpeta y no se mezcla con las demás:
 En cada una: `perfil.json` (colores, voz, tono; lo lee `vox.py`), `ideas.md` (temas pendientes) y, cuando exista, `MARCA.md` con la guía de identidad y sus fuentes. `vox.py proyecto` se niega a crear una producción fuera de la carpeta de su espacio.
 
 Comunes a todas las skills de video: `APRENDIZAJES.md` (lecciones generales), `APRENDIZAJES-PIZARRA.md` (lecciones del estilo pizarra) y `ESTILOS.md` (qué estilo proponer en cada espacio). Las instrucciones de cada skill viven en su propia carpeta de `skills/`.
+
+Editor Studio añade en cada espacio `edicion.json` (su estilo de edición: nivel de partida, ritmo de corte, subtítulos, sonido) y `aprendizajes-edicion.md`, y aquí `APRENDIZAJES-EDICION.md`. El radar semanal lee `radar.json` (qué etiquetas y cuentas sigue ese espacio). El mapa de quién escribe qué está en `cerebro/CEREBRO.md`.

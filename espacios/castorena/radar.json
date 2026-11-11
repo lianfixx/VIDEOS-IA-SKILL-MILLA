@@ -1,0 +1,17 @@
+{
+ "_doc": "Qué sigue el radar semanal para este espacio (cerebro/radar.py). Etiquetas sin #. Emi las ajusta cuando quiera; cada etiqueta cuesta resultados.",
+ "estado": "semilla propuesta por Claude el 2026-11-11; Emi aún no la revisa",
+ "temas": "fiscal, administrativo y amparo; tono institucional",
+ "etiquetas": {
+  "tiktok": [
+   "derechofiscal",
+   "amparo"
+  ],
+  "instagram": [
+   "derechofiscal",
+   "amparo"
+  ]
+ },
+ "cuentas_de_referencia": [],
+ "cuentas_propias": {}
+}

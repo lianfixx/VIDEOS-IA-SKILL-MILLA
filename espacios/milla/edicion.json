@@ -1,0 +1,31 @@
+{
+ "_doc": "Estilo de EDICIÓN de este espacio (Editor Studio). La marca vive en perfil.json. Candidato hasta que Emi lo apruebe sobre un video real.",
+ "estado": "candidato",
+ "nivel_partida": 2,
+ "nivel_tope": 2,
+ "ritmo": "natural",
+ "muletillas": "seguras",
+ "movimiento": "suave",
+ "color": "natural",
+ "fuente_titular": "Anton",
+ "fuente_texto": "Inter",
+ "subtitulos": {
+  "modo": "karaoke",
+  "estilo": "caja",
+  "mayusculas": false,
+  "zona": "pecho",
+  "max_palabras": 4,
+  "sin_signos": true
+ },
+ "sonido": {
+  "densidad": "minima"
+ },
+ "groserias": "tapar",
+ "modismos": "se quitan o se regraban",
+ "humor": "mínimo y nunca sobre el problema del cliente",
+ "quienes_salen": "Emi; nunca un cliente ni nadie que parezca testimonio",
+ "marca_en_pantalla": null,
+ "cierres": [],
+ "referencias": [],
+ "actualizado": "2026-11-11"
+}

@@ -1,0 +1,33 @@
+{
+ "_doc": "Estilo de EDICIÓN de este espacio (Editor Studio). La marca vive en perfil.json. Candidato hasta que Emi lo apruebe sobre un video real.",
+ "estado": "candidato",
+ "nivel_partida": 1,
+ "nivel_tope": 2,
+ "ritmo": "natural",
+ "muletillas": "seguras",
+ "movimiento": "sobrio",
+ "color": "natural",
+ "fuente_titular": "Gelasio",
+ "fuente_texto": "Inter",
+ "subtitulos": {
+  "modo": "frase",
+  "estilo": "sobrio",
+  "mayusculas": false,
+  "zona": "abajo",
+  "max_palabras": 6,
+  "max_caracteres": 34,
+  "fuente": "Gelasio",
+  "sin_signos": true
+ },
+ "sonido": {
+  "densidad": "ninguna"
+ },
+ "groserias": "tapar",
+ "modismos": "se quitan o se regraban",
+ "humor": "ninguno",
+ "quienes_salen": "quien el despacho autorice; requiere su visto bueno",
+ "marca_en_pantalla": null,
+ "cierres": [],
+ "referencias": [],
+ "actualizado": "2026-11-11"
+}

@@ -1,6 +1,6 @@
 # Plan · skill de edición de video (nombre provisional: Editor Studio)
 
-**Estado: propuesta del 11/11/2026. Nada de esto está construido.** Queda en firme cuando Emi responda las preguntas del final. Lo que se leyó para llegar aquí está en [REFERENCIAS-EXTERNAS.md](REFERENCIAS-EXTERNAS.md).
+**Estado: Emi respondió las 45 preguntas el 11/11/2026 y las fases 2 a 5 quedaron construidas ese día como Editor Studio 0.1.0 (candidata).** Sus respuestas están resumidas al final y en `espacios/APRENDIZAJES-EDICION.md`. Lo vigente es la skill (`skills/editor-studio/`) y `cerebro/CEREBRO.md`; este documento queda como el plan original. Lo que se leyó para llegar aquí está en [REFERENCIAS-EXTERNAS.md](REFERENCIAS-EXTERNAS.md).
 
 ## Qué es y qué no es
 
@@ -183,3 +183,7 @@ Puede contestar por número. Donde dice **(sugiero)** es lo que se haría si res
 43. ¿Dónde se produce? Aquí en la nube **(sugiero; ya está probado)**, en el box o en tu Mac.
 44. ¿Actualizo el box a la versión nueva?
 45. Modelo: construir la skill con el modelo actual y producir cada video después en Opus con esfuerzo medio **(sugiero, según tu selector)**. ¿De acuerdo?
+
+## Respuestas de Emi (11/11/2026)
+
+Nombre `editor-studio`; los cuatro espacios desde el inicio; quién sale a cuadro depende del espacio (en PAN casi siempre más personas); grabará de todo; TikTok y Reels sobre todo, a veces YouTube; duración y frecuencia variables. Graba con iPhone 17 Pro (comprará micrófonos y una cámara de acción); crudos por Drive; con guion casi siempre y quiere escaleta y ganchos; pasará un crudo y referencias. Sin llave de AssemblyAI todavía (la creará). Niveles de partida aceptados; subtítulos, humor y cierre los razona la skill; corte natural con respiros; muletillas casi todas; groserías tapadas; zooms suaves; color natural; música preguntada en cada video; efectos sintetizados; marca en pantalla por definir. Apoyos en el orden propuesto y con todos los recursos; video generado autorizado; personaje solo si queda perfecto; probar el texto detrás; sin Higgsfield mientras no haga falta; gasto cero en niveles 1 y 2 y cotización en el 3. Cuentas por crear; pasará estadísticas; referencias después; radar semanal autorizado (puede gastar más si hace falta); las tendencias se sugieren. Autorizó leer X e Historias y dejar ideas; nota aparte para la publicación; entrega en Drive por espacio; sí a los frenos; motor a criterio de Claude (se eligió código propio sobre HyperFrames); aún no es miembro de Horizontes IA; producir en la nube, luego box, luego Mac; actualizar el box; construir con el modelo actual y producir con Opus a esfuerzo medio.

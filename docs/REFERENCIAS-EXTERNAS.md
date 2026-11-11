@@ -24,7 +24,7 @@ Otros repositorios suyos leídos por ser del mismo oficio: `analisis-video` (Gem
 
 `editor-tiktok`, `edicion-3-niveles`, `edicion-3-niveles-pro`, `broll-animado`, `video-pizarra`, `intro-edit-pipeline-skill` y `color-grade-skill` no traen archivo de licencia. `video-estilos-pro` dice «Exclusivo para miembros de la comunidad. No se redistribuye» y la versión PRO de 3 niveles se anuncia como exclusiva de su comunidad aunque el repositorio sea público. Por eso se sigue la misma regla que con el motor de pizarra: **su código, plantillas y sonidos no se copian a este repositorio**. Las ideas y los números de oficio sí se adoptan, escritos de nuevo y con el crédito aquí. HyperFrames, el motor que todos usan, es de HeyGen y tiene licencia Apache 2.0.
 
-### Qué se propone adoptar (queda en firme cuando Emi responda el plan)
+### Qué se adoptó (Emi respondió el plan el 11/11/2026; quedó en Editor Studio 0.1.0)
 
 | Idea | De dónde | Cómo quedaría |
 |---|---|---|
