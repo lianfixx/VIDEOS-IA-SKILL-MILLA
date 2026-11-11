@@ -75,6 +75,9 @@ PLANOS = ("imagen", "cita", "lista", "calendario", "dato", "duo", "flujo", "barr
 PLANO_VIVO = {"cita", "lista", "calendario", "flujo", "barras", "linea"}  # se mueven solos mientras duran
 PLANO_QUIETO = 4.5  # segundos; un recorte o una cifra sin nada nuevo se siente detenido
 MAX_PLANOS = 5
+# Estilo del video: «collage» (recortes sobre papel) o «pizarra» (motion: casi todo dibujado con código sobre cuadrícula).
+ESTILOS_VIDEO = ("collage", "pizarra")
+PAPEL_PIZARRA = "#FBFBF7"
 MIN_PLANO = 18  # frames; con menos no da tiempo de leerlo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -128,25 +131,198 @@ def limpia(palabra: str) -> str:
     return palabra.strip(SIGNOS).upper()
 
 
+# Marcas de voz dentro de la narración: no se leen ni salen en subtítulos; le dicen a la voz cómo decirlo.
+PAUSAS = {"pausa": 0.5, "pausa larga": 1.0}
+EXPRESIONES = {"ríe": "laughs", "suspira": "sighs", "carraspea": "clears throat", "susurra": "whispers", "irónica": "sarcastic",
+               "sorprendida": "surprised", "seria": "serious", "emocionada": "excited", "lento": "slow", "duda": "hesitates"}
+MODELOS_CON_EXPRESION = ("eleven_v3", "eleven_v4")  # entienden etiquetas entre corchetes; los demás, solo pausas
+MARCA = re.compile(r"\[([^\[\]]{1,24})\]")
+CAMBIO_TEMA = {"silencio": 0.55, "velocidad": 0.9}  # al cambiar de tema: respiro y la escena se dice más despacio
+SILENCIO_ENTRE_VOCES = 0.18
+
+
+def narracion_limpia(s: dict) -> str:
+    """La narración sin marcas de voz: lo que se oye como palabras y sale en subtítulos."""
+    return " ".join(MARCA.sub(" ", str(s.get("narracion", ""))).split())
+
+
+def marcas_de(s: dict) -> list[str]:
+    return [m.strip().lower() for m in MARCA.findall(str(s.get("narracion", "")))]
+
+
+def texto_para_voz(s: dict, modelo: str) -> str:
+    """Convierte las marcas a lo que entiende el modelo: `<break>` en los clásicos, etiquetas en los expresivos."""
+    expresivo = modelo.startswith(MODELOS_CON_EXPRESION)
+    def cambia(m: re.Match) -> str:
+        k = m.group(1).strip().lower()
+        if k in PAUSAS:
+            return ("[long pause]" if k == "pausa larga" else "[pause]") if expresivo else f'<break time="{PAUSAS[k]}s" />'
+        return f"[{EXPRESIONES[k]}]" if expresivo and k in EXPRESIONES else " "
+    return " ".join(MARCA.sub(cambia, str(s.get("narracion", ""))).split())
+
+
+def sin_etiquetas(palabras: list[dict]) -> list[dict]:
+    """Quita de la alineación lo que no es palabra dicha: `<break time="0.5s" />` y `[laughs]`."""
+    out, dentro = [], ""
+    for w in palabras:
+        t = w["t"]
+        if not dentro and t.startswith("<break"):
+            dentro = "/>"
+        elif not dentro and t.startswith("[") and "]" not in t[1:]:
+            dentro = "]"
+        elif not dentro and re.fullmatch(r"\[[^\[\]]*\][.,;:!?…]*", t):
+            continue
+        if dentro:
+            if dentro in t:
+                dentro = ""
+            continue
+        out.append(w)
+    return out
+
+
+def plan_de_voz(g: dict, perfil: dict) -> list[dict]:
+    """Tramos de narración: cada uno es una petición con su voz y velocidad. Sin marcas ni segunda voz, hay uno solo."""
+    base = perfil["voz"]
+    vel = velocidad_voz(g, base)
+    tramos: list[dict] = []
+    for i, s in enumerate(g["escenas"]):
+        coment = s.get("voz") == "comentario"
+        voz = perfil.get("voz_comentario") if coment else base
+        if coment and not voz:
+            raise ErrorVox(f"la escena {s.get('id')} pide la voz de comentario y el espacio no tiene `voz_comentario` en su perfil")
+        cambio = bool(s.get("cambio_tema")) and i > 0
+        v = velocidad_voz({}, voz) if coment else vel
+        if cambio:
+            v = round(max(VELOCIDAD_VOZ[0], v * CAMBIO_TEMA["velocidad"]), 3)
+        clave = (voz["voice_id"], voz.get("modelo", "eleven_multilingual_v2"), v)
+        nuevo = not tramos or cambio or tramos[-1]["cambio"] or tramos[-1]["clave"] != clave
+        if nuevo:
+            silencio = 0.0 if not tramos else CAMBIO_TEMA["silencio"] if cambio else SILENCIO_ENTRE_VOCES if tramos[-1]["clave"][0] != clave[0] else 0.0
+            tramos.append({"voz": voz, "velocidad": v, "clave": clave, "cambio": cambio, "comentario": coment, "silencio": silencio, "textos": [], "palabras": 0})
+        t = tramos[-1]
+        t["textos"].append(texto_para_voz(s, clave[1]))
+        t["palabras"] += len(narracion_limpia(s).split())
+    for t in tramos:
+        t["texto"] = " ".join(t.pop("textos"))
+    return tramos
+
+
+def firma_de_voz(g: dict, tramos: list[dict]) -> str:
+    """Huella de lo que se narró. Con un solo tramo sin marcas es la de siempre: las voces ya pagadas siguen vigentes."""
+    if len(tramos) == 1 and tramos[0]["texto"] == texto_completo(g):
+        t = tramos[0]
+        return huella(t["texto"], t["voz"]["voice_id"], t["voz"].get("modelo", ""), *([f"vel={t['velocidad']}"] if t["velocidad"] != 1.0 else []))
+    return huella("tramos", json.dumps([[t["texto"], *t["clave"], t["silencio"]] for t in tramos], ensure_ascii=False))
+
+
+def _tramo_narrado(t: dict, previo: str, siguiente: str, pagados: Path | None) -> tuple[bytes, list[dict]]:
+    """Narra un tramo, o lo recupera si ya se pagó: un fallo a media narración no vuelve a cobrar lo anterior."""
+    clave = huella("tramo", t["texto"], *map(str, t["clave"]), previo, siguiente)
+    mp3, js = (pagados / f"{clave}.mp3", pagados / f"{clave}.json") if pagados else (None, None)
+    if mp3 and mp3.is_file() and js.is_file():
+        return mp3.read_bytes(), json.loads(js.read_text())
+    audio, palabras = narrar(t["texto"], t["voz"], t["velocidad"], previo=previo, siguiente=siguiente)
+    if pagados:
+        pagados.mkdir(parents=True, exist_ok=True)
+        mp3.write_bytes(audio)
+        js.write_text(json.dumps(palabras))
+    return audio, palabras
+
+
+def narrar_guion(g: dict, perfil: dict, destino: Path, pagados: Path | None = None) -> list[dict]:
+    """Narra cada tramo, los une con sus silencios y devuelve las palabras con tiempo real sobre el audio final."""
+    tramos = plan_de_voz(g, perfil)
+    if len(tramos) == 1:
+        audio, palabras = _tramo_narrado(tramos[0], "", "", pagados)
+        palabras = sin_etiquetas(palabras)
+        if len(palabras) != tramos[0]["palabras"]:
+            raise ErrorVox(f"la voz volvió con {len(palabras)} palabras y el guion tiene {tramos[0]['palabras']}; revisa las marcas de voz. "
+                           "El audio pagado quedó guardado: al corregir solo las marcas no se vuelve a cobrar si el texto enviado no cambia")
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        destino.write_bytes(audio)
+        if tramos[0]["comentario"]:
+            for w in palabras:
+                w["c"] = True
+        return palabras
+    tmp = Path(tempfile.mkdtemp(prefix="vox-voz-"))
+    try:
+        return _unir_tramos(tramos, destino, tmp, pagados)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _unir_tramos(tramos: list[dict], destino: Path, tmp: Path, pagados: Path | None) -> list[dict]:
+    todas, piezas, reloj = [], [], 0.0
+    varias_voces = len({t["clave"][0] for t in tramos}) > 1
+    for n, t in enumerate(tramos):
+        clasico = not t["clave"][1].startswith(MODELOS_CON_EXPRESION)
+        audio, palabras = _tramo_narrado(t, tramos[n - 1]["texto"][-300:] if n and clasico else "",
+                                         tramos[n + 1]["texto"][:300] if n + 1 < len(tramos) and clasico else "", pagados)
+        palabras = sin_etiquetas(palabras)
+        if len(palabras) != t["palabras"]:
+            raise ErrorVox(f"el tramo {n + 1} volvió con {len(palabras)} palabras y el guion tiene {t['palabras']}; no se inventan tiempos. "
+                           "Los tramos ya pagados quedaron guardados y no se vuelven a cobrar")
+        crudo, wav = tmp / f"{n}.mp3", tmp / f"{n}.wav"
+        crudo.write_bytes(audio)
+        if varias_voces and duracion_audio(crudo) >= 3.0:  # cada voz al mismo nivel antes de unirlas
+            normalizar(crudo, wav, VOZ_LUFS)
+        else:
+            _correr(["ffmpeg", "-y", "-v", "error", "-i", str(crudo), "-ar", "48000", "-ac", "1", "-c:a", "pcm_s16le", str(wav)])
+        if t["silencio"]:
+            sil = tmp / f"s{n}.wav"
+            _correr(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=mono", "-t", str(t["silencio"]), "-c:a", "pcm_s16le", str(sil)])
+            piezas.append(sil)
+            reloj += duracion_audio(sil)
+        for w in palabras:
+            todas.append({"t": w["t"], "a": w["a"] + reloj, "b": w["b"] + reloj, **({"c": True} if t["comentario"] else {})})
+        piezas.append(wav)
+        reloj += duracion_audio(wav)
+    lista = tmp / "lista.txt"
+    lista.write_text("".join(f"file '{x}'\n" for x in piezas))
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    _correr(["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(lista), "-ac", "1", "-ar", "48000", "-c:a", "libmp3lame", "-b:a", "160k", str(destino)])
+    return todas
+
+
 def imagenes_de(s: dict) -> list[str]:
     """Todas las imágenes que usa una escena: la suya y las de sus planos."""
-    out = [s.get("imagen_archivo", "")] if isinstance(s.get("imagen_archivo", ""), str) else []
-    for pl in s.get("planos") or []:
-        if isinstance(pl, dict):
-            out.append(pl.get("imagen_archivo", ""))
-            out.extend(pl.get("imagenes") or [])
-    vistas: list[str] = []
-    for x in out:
-        if isinstance(x, str) and x and x not in vistas:
-            vistas.append(x)
-    return vistas
+    return list(fichas_de_imagenes(s))
+
+
+def fichas_de_imagenes(s: dict) -> dict[str, dict]:
+    """Cada imagen de la escena con lo que hay que saber de ella: si es foto real y su crédito.
+
+    Solo cuentan la imagen de la escena y las de planos `imagen` y `duo`, y solo rutas dentro de public/.
+    """
+    out: dict[str, dict] = {}
+    def suma(ruta, foto=False, credito=""):
+        if isinstance(ruta, str) and ruta and ruta_segura(ruta) and ruta not in out:
+            out[ruta] = {"foto_real": bool(foto), "credito": str(credito or "")}
+    suma(s.get("imagen_archivo"), s.get("foto_real"), s.get("credito"))
+    planos = s.get("planos")
+    for pl in planos if isinstance(planos, list) else []:
+        if not isinstance(pl, dict):
+            continue
+        if pl.get("tipo") == "imagen":
+            suma(pl.get("imagen_archivo"), pl.get("foto_real"), pl.get("credito"))
+        elif pl.get("tipo") == "duo" and isinstance(pl.get("imagenes"), list):
+            for x in pl["imagenes"]:
+                suma(x)
+    return out
+
+
+SIGNOS_ANCLA = SIGNOS + "«»()[]…%\"'“”‘’—-"
+
+
+def clave_ancla(palabra: str) -> str:
+    return str(palabra).strip(SIGNOS_ANCLA).lower()
 
 
 def buscar_ancla(palabras: list[str], ancla: str, desde: int = 0) -> int:
-    """Índice de la primera palabra de la narración igual al ancla (sin signos ni mayúsculas), o -1."""
-    clave = limpia(str(ancla)).lower()
+    """Índice de la primera palabra de la narración igual al ancla (sin signos, comillas ni mayúsculas), o -1."""
+    clave = clave_ancla(ancla)
     for j in range(desde, len(palabras)):
-        if clave and limpia(palabras[j]).lower() == clave:
+        if clave and clave_ancla(palabras[j]) == clave:
             return j
     return -1
 
@@ -159,14 +335,23 @@ def validar_planos(s: dict, p: str) -> list[str]:
         return e
     if not isinstance(planos, list) or not planos or len(planos) > MAX_PLANOS or not all(isinstance(x, dict) for x in planos):
         return [f"{p}: planos debe ser una lista de 1 a {MAX_PLANOS} objetos"]
-    narr = str(s.get("narracion", "")).split()
+    narr = narracion_limpia(s).split()
     pos = 0
+    anclas: list[int] = []   # palabra con la que entra cada plano
+    ultimas: list[int] = []  # última palabra a la que se ancla una pieza de cada plano
     for j, pl in enumerate(planos):
         q = f"{p}, plano {j + 1}"
         tipo = pl.get("tipo")
+        anclas.append(-1); ultimas.append(-1)
         if tipo not in PLANOS:
             e.append(f"{q}: tipo {tipo!r} no existe; opciones {list(PLANOS)}")
             continue
+        for campo in ("etiqueta", "dato", "origen", "texto", "resaltar", "entre", "credito", "en"):
+            if campo in pl and not isinstance(pl[campo], str):
+                e.append(f"{q}: `{campo}` debe ser texto")
+                pl[campo] = ""
+        if tipo not in ("imagen", "duo") and ("imagen_archivo" in pl or "imagenes" in pl):
+            e.append(f"{q}: un plano `{tipo}` no lleva imágenes; usa un plano `imagen` o `duo`")
         if j == 0 and pl.get("en"):
             e.append(f"{q}: el primer plano abre la escena; no lleva `en`")
         if j > 0:
@@ -175,10 +360,13 @@ def validar_planos(s: dict, p: str) -> list[str]:
                 e.append(f"{q}: `en` debe ser una palabra de la narración posterior al plano anterior (se recibió {pl.get('en')!r})")
             else:
                 pos = k + 1
+                anclas[j] = k
         if tipo == "imagen" and not (isinstance(pl.get("imagen_archivo"), str) and pl["imagen_archivo"] and ruta_segura(pl["imagen_archivo"])):
             e.append(f"{q}: imagen_archivo debe ser una ruta relativa a public/")
+        if tipo == "imagen" and pl.get("foto_real") and not 5 <= len(str(pl.get("credito", ""))) <= 60:
+            e.append(f"{q}: una foto real exige `credito` (autor y licencia, de 5 a 60 caracteres) a la vista")
         if tipo == "cita":
-            texto, marca = str(pl.get("texto", "")), str(pl.get("resaltar", ""))
+            texto, marca = " ".join(str(pl.get("texto", "")).split()), " ".join(str(pl.get("resaltar", "")).split())
             if not 12 <= len(texto) <= 150:
                 e.append(f"{q}: la cita lleva de 12 a 150 caracteres, copiados de la fuente")
             if marca and marca not in texto:
@@ -190,18 +378,19 @@ def validar_planos(s: dict, p: str) -> list[str]:
             if not isinstance(items, list) or not 2 <= len(items) <= 4 or not all(isinstance(x, dict) for x in items):
                 e.append(f"{q}: la lista lleva de 2 a 4 items")
             else:
-                ipos = pos
+                ipos = max(0, pos - 1)  # la primera pieza puede compartir palabra con su plano; las demás van después
                 for it in items:
-                    if not 1 <= len(str(it.get("texto", ""))) <= 16:
+                    if not isinstance(it.get("texto"), str) or not 1 <= len(it["texto"]) <= 16:
                         e.append(f"{q}: cada item lleva texto de hasta 16 caracteres")
                     if it.get("marca", "") not in ("", "si", "no"):
                         e.append(f"{q}: marca debe ser 'si', 'no' o vacía")
                     if it.get("en"):
-                        k = buscar_ancla(narr, it["en"], max(0, ipos - 1))
+                        k = buscar_ancla(narr, it["en"], ipos)
                         if k < 0:
                             e.append(f"{q}: el item {it.get('texto')!r} pide una palabra que la narración no dice después ({it['en']!r})")
                         else:
                             ipos = k + 1
+                            ultimas[j] = max(ultimas[j], k)
         if tipo == "calendario":
             celdas, dias = pl.get("celdas"), pl.get("dias")
             if celdas is not None:
@@ -223,16 +412,17 @@ def validar_planos(s: dict, p: str) -> list[str]:
             if not isinstance(xs, list) or not minimo <= len(xs) <= maximo or not all(isinstance(x, dict) for x in xs):
                 e.append(f"{q}: `{nombre}` lleva de {minimo} a {maximo} objetos")
                 return []
-            ipos = pos
+            ipos = max(0, pos - 1)
             for x in xs:
-                if not 1 <= len(str(x.get(campo, ""))) <= tope:
-                    e.append(f"{q}: cada elemento de `{nombre}` lleva `{campo}` de hasta {tope} caracteres")
+                if not isinstance(x.get(campo), str) or not 1 <= len(x[campo]) <= tope:
+                    e.append(f"{q}: cada elemento de `{nombre}` lleva `{campo}` (texto) de hasta {tope} caracteres")
                 if x.get("en"):
-                    k = buscar_ancla(narr, x["en"], max(0, ipos - 1))
+                    k = buscar_ancla(narr, x["en"], ipos)
                     if k < 0:
                         e.append(f"{q}: `{nombre}` pide una palabra que la narración no dice después ({x['en']!r})")
                     else:
                         ipos = k + 1
+                        ultimas[j] = max(ultimas[j], k)
             return xs
         if tipo == "flujo":
             for x in piezas("pasos", "texto", 2, 4, 14):
@@ -261,8 +451,12 @@ def validar_planos(s: dict, p: str) -> list[str]:
         if ap is not None:
             if not isinstance(ap, dict) or not 1 <= len(str(ap.get("texto", ""))) <= LIMITES["nota"]:
                 e.append(f"{q}: `apunte` lleva `texto` de hasta {LIMITES['nota']} caracteres")
-            elif ap.get("en") and buscar_ancla(narr, ap["en"], max(0, pos - 1)) < 0:
-                e.append(f"{q}: el apunte pide una palabra que la narración no dice después ({ap['en']!r})")
+            elif ap.get("en"):
+                k = buscar_ancla(narr, ap["en"], max(0, pos - 1))
+                if k < 0:
+                    e.append(f"{q}: el apunte pide una palabra que la narración no dice después ({ap['en']!r})")
+                else:
+                    ultimas[j] = max(ultimas[j], k)
             if s.get("nota"):
                 e.append(f"{q}: la escena ya lleva `nota`; usa una u otra, no las dos")
         if tipo == "duo":
@@ -271,9 +465,12 @@ def validar_planos(s: dict, p: str) -> list[str]:
                 e.append(f"{q}: un duo lleva dos imágenes (rutas relativas a public/)")
             if len(str(pl.get("entre", ""))) > 3:
                 e.append(f"{q}: `entre` lleva hasta 3 letras (O, VS, +)")
+    for j in range(len(planos) - 1):  # una pieza anclada después del plano siguiente nunca se vería
+        if ultimas[j] >= 0 and anclas[j + 1] >= 0 and ultimas[j] >= anclas[j + 1]:
+            e.append(f"{p}, plano {j + 1}: una de sus piezas se ancla a «{narr[ultimas[j]]}», que se dice cuando ya entró el plano {j + 2}; ánclala antes o muévela a ese plano")
     ancla = s.get("remate_en")
     if ancla and buscar_ancla(narr, ancla) < 0:
-        e.append(f"{p}: remate_en debe ser una palabra de la narración")
+        e.append(f"{p}: remate_en debe ser una palabra de la narración (se toma su primera aparición)")
     return e
 
 
@@ -297,14 +494,16 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
         n: dict = {"tipo": pl["tipo"], "desde": en}
         if pl["tipo"] == "imagen":
             n["imagen"] = pl["imagen_archivo"]
+            if pl.get("foto_real"):
+                n.update(foto=True, credito=str(pl.get("credito", "")))
         elif pl["tipo"] == "cita":
-            n.update(texto=" ".join(str(pl["texto"]).split()), resaltar=str(pl.get("resaltar", "")), origen=str(pl["origen"]))
+            n.update(texto=" ".join(str(pl["texto"]).split()), resaltar=" ".join(str(pl.get("resaltar", "")).split()), origen=str(pl["origen"]))
         elif pl["tipo"] == "lista":
-            items, ipos = [], pos
+            items, ipos = [], max(0, pos - 1)
             for m, it in enumerate(pl["items"]):
                 t = en + 8 + 9 * m
                 if it.get("en"):
-                    k = buscar_ancla(narr, it["en"], max(0, ipos - 1))
+                    k = buscar_ancla(narr, it["en"], ipos)
                     if k >= 0:
                         ipos, t = k + 1, max(cuadro(k), en + 4)
                 if items:
@@ -321,11 +520,11 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
 
         def con_tiempo(xs: list[dict], campos: tuple, paso: int, mayus: tuple = ()) -> list[dict]:
             """Cada pieza entra con su ancla (tiempo real) o, sin ancla, a ritmo fijo tras la anterior."""
-            hechos, ipos = [], pos
+            hechos, ipos = [], max(0, pos - 1)
             for m, x in enumerate(xs):
                 t = en + 8 + paso * m
                 if x.get("en"):
-                    k = buscar_ancla(narr, x["en"], max(0, ipos - 1))
+                    k = buscar_ancla(narr, x["en"], ipos)
                     if k >= 0:
                         ipos, t = k + 1, max(cuadro(k), en + 4)
                 if hechos:
@@ -349,6 +548,15 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
         out.append(n)
     for j, n in enumerate(out):
         n["dur"] = (out[j + 1]["desde"] if j + 1 < len(out) else dur) - n["desde"]
+        fin = n["desde"] + n["dur"]
+        # Ninguna pieza entra cuando su plano ya se fue: las últimas se adelantan lo justo para verse.
+        for clave in ("items", "pasos", "hitos", "barras", "etiquetas"):
+            piezas = n.get(clave) or []
+            for m in range(len(piezas) - 1, -1, -1):
+                tope = fin - 12 - 5 * (len(piezas) - 1 - m)
+                piezas[m]["desde"] = max(n["desde"], min(piezas[m]["desde"], tope))
+        if n.get("apunte"):
+            n["apunte"]["desde"] = max(n["desde"], min(n["apunte"]["desde"], fin - 20))
     return out
 
 
@@ -409,6 +617,8 @@ def validar_guion(g: dict) -> list[str]:
         e.append("musica 'ninguna' exige musica.motivo")
     if not isinstance(g.get("cierre", ""), str) or len(g.get("cierre", "")) > 16:
         e.append("cierre: texto de hasta 16 caracteres (sustituye al llamado del espacio solo en este video)")
+    if g.get("estilo", "collage") not in ESTILOS_VIDEO:
+        e.append(f"estilo {g.get('estilo')!r} no existe; opciones {list(ESTILOS_VIDEO)}")
     bucle = g.get("bucle")
     if bucle is not None:
         ids = [x.get("id") for x in (g.get("escenas") or []) if isinstance(x, dict)]
@@ -436,8 +646,22 @@ def validar_guion(g: dict) -> list[str]:
         if s.get("id") in vistos or not s.get("id"):
             e.append(f"{p}: id ausente o repetido")
         vistos.add(s.get("id"))
-        n = " ".join(str(s.get("narracion", "")).split())
+        n = narracion_limpia(s)
         k = " ".join(str(s.get("keyword", "")).split())
+        desconocidas = [m for m in marcas_de(s) if m not in PAUSAS and m not in EXPRESIONES]
+        if desconocidas:
+            e.append(f"{p}: marcas de voz desconocidas {desconocidas}; opciones {sorted(PAUSAS) + sorted(EXPRESIONES)}")
+        cruda = str(s.get("narracion", ""))
+        if "[" in MARCA.sub(" ", cruda) or "]" in MARCA.sub(" ", cruda) or "<" in cruda or ">" in cruda:
+            e.append(f"{p}: los corchetes son solo para marcas de voz como [pausa]; quita corchetes sueltos y los signos < >")
+        elif any((m.start() > 0 and not cruda[m.start() - 1].isspace()) or (m.end() < len(cruda) and not cruda[m.end()].isspace()) for m in MARCA.finditer(cruda)):
+            e.append(f"{p}: cada marca de voz va separada por espacios y después del signo de puntuación («cheque. [pausa] En pleno…»)")
+        if s.get("voz") not in (None, "", "comentario"):
+            e.append(f"{p}: `voz` solo admite 'comentario' (la segunda voz del espacio)")
+        elif s.get("voz") == "comentario" and g.get("perfil") in conocidos and not conocidos[g["perfil"]].get("voz_comentario"):
+            e.append(f"{p}: el espacio {g['perfil']} no tiene `voz_comentario` en su perfil")
+        if not isinstance(s.get("cambio_tema", False), bool) or (s.get("cambio_tema") and i == 0):
+            e.append(f"{p}: cambio_tema es verdadero o falso y no va en la primera escena")
         if not n:
             e.append(f"{p}: falta narracion")
         if not k or len(k) > 34:
@@ -487,13 +711,35 @@ def avisos_guion(g: dict) -> list[str]:
     """Oficio del guion: no bloquea, pero un video que ignora estos avisos rara vez queda bien."""
     a: list[str] = []
     escenas = [s for s in (g.get("escenas") or []) if isinstance(s, dict)]
-    cuenta = [len(str(s.get("narracion", "")).split()) for s in escenas]
+    cuenta = [len(narracion_limpia(s).split()) for s in escenas]
     if not cuenta:
         return a
     if cuenta[0] > 14:
         a.append(f"el gancho tiene {cuenta[0]} palabras; con 14 o menos detiene mejor el scroll")
+    try:
+        modelo = perfiles()[g.get("perfil")]["voz"].get("modelo", "")
+    except (ErrorVox, KeyError):
+        modelo = ""
+    for i, s in enumerate(escenas):
+        mudas = [m for m in marcas_de(s) if m in EXPRESIONES]
+        m_esc = (perfiles()[g["perfil"]].get("voz_comentario") or {}).get("modelo", "") if s.get("voz") == "comentario" and modelo else modelo
+        if mudas and not m_esc.startswith(MODELOS_CON_EXPRESION):
+            a.append(f"escena {i + 1}: las expresiones {mudas} solo las dice un modelo expresivo ({', '.join(MODELOS_CON_EXPRESION)}); con {m_esc or 'esta voz'} se omiten")
+    if g.get("estilo") == "pizarra":
+        todos = [pl for s in escenas for pl in (s.get("planos") or []) if isinstance(pl, dict)]
+        fotos = [pl for pl in todos if pl.get("tipo") in ("imagen", "duo") and not pl.get("foto_real")]
+        if not todos:
+            a.append("estilo pizarra sin `planos`: en pizarra la historia se dibuja con cita, lista, flujo, línea, barras, calendario y cifras")
+        elif len(fotos) * 3 > len(todos):
+            a.append(f"estilo pizarra con {len(fotos)} de {len(todos)} planos de imagen generada: en pizarra casi todo se dibuja con código")
     if not g.get("bucle"):
         a.append("falta `bucle`: escribe qué pregunta deja abierta el gancho y en qué escena se responde (NARRATIVA.md)")
+    for i, s in enumerate(escenas):
+        if s.get("dato") and isinstance(s.get("planos"), list) and s["planos"]:
+            a.append(f"escena {i + 1}: lleva `planos`, así que su `dato` de escena no se dibuja; ponlo como plano `dato`")
+    primero = (escenas[0].get("planos") or [{}])[0] if isinstance(escenas[0].get("planos"), list) else {}
+    if isinstance(primero, dict) and primero.get("tipo") in ("lista", "flujo", "barras", "linea"):
+        a.append(f"el video abre con un plano `{primero['tipo']}`, cuyas piezas entran después: el primer cuadro quedaría solo con el titular. Abre con imagen, cita o dato")
     if cuenta[0] > 6 and len(escenas[0].get("planos") or []) < 2:
         a.append("el gancho se queda con una sola imagen: dale un segundo plano para que algo cambie en los primeros 2 s")
     total = sum(cuenta)
@@ -522,7 +768,7 @@ def avisos_guion(g: dict) -> list[str]:
 
 
 def texto_completo(g: dict) -> str:
-    return " ".join(" ".join(str(s["narracion"]).split()) for s in g["escenas"])
+    return " ".join(narracion_limpia(s) for s in g["escenas"])
 
 
 def palabras_desde_alineacion(chars: list[str], ini: list[float], fin: list[float]) -> list[dict]:
@@ -549,7 +795,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
     Las palabras se reparten entre escenas contando palabras, no caracteres: así un
     proveedor que normalice comillas o espacios no desplaza los límites en silencio.
     """
-    conteos = [len(str(s["narracion"]).split()) for s in g["escenas"]]
+    conteos = [len(narracion_limpia(s).split()) for s in g["escenas"]]
     if sum(conteos) != len(palabras):
         raise ErrorVox(f"la alineación trae {len(palabras)} palabras y el guion {sum(conteos)}; no se inventan tiempos")
     inicios, pos = [], 0
@@ -576,9 +822,9 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         if s.get("remate") and s.get("remate_en"):
             k = buscar_ancla([w["t"] for w in suyas], s["remate_en"])
             if k >= 0:
-                remate_en = max(0, int(round(suyas[k]["a"] * FPS)) - desde - 2)
+                remate_en = max(0, min(int(round(suyas[k]["a"] * FPS)) - desde - 2, dur - 30))  # con tiempo de verse antes del corte
         escenas.append({
-            "planos": planos, "remateEn": remate_en,
+            "planos": planos, "remateEn": remate_en, "comentario": s.get("voz") == "comentario",
             "id": s["id"], "desde": desde, "dur": dur,
             "keyword": " ".join(str(s["keyword"]).split()).upper(), "resaltar": limpia(s.get("resaltar") or ""),
             "kicker": s.get("kicker", ""), "nota": s.get("nota", ""), "dato": s.get("dato", ""),
@@ -588,21 +834,25 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         })
     port = g.get("portada") or {}
     con_imagen = next((x for x in escenas if x["imagen"]), None)
+    de_plano = next((ruta for s in g["escenas"] for ruta, f in fichas_de_imagenes(s).items() if not f["foto_real"]), "")
     portada = {
         "texto": " ".join(str(port.get("texto") or escenas[0]["keyword"]).split()).upper(),
         "resaltar": limpia(port.get("resaltar") or escenas[0]["resaltar"]),
-        "imagen": port.get("imagen_archivo") or (con_imagen["imagen"] if con_imagen else ""),
+        "imagen": port.get("imagen_archivo") or (con_imagen["imagen"] if con_imagen else de_plano),
     }
     if portada["imagen"] and publico is not None and not (publico / portada["imagen"]).is_file():
         raise ErrorVox(f"la portada pide {portada['imagen']} y no existe en {publico}")
     animo = (g.get("musica") or {}).get("animo", "ninguna")
+    if g.get("estilo") == "pizarra":  # misma marca, sobre pizarra blanca cuadriculada
+        perfil = {**perfil, "cuadricula": True, "colores": {**perfil["colores"], "papel": PAPEL_PIZARRA}}
     return {
         "fps": FPS, "ancho": 1080, "alto": 1920, "frames": total,
         "titulo": g["titulo"], "perfil": perfil, "voz": "audio/voz.mp3",
         "musica": "" if animo == "ninguna" else "audio/musica.wav", "animo": animo,
         "finVoz": round(palabras[-1]["b"], 3), "portada": portada, "sfx": True, "escenas": escenas,
         "cierre": str(g.get("cierre") or perfil.get("cierre") or "COMENTA")[:16].upper(),
-        "palabras": [{"t": p["t"], "a": round(p["a"], 3), "b": round(p["b"], 3)} for p in palabras],
+        "palabras": [{"t": p["t"], "a": round(p["a"], 3), "b": round(p["b"], 3), **({"c": True} if p.get("c") else {})} for p in palabras],
+        "etiquetaComentario": str(perfil.get("etiqueta_comentario") or "OPINIÓN")[:14].upper(),
     }
 
 
@@ -715,9 +965,13 @@ def ajustes_voz(velocidad: float = 1.0) -> dict:
     return a
 
 
-def narrar(texto: str, voz: dict, velocidad: float = 1.0) -> tuple[bytes, list[dict]]:
+def narrar(texto: str, voz: dict, velocidad: float = 1.0, previo: str = "", siguiente: str = "") -> tuple[bytes, list[dict]]:
     cuerpo = {"text": texto, "model_id": voz.get("modelo", "eleven_multilingual_v2"),
               "voice_settings": ajustes_voz(velocidad)}
+    if previo:  # contexto para que la entonación continúe entre tramos
+        cuerpo["previous_text"] = previo
+    if siguiente:
+        cuerpo["next_text"] = siguiente
     r = _json(_pedir(f"{ELEVEN}/text-to-speech/{voz['voice_id']}/with-timestamps?output_format=mp3_44100_128",
                      metodo="POST", cabeceras=_eleven(), cuerpo=cuerpo, espera=240), "ElevenLabs")
     al = r.get("alignment") or {}
@@ -1055,6 +1309,16 @@ def buscar_fotos(consulta: str, maximo: int, tope_usd: float, derechos: str = "c
             for x in datos if (x.get("imageUrl") or x.get("url"))][:maximo]
 
 
+def miniatura_commons(url_imagen: str, ancho: int = 960) -> str:
+    """URL de la versión reducida estándar de un original de Wikimedia Commons; cadena vacía si no lo es."""
+    m = re.match(r"https://upload\.wikimedia\.org/wikipedia/commons/([0-9a-f])/([0-9a-f]{2})/([^/?#]+)(?:[?#].*)?$", url_imagen)
+    if not m:
+        return ""
+    nombre = m.group(3)
+    extra = ".jpg" if nombre.lower().endswith((".tif", ".tiff")) else ".png" if nombre.lower().endswith(".svg") else ""
+    return f"https://upload.wikimedia.org/wikipedia/commons/thumb/{m.group(1)}/{m.group(2)}/{nombre}/{ancho}px-{nombre}{extra}"
+
+
 def licencia_commons(url_imagen: str) -> dict | None:
     """Autor y licencia de un archivo de Wikimedia Commons, leídos de su propia ficha."""
     u = urllib.parse.urlparse(url_imagen)
@@ -1093,7 +1357,7 @@ def catalogar(d: Path) -> list[dict]:
     cat = leer_catalogo()
     conocidos = {x["sha256"] for x in cat}
     nuevos = []
-    for s, img in [(s, x) for s in g["escenas"] for x in imagenes_de(s)]:
+    for s, img, ficha in [(s, x, f) for s in g["escenas"] for x, f in fichas_de_imagenes(s).items()]:
         origen = d / "public" / img
         if not origen.is_file():
             continue
@@ -1115,7 +1379,7 @@ def catalogar(d: Path) -> list[dict]:
             pass
         item = {"id": ident, "espacio": g["perfil"], "archivo": str(destino.relative_to(dir_biblioteca())), "sha256": sha,
                 "muestra": prompt_f.read_text(encoding="utf-8").strip() if prompt_f.is_file() else "",
-                "descripcion": s.get("descripcion_imagen", ""), "foto_real": bool(s.get("foto_real", False)),
+                "descripcion": s.get("descripcion_imagen", ""), "foto_real": ficha["foto_real"], "credito": ficha["credito"],
                 "origen": f"productions/{g['perfil']}/{d.name}", "fecha": time.strftime("%Y-%m-%d"), "usos": 1}
         cat.append(item)
         conocidos.add(sha)
@@ -1243,13 +1507,12 @@ def main(argv=None) -> int:
             return 1 if errores else 0
         elif a.cmd in {"voz", "armar"}:
             g = _guion(a.guion)
-            voz = perfiles()[g["perfil"]]["voz"]
-            texto = texto_completo(g)
+            perfil = perfiles()[g["perfil"]]
             d = Path(a.dir)
             cache = d / "estados" / "voz.json"
-            vel = velocidad_voz(g, voz)
-            # La velocidad entra en la huella solo si no es la normal: las voces ya pagadas siguen vigentes.
-            firma = huella(texto, voz["voice_id"], voz.get("modelo", ""), *([f"vel={vel}"] if vel != 1.0 else []))
+            tramos = plan_de_voz(g, perfil)
+            firma = firma_de_voz(g, tramos)  # un solo tramo sin marcas conserva la huella de siempre
+            letras = sum(len(t["texto"]) for t in tramos)
             guardado = json.loads(cache.read_text()) if cache.exists() else {}
             vigente = guardado.get("firma") == firma and (d / "public" / "audio" / "voz.mp3").is_file()
             if vigente:
@@ -1258,16 +1521,16 @@ def main(argv=None) -> int:
             elif a.cmd == "armar":
                 raise ErrorVox("la narración cambió o no existe: ejecuta `voz --execute` (esto sí gasta caracteres)")
             elif not a.execute:
-                print(f"En seco: {len(texto)} caracteres con la voz {voz['nombre']} (velocidad {vel}). Añade --execute para narrar.")
+                print(f"En seco: {letras} caracteres en {len(tramos)} tramo(s). Añade --execute para narrar.")
+                for n, t in enumerate(tramos):
+                    print(f"  tramo {n + 1}: {t['voz']['nombre']} · velocidad {t['velocidad']} · {len(t['texto'])} caracteres"
+                          + (" · cambio de tema (respiro y más despacio)" if t["cambio"] else "") + (" · comentario" if t["comentario"] else ""))
             else:
-                audio, palabras = narrar(texto, voz, vel)
-                destino = d / "public" / "audio" / "voz.mp3"
-                destino.parent.mkdir(parents=True, exist_ok=True)
-                destino.write_bytes(audio)
+                palabras = narrar_guion(g, perfil, d / "public" / "audio" / "voz.mp3", d / "estados" / "tramos")
                 cache.parent.mkdir(parents=True, exist_ok=True)
                 cache.write_text(json.dumps({"firma": firma, "palabras": palabras}))  # antes de armar: lo pagado no se pierde
                 video = _escribir_video(g, d, palabras)
-                print(f"Voz lista: {len(texto)} caracteres, {video['frames'] / FPS:.1f} s, {len(palabras)} palabras con tiempo real.")
+                print(f"Voz lista: {letras} caracteres en {len(tramos)} tramo(s), {video['frames'] / FPS:.1f} s, {len(palabras)} palabras con tiempo real.")
         elif a.cmd == "imagen":
             if a.perfil and a.perfil not in perfiles():
                 raise ErrorVox(f"espacio desconocido: {a.perfil}")
@@ -1335,7 +1598,16 @@ def main(argv=None) -> int:
             if not a.execute:
                 print(f"En seco: bajaría {f['imagen']} (página {f['pagina']}). Añade --execute.")
                 return 0
-            datos_img = _pedir(f["imagen"], espera=60, tope=15 * 1024 * 1024)
+            try:
+                datos_img = _pedir(f["imagen"], espera=60, tope=15 * 1024 * 1024)
+            except ErrorVox as exc:
+                reducida = miniatura_commons(f["imagen"])
+                if "429" not in str(exc) or not reducida:
+                    raise
+                # Wikimedia limita los originales; sus tamaños estándar sí se sirven y bastan para un video vertical.
+                print("Wikimedia limitó el original; se baja la versión de 960 px de la misma foto.")
+                datos_img = _pedir(reducida, espera=60, tope=15 * 1024 * 1024)
+                f["imagen_bajada"] = reducida
             try:
                 import io
                 from PIL import Image
@@ -1392,6 +1664,9 @@ def main(argv=None) -> int:
             with destino.open("a", encoding="utf-8") as fh:
                 fh.write(f"- {time.strftime('%Y-%m-%d')} · {' '.join(a.texto.split())}\n")
             print(f"Aprendizaje guardado en {destino}")
+            if a.espacio:
+                print(f"Quedó solo para «{a.espacio}»: úsalo únicamente para el espíritu de esa marca (tono, público, voz, límites, aprobaciones). "
+                      "Lo técnico, de oficio o de proceso vale para todos los espacios: guárdalo sin --espacio.")
         elif a.cmd == "aprendizajes":
             print(leer_aprendizajes(a.espacio))
     except ErrorVox as exc:

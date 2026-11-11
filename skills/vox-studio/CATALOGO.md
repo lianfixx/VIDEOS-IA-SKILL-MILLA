@@ -54,6 +54,17 @@ Añadidos a cualquier plano: `apunte` (nota a mano con flecha) y, en imágenes, 
 
 Cada plano entra con la palabra ancla (`en`) en su tiempo real de voz y suena al entrar (papel, pop o deslizar; marcador en las citas). `remate_en` ancla el sello a una palabra.
 
+## Voz
+
+| Recurso | Cómo se escribe | Efecto |
+|---|---|---|
+| Pausa | `[pausa]`, `[pausa larga]` en la narración | 0.5 s o 1 s de silencio natural |
+| Cambio de tema | `cambio_tema: true` en la escena | respiro de 0.55 s y esa escena 10 % más lenta |
+| Expresión | `[ríe]`, `[suspira]`, `[carraspea]`, `[susurra]`, `[irónica]`, `[sorprendida]`, `[seria]`, `[emocionada]`, `[lento]`, `[duda]` | solo con modelo expresivo (`eleven_v3`, `eleven_v4`) |
+| Segunda voz | `voz: "comentario"` en la escena | la dice `voz_comentario` del espacio; subtítulos en caja invertida con «OPINIÓN» |
+
+Fotos reales: plano `imagen` con `foto_real: true` y `credito`. Estilo de video: `estilo: "collage"` (por defecto) o `"pizarra"`.
+
 ## Movimiento
 
 - Entradas (`entrada`): `sello`, `desliza-izq`, `cae`, `desliza-der`, `desdobla`, `mordidas`.

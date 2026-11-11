@@ -16,7 +16,7 @@ export type Colores = {papel: string; tinta: string; acento: string; apoyo: stri
 export type Plano = {
   tipo: string; desde: number; dur: number; imagen?: string; texto?: string; resaltar?: string; origen?: string;
   items?: {texto: string; marca: string; desde: number}[]; celdas?: {t: string; estado: string}[]; etiqueta?: string;
-  dato?: string; tachar?: boolean; imagenes?: string[]; entre?: string;
+  dato?: string; tachar?: boolean; imagenes?: string[]; entre?: string; foto?: boolean; credito?: string;
   pasos?: {texto: string; nota?: string; desde: number}[]; hitos?: {fecha: string; texto: string; desde: number}[];
   barras?: {etiqueta: string; valor: number; texto?: string; desde: number}[];
   etiquetas?: {texto: string; x: number; y: number; desde: number}[]; apunte?: {texto: string; desde: number};
@@ -26,11 +26,11 @@ export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
   nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string;
 };
-export type Palabra = {t: string; a: number; b: number};
+export type Palabra = {t: string; a: number; b: number; c?: boolean}; // c: la dice la voz de comentario
 export type VideoVox = {
   fps: number; ancho: number; alto: number; frames: number; titulo: string;
   perfil: {nombre: string; handle: string; colores: Colores; cuadricula: boolean; titular?: string; subtitulos?: string};
-  finVoz?: number; cierre?: string; volMusica?: number; volEfecto?: number; portada?: {texto: string; resaltar: string; imagen: string};
+  finVoz?: number; cierre?: string; etiquetaComentario?: string; volMusica?: number; volEfecto?: number; portada?: {texto: string; resaltar: string; imagen: string};
   voz: string; musica: string; sfx: boolean; escenas: Escena[]; palabras: Palabra[];
 };
 
@@ -119,6 +119,8 @@ const FUENTES: Record<string, {ancho: number; tope: number; espacio: number}> = 
 // Ancho real de cada mayúscula de Gelasio 700, en em (leído de la fuente): una media por letra
 // dejaba salir del margen las líneas con M, N, O, D o G.
 const ANCHOS: Record<string, Record<string, number>> = {
+  // Anton es casi uniforme (0.47 em) salvo M y W, anchas, e I, estrecha: con la media, «MÍNIMO» o «WHATSAPP» se salían.
+  Anton: {A: 0.49, B: 0.48, C: 0.47, D: 0.49, E: 0.41, F: 0.4, G: 0.48, H: 0.5, I: 0.23, J: 0.47, K: 0.47, L: 0.4, M: 0.75, N: 0.5, Ñ: 0.5, O: 0.49, P: 0.47, Q: 0.49, R: 0.48, S: 0.46, T: 0.4, U: 0.47, V: 0.47, W: 0.71, X: 0.48, Y: 0.45, Z: 0.41, Á: 0.49, É: 0.41, Í: 0.23, Ó: 0.49, Ú: 0.47, Ü: 0.47, '¿': 0.49, '?': 0.49, '¡': 0.23, '!': 0.23, '0': 0.49, '1': 0.33, '2': 0.49, '3': 0.49, '4': 0.49, '5': 0.49, '6': 0.49, '7': 0.49, '8': 0.49, '9': 0.49, $: 0.46, '%': 1.06, '.': 0.23, ',': 0.24, ':': 0.24},
   Gelasio: {A: 0.76, B: 0.76, C: 0.72, D: 0.83, E: 0.72, F: 0.67, G: 0.81, H: 0.91, I: 0.45, J: 0.6, K: 0.82, L: 0.69, M: 1.02, N: 0.84, Ñ: 0.84, O: 0.82, P: 0.7, Q: 0.82, R: 0.8, S: 0.65, T: 0.68, U: 0.83, V: 0.76, W: 1.13, X: 0.81, Y: 0.73, Z: 0.69, Á: 0.76, É: 0.72, Í: 0.45, Ó: 0.82, Ú: 0.83, Ü: 0.83, '¿': 0.55, '?': 0.55, '¡': 0.38, '!': 0.38, '0': 0.7, '1': 0.49, '2': 0.63, '3': 0.62, '4': 0.65, '5': 0.6, '6': 0.65, '7': 0.55, '8': 0.68, '9': 0.65, $: 0.64, '%': 0.88, '.': 0.33, ',': 0.33, ':': 0.37},
 };
 const SEPARA = 0.22; // espacio entre palabras del titular, en em
@@ -127,7 +129,7 @@ const anchoLinea = (linea: string, fuente: string, media: number): number => {
   const tabla = ANCHOS[fuente];
   if (!tabla) return Math.max(linea.length, 3) * media;
   const palabras = linea.toUpperCase().split(' ');
-  const letras = palabras.reduce((a, p) => a + [...p].reduce((b, ch) => b + (tabla[ch] ?? 0.84), 0), 0);
+  const letras = palabras.reduce((a, p) => a + [...p].reduce((b, ch) => b + (tabla[ch] ?? (fuente === 'Anton' ? 0.5 : 0.84)), 0), 0);
   // 0.16 em: lo que el resaltador sobresale a los lados.
   return Math.max(letras + SEPARA * (palabras.length - 1) + 0.16, 3 * media);
 };
@@ -273,8 +275,8 @@ const Lista: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: 
           <div key={m} style={{height: fila, display: 'flex', alignItems: 'center', gap: 26, ...entrar(m % 2 ? 'desliza-der' : 'desliza-izq', t, fps)}}>
             <div style={{flex: 'none', width: fila * 0.72, height: fila * 0.72, border: `7px solid ${c.tinta}`, background: no ? c.papel : it.marca ? c.acento : c.papel, transform: `rotate(${m % 2 ? 3 : -3}deg)`, boxShadow: `6px 6px 0 ${c.tinta}`}}>
               <svg viewBox="0 0 40 40" width="100%" height="100%">
-                {it.marca === 'si' && <path d="M8 21 l9 9 l16 -20" fill="none" stroke={c.papel} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />}
-                {no && <path d="M9 9 L31 31 M31 9 L9 31" fill="none" stroke={c.tinta} strokeWidth={6} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />}
+                {it.marca === 'si' && dib > 0 && <path d="M8 21 l9 9 l16 -20" fill="none" stroke={c.papel} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />}
+                {no && dib > 0 && <path d="M9 9 L31 31 M31 9 L9 31" fill="none" stroke={c.tinta} strokeWidth={6} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />}
               </svg>
             </div>
             <div style={{position: 'relative', fontFamily: 'Anton', fontSize: tam, lineHeight: 1, letterSpacing: 1, color: c.tinta, whiteSpace: 'nowrap'}}>
@@ -296,7 +298,7 @@ const Calendario: React.FC<{p: Plano; c: Colores; t: number; alto: number; ancho
   const filas = Math.ceil(celdas.length / cols);
   const pie = p.etiqueta ? 84 : 0;
   const lado = Math.min((ancho - 70) / cols - 14, (alto - pie - 30) / filas - 14, 170);
-  const paso = Math.min(6, Math.max(1.5, (p.dur - 34) / Math.max(1, celdas.length)));
+  const paso = Math.min(6, Math.max(0.6, (p.dur - 34) / Math.max(1, celdas.length))); // 31 días caben aunque el plano sea corto
   return (
     <div style={{position: 'relative', background: '#FFFDF7', padding: '22px 22px 16px', boxShadow: `14px 14px 0 ${c.tinta}`, borderTop: `26px solid ${c.tinta}`, transform: 'rotate(1.5deg)'}}>
       <Cinta c={c} />
@@ -309,7 +311,7 @@ const Calendario: React.FC<{p: Plano; c: Colores; t: number; alto: number; ancho
           return (
             <div key={n} style={{position: 'relative', width: lado, height: lado, border: `5px solid ${c.tinta}`, background: activo ? c.acento : c.papel, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1 + 0.16 * Math.sin(Math.PI * Math.min(1, salto))})`}}>
               <span style={{position: 'relative', zIndex: 1, fontFamily: 'Anton', fontSize: lado * 0.5, lineHeight: 1, color: activo ? c.papel : c.tinta}}>{x.t}</span>
-              {x.estado === 'tachado' && (
+              {x.estado === 'tachado' && dib > 0 && (
                 <svg viewBox="0 0 40 40" width="100%" height="100%" style={{position: 'absolute', inset: 0}}>
                   <path d="M6 7 L34 33 M34 7 L6 33" fill="none" stroke={c.acento} strokeWidth={4.5} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />
                 </svg>
@@ -335,7 +337,7 @@ const DatoGrande: React.FC<{p: Plano; c: Colores; t: number; alto: number}> = ({
     <div style={{position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: `translateY(${Math.sin(t / 24) * 5}px) rotate(-2deg)`}}>
       <div style={{position: 'relative', fontFamily: 'Anton', fontSize: tam, lineHeight: 1.08, color: c.papel, background: c.tinta, padding: '6px 46px 12px', boxShadow: `14px 14px 0 ${c.acento}`, border: `8px solid ${c.papel}`, outline: `6px solid ${c.tinta}`, fontVariantNumeric: 'tabular-nums'}}>
         {visto}
-        {p.tachar && (
+        {p.tachar && raya > 0 && (
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" width="116%" height="100%" style={{position: 'absolute', left: '-8%', top: 0, overflow: 'visible'}}>
             <path d="M2 78 L98 24" stroke={c.papel} strokeWidth={15} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - raya} vectorEffect="non-scaling-stroke" style={{strokeWidth: 34}} />
             <path d="M2 78 L98 24" stroke={c.acento} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - raya} vectorEffect="non-scaling-stroke" style={{strokeWidth: 20}} />
@@ -387,7 +389,7 @@ const Flujo: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: 
           <React.Fragment key={m}>
             {m > 0 && (
               <svg width={80} height={flecha} viewBox="0 0 80 54" style={{marginLeft: 70}}>
-                <path d="M40 2 L40 44 M40 48 l-15 -17 M40 48 l15 -17" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />
+                {dib > 0 && <path d="M40 2 L40 44 M40 48 l-15 -17 M40 48 l15 -17" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - dib} />}
               </svg>
             )}
             <div style={{position: 'relative', height: caja, display: 'flex', alignItems: 'center', ...entrar(m % 2 ? 'desliza-der' : 'sello', t, fps)}}>
@@ -405,22 +407,28 @@ const Flujo: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: 
 const Barras: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: number}> = ({p, c, real, alto, ancho}) => {
   const {fps} = useVideoConfig();
   const barras = p.barras ?? [];
-  const max = Math.max(...barras.map((x) => x.valor), 1);
+  const max = Math.max(...barras.map((x) => x.valor), 1e-9);
   const fila = Math.min(215, (alto - 70) / Math.max(1, barras.length));
-  const pista = ancho - 300;
+  const cifra = fila * 0.4;
+  // Cifra tal como se escribió (sin redondear decimales); mientras crece se muestra con sus mismos decimales.
+  const decimales = (v: number) => (String(v).split('.')[1] ?? '').length;
+  const escrito = (x: {valor: number; texto?: string}) => x.texto || String(x.valor);
+  // La pista deja sitio fijo al texto más largo: así ninguna barra se encoge y la proporción dibujada es la de los datos.
+  const sitio = Math.max(...barras.map((x) => escrito(x).length), 1) * cifra * 0.5 + 30;
+  const pista = Math.max(120, ancho - 40 - sitio);
   return (
     <div style={{width: ancho - 40}}>
       {barras.map((x, m) => {
         const t = real - x.desde;
         const sube = spring({frame: t, fps, config: {damping: 200, stiffness: 70}});
-        const largo = Math.max(14, (x.valor / max) * pista * sube);
-        const visto = x.texto || String(Math.round(x.valor * sube));
+        const largo = Math.max(6, (x.valor / max) * pista * Math.min(1, sube));
+        const visto = x.texto || (sube > 0.985 ? String(x.valor) : (x.valor * sube).toFixed(decimales(x.valor)));
         return (
           <div key={m} style={{height: fila, ...entrar('desliza-izq', t, fps)}}>
             <div style={{fontFamily: 'Anton', fontSize: Math.min(56, fila * 0.28), lineHeight: 1.1, letterSpacing: 1, color: c.tinta}}>{x.etiqueta}</div>
             <div style={{display: 'flex', alignItems: 'center', gap: 18, marginTop: 6}}>
-              <div style={{width: largo, height: fila * 0.4, background: x.valor === max ? c.acento : c.tinta, boxShadow: `7px 7px 0 ${x.valor === max ? c.tinta : c.apoyo}`}} />
-              <div style={{fontFamily: 'Anton', fontSize: fila * 0.4, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'}}>{sube > 0.6 || !x.texto ? visto : ''}</div>
+              <div style={{flex: 'none', width: largo, height: cifra, background: x.valor === max ? c.acento : c.tinta, boxShadow: `7px 7px 0 ${x.valor === max ? c.tinta : c.apoyo}`}} />
+              <div style={{flex: 'none', fontFamily: 'Anton', fontSize: cifra, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'}}>{sube > 0.6 || !x.texto ? visto : ''}</div>
             </div>
           </div>
         );
@@ -470,13 +478,20 @@ const Etiquetas: React.FC<{p: Plano; c: Colores; real: number}> = ({p, c, real})
       {(p.etiquetas ?? []).map((x, m) => {
         const t = real - x.desde;
         if (t < 0) return null;
-        const izq = x.x > 0.5;
+        // Punto a los lados: la etiqueta se abre hacia el centro. Punto al centro: la etiqueta va encima, centrada.
+        // Así una etiqueta de 16 letras no sale de la zona segura. En fotos reales, x e y se miden sobre el marco.
+        const centro = x.x > 0.35 && x.x < 0.65;
+        const izq = x.x >= 0.65;
         const linea = interpolate(t, [0, 6], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
         return (
           <div key={m} style={{position: 'absolute', left: `${x.x * 100}%`, top: `${x.y * 100}%`, zIndex: 2}}>
             <div style={{position: 'absolute', left: -13, top: -13, width: 26, height: 26, borderRadius: '50%', background: c.acento, border: `5px solid ${c.papel}`, outline: `4px solid ${c.tinta}`}} />
-            <div style={{position: 'absolute', top: -3, [izq ? 'right' : 'left']: 16, width: 70 * linea, height: 6, background: c.tinta}} />
-            <div style={{position: 'absolute', top: -34, [izq ? 'right' : 'left']: 84, ...entrar('sello', t - 5, fps)}}>
+            {centro
+              ? <div style={{position: 'absolute', left: -3, bottom: 16, width: 6, height: 44 * linea, background: c.tinta}} />
+              : <div style={{position: 'absolute', top: -3, [izq ? 'right' : 'left']: 16, width: 70 * linea, height: 6, background: c.tinta}} />}
+            <div style={centro
+              ? {position: 'absolute', bottom: 58, left: 0, width: 0, display: 'flex', justifyContent: 'center', ...entrar('sello', t - 5, fps)}
+              : {position: 'absolute', top: -34, [izq ? 'right' : 'left']: 84, ...entrar('sello', t - 5, fps)}}>
               <div style={{fontFamily: 'Anton', fontSize: 42, lineHeight: 1, letterSpacing: 1, whiteSpace: 'nowrap', color: c.papel, background: c.tinta, padding: '8px 18px 10px', border: `5px solid ${c.papel}`, transform: `rotate(${izq ? 2 : -2}deg)`}}>{x.texto}</div>
             </div>
           </div>
@@ -495,7 +510,7 @@ const Apunte: React.FC<{p: Plano; c: Colores; real: number; der: boolean; arriba
   return (
     <div style={{position: 'absolute', top: arriba, [der ? 'right' : 'left']: 20, width: 560, transform: `rotate(${der ? -4 : 4}deg)`, zIndex: 3}}>
       <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
-        <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
+        {t > 0.001 && <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />}
       </svg>
       <div style={{fontFamily: 'Caveat', fontSize: 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(-10% ${(1 - t) * 100}% -10% 0)`}}>{p.apunte.texto}</div>
     </div>
@@ -520,7 +535,7 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
         const sale = s > 0 ? {transform: `translateX(${lado * Math.pow(s / SALIDA, 2) * 1500}px) rotate(${lado * s * 1.6}deg)`} : {};
         const propio = ['lista', 'duo', 'flujo', 'barras', 'linea'].includes(p.tipo); // sus piezas entran una por una
         const fondo = p.tipo === 'imagen' || p.tipo === 'dato' || p.tipo === 'duo';
-        const crece = spring({frame: t + 4, fps, config: {damping: 200, stiffness: 120}});
+        const crece = spring({frame: j === 0 ? t + 4 : t - SALIDA, fps, config: {damping: 200, stiffness: 120}}); // el fondo nuevo espera a que salga el plano anterior
         return (
           <div key={j} style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', ...sale}}>
             {fondo && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${crece}) rotate(${t * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
@@ -534,7 +549,15 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
             <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...(propio ? {} : entrar(verbos[(indice + j) % verbos.length], t, fps))}}>
               {p.tipo === 'imagen' && p.imagen && (
                 <div style={{position: 'relative', transform: `translateY(${Math.sin(t / 24) * 5}px) rotate(${((indice + j) % 2 ? 2 : -2) + Math.sin(t / 37 + j) * 0.7}deg)`}}>
-                  <Img src={staticFile(p.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: ancho - 60, objectFit: 'contain', filter: recorteCss(c)}} />
+                  {p.foto ? (
+                    // Foto real: copia en papel, en blanco y negro, con su crédito. Nunca se recorta como si fuera un objeto.
+                    <div style={{background: '#fff', padding: '18px 18px 14px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
+                      <Img src={staticFile(p.imagen)} style={{display: 'block', maxWidth: ancho - 130, maxHeight: alto - 150, filter: 'grayscale(1) contrast(1.2)'}} />
+                      <div style={{fontFamily: 'Caveat', fontSize: 34, lineHeight: 1, color: '#333', marginTop: 10, maxWidth: ancho - 130}}>{p.credito || ' '}</div>
+                    </div>
+                  ) : (
+                    <Img src={staticFile(p.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: ancho - 60, objectFit: 'contain', filter: recorteCss(c)}} />
+                  )}
                   <Cinta c={c} />
                   <Etiquetas p={p} c={c} real={real} />
                 </div>
@@ -564,7 +587,7 @@ const Nota: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({e, 
   return (
     <div style={{position: 'absolute', top: 1188, [der ? 'right' : 'left']: der ? W - DER_BAJO + 20 : SEGURO.izq + 10, width: 540, transform: `rotate(${der ? -4 : 4}deg)`}}>
       <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
-        <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
+        {t > 0.001 && <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />}
       </svg>
       <div style={{fontFamily: 'Caveat', fontSize: 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(0 ${(1 - t) * 100}% 0 0)`}}>{e.nota}</div>
     </div>
@@ -606,7 +629,7 @@ const EscenaVox: React.FC<{e: Escena; c: Colores; indice: number; f: number; rea
 };
 
 /** Subtítulos por palabra con los tiempos reales de la narración (nunca repartidos a mano). */
-const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = ({palabras, c, fuente}) => {
+const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string; etiqueta?: string}> = ({palabras, c, fuente, etiqueta}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const t = frame / fps;
@@ -616,7 +639,8 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
     for (const p of palabras) {
       const letras = actual.reduce((n, x) => n + x.t.length + 1, 0) + p.t.length;
       const pausa = actual.length > 0 && p.a - actual[actual.length - 1].b > 0.35;
-      if (actual.length > 0 && (actual.length >= 3 || letras > (fuente === 'Anton' ? 18 : 15) || pausa)) {
+      const otraVoz = actual.length > 0 && !!p.c !== !!actual[actual.length - 1].c;
+      if (actual.length > 0 && (actual.length >= 3 || letras > (fuente === 'Anton' ? 18 : 15) || pausa || otraVoz)) {
         g.push(actual);
         actual = [];
       }
@@ -632,15 +656,18 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
   const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < (grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : g[g.length - 1].b + 0.12));
   if (i < 0) return null;
   const grupo = grupos[i];
+  // La voz de comentario se distingue a la vista: caja invertida y etiqueta. Opinión y dato no se confunden.
+  const opina = !!grupo[0].c;
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: SEGURO.der - SEGURO.izq, top: 1320, display: 'flex', justifyContent: 'center'}}>
-      <div style={{display: 'flex', gap: 16, background: c.papel, padding: '10px 22px 14px', boxShadow: `9px 9px 0 ${c.tinta}`, border: `5px solid ${c.tinta}`, transform: `rotate(${i % 2 ? 1 : -1}deg)`}}>
+      <div style={{position: 'relative', display: 'flex', gap: 16, background: opina ? c.tinta : c.papel, padding: '10px 22px 14px', boxShadow: `9px 9px 0 ${opina ? c.acento : c.tinta}`, border: `5px solid ${c.tinta}`, transform: `rotate(${i % 2 ? 1 : -1}deg)`}}>
+        {opina && etiqueta && <div style={{position: 'absolute', left: -14, top: -40, fontFamily: 'Anton', fontSize: 32, lineHeight: 1, letterSpacing: 2, color: c.papel, background: c.acento, padding: '5px 14px 7px', transform: 'rotate(-3deg)'}}>{etiqueta}</div>}
         {grupo.map((p, k) => {
           const dicha = t >= p.a - 0.04;
           const activa = dicha && t < p.b + 0.06;
           const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 17, stiffness: 240, mass: 0.6}});
           return (
-            <span key={k} style={{fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: fuente === 'Anton' ? 74 : 62, lineHeight: fuente === 'Anton' ? 1.05 : 1.2, textTransform: 'uppercase', color: activa ? c.papel : dicha ? c.tinta : `${c.tinta}38`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
+            <span key={k} style={{fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: fuente === 'Anton' ? 74 : 62, lineHeight: fuente === 'Anton' ? 1.05 : 1.2, textTransform: 'uppercase', color: activa ? c.papel : dicha ? (opina ? c.papel : c.tinta) : `${opina ? c.papel : c.tinta}${opina ? '66' : '38'}`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
               {p.t}
             </span>
           );
@@ -663,7 +690,7 @@ const Cierre: React.FC<{texto: string; c: Colores; desde: number}> = ({texto, c,
         <div style={{fontFamily: 'Anton', fontSize: 84, lineHeight: 1, color: c.papel, background: c.acento, padding: '10px 30px 14px', boxShadow: `10px 10px 0 ${c.tinta}`, transform: 'rotate(-2deg)', letterSpacing: 1}}>{texto}</div>
       </div>
       <svg width={150} height={120} viewBox="0 0 150 120">
-        <path d="M8 30 C 60 10, 110 40, 128 100 M128 100 l -30 -10 M128 100 l 6 -32" fill="none" stroke={c.tinta} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />
+        {t > 0.001 && <path d="M8 30 C 60 10, 110 40, 128 100 M128 100 l -30 -10 M128 100 l 6 -32" fill="none" stroke={c.tinta} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />}
       </svg>
     </div>
   );
@@ -729,7 +756,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
       )}
       {v.cierre && v.finVoz != null && <Cierre texto={v.cierre} c={c} desde={Math.round((v.finVoz + 0.15) * fps)} />}
       {v.cierre && v.finVoz != null && v.sfx && <Audio src={staticFile('sfx/pop.wav')} from={Math.round((v.finVoz + 0.15) * fps)} volume={0.35} />}
-      {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} />}
+      {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} etiqueta={v.etiquetaComentario} />}
       {/* barra de avance y firma, dentro de la zona segura */}
       <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba - 8, width: SEGURO.der - SEGURO.izq, height: 10, background: `${c.tinta}22`}}>
         <div style={{width: `${avance * 100}%`, height: '100%', background: c.acento}} />
@@ -745,7 +772,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
           {(e.planos ?? []).map((p, j) => (
             <React.Fragment key={j}>
               {j > 0 && <Audio src={staticFile(`sfx/${['papel', 'pop', 'deslizar'][j % 3]}.wav`)} from={e.desde + p.desde} volume={0.2} />}
-              {p.tipo === 'cita' && p.resaltar && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + p.desde + (j === 0 ? 4 : 12)} volume={0.2} />}
+              {p.tipo === 'cita' && p.resaltar && !(i === 0 && j === 0) && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + p.desde + (j === 0 ? 4 : 12)} volume={0.2} />}
               {p.tipo === 'lista' && (p.items ?? []).map((it, m) => m > 0 && <Audio key={m} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
               {[...(p.pasos ?? []), ...(p.hitos ?? []), ...(p.barras ?? [])].map((it, m) => m > 0 && <Audio key={`m${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
               {(p.etiquetas ?? []).map((it, m) => <Audio key={`e${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}

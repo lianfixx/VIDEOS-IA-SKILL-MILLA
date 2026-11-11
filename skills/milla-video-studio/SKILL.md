@@ -2,8 +2,8 @@
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.1.1"
-  release_date: "2026-11-04"
+  version: "1.2.0"
+  release_date: "2026-11-11"
   language: "es-MX"
 ---
 
@@ -38,7 +38,7 @@ Ejecutar `python3 scripts/milla.py doctor` desde la carpeta de la skill. Comprue
 ## Ejecutar por hitos
 
 1. Crear producción privada con `python3 scripts/milla.py init-project RUTA --title "Tema"`. Registrar objetivo, audiencia, plataforma, jurisdicción, CTA y presupuesto ya autorizado. Completar solo lo faltante.
-2. Investigar y escribir guion, mapa de afirmaciones y storyboard. Leer [prompts](references/prompts.md). Dar función explicativa a cada escena.
+2. Investigar y escribir guion, mapa de afirmaciones y storyboard. Leer [prompts](references/prompts.md) y [narrativa, ritmo y motion](references/narrative-motion.md) (candidato: lo aprendido en Vox Studio que vale para todos los espacios). Dar función explicativa a cada escena.
 3. Configurar secretos fuera del chat/repositorio. Hacer solicitudes mínimas dentro del presupuesto. Registrar hash de petición y task ID. Tras timeout de POST, comprobar estado antes de reenviar.
 4. Resolver voz, música, imágenes, recortes y tiempos. Conservar originales/derivados/hashes. Revisar cada recurso antes de montar. Guardar motivos de rechazo y aprobación.
 5. Trabajar en la plantilla Remotion que `init-project` ya copió a la raíz de la producción, siguiendo [renderizado](references/rendering.md). Es una base nueva, no código recuperado del video aprobado. Adaptar diagramas, tipografía y transiciones sin crear otra copia paralela.

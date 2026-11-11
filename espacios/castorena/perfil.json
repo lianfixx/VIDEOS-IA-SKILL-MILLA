@@ -20,5 +20,12 @@
   "titular": "Gelasio",
   "estilo_imagen": "foto",
   "subtitulos": "Gelasio",
-  "cierre": "OPINA"
+  "cierre": "OPINA",
+  "voz_comentario": {
+    "proveedor": "elevenlabs",
+    "voice_id": "7QXA3lh7d25G1SzsIJdv",
+    "nombre": "Daniel Virgen - Hyped",
+    "modelo": "eleven_v3"
+  },
+  "etiqueta_comentario": "OPINIÓN"
 }

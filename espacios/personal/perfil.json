@@ -23,5 +23,12 @@
     "x": "@emilianomilla_",
     "tiktok": ""
   },
-  "cierre": "COMENTA"
+  "cierre": "COMENTA",
+  "voz_comentario": {
+    "proveedor": "elevenlabs",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
+    "modelo": "eleven_v3"
+  },
+  "etiqueta_comentario": "OPINIÓN"
 }

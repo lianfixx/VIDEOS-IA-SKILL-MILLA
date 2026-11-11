@@ -19,5 +19,12 @@
   "titular": "Anton",
   "estilo_imagen": "foto",
   "subtitulos": "Anton",
-  "cierre": "OPINA"
+  "cierre": "OPINA",
+  "voz_comentario": {
+    "proveedor": "elevenlabs",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
+    "modelo": "eleven_v3"
+  },
+  "etiqueta_comentario": "OPINIÓN"
 }

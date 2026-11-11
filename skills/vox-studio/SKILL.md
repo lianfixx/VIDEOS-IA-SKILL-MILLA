@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.10.0"
+  version: "0.11.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -45,6 +45,30 @@ Una escena con un solo recorte quieto no cuenta nada: Emi lo rechazó en el prim
 Cualquier plano puede llevar además un `apunte` (aclaración a mano con flecha, anclada a una palabra) y los de imagen, `etiquetas` que señalan una parte (`x`, `y` de 0 a 1). Así la explicación va a la par de lo que se ve, no después. Motion hecho con código primero: si un diagrama explica mejor que una foto, se dibuja.
 
 Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen, del gancho sin segundo plano y del guion sin `bucle`; `armar` avisa de cualquier plano quieto más de 4.5 s en la voz real. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
+
+## Cómo lo dice la voz
+
+La voz no lee: cuenta. Tres recursos, escritos en el guion:
+
+- **Pausas**: `[pausa]` (medio segundo) o `[pausa larga]` (uno) dentro de la narración, antes del remate o después de una cifra fuerte. No se leen ni salen en subtítulos.
+- **Cambio de tema**: `cambio_tema: true` en la escena que abre otro asunto (los flashes, un «por otro lado»). La voz respira 0.55 s y dice esa escena 10 % más despacio; se narra en un tramo propio.
+- **Expresiones humanas**: redactar como se habla (muletillas medidas, autocorrecciones como «bueno, casi», preguntas al que mira). Las marcas `[ríe]`, `[suspira]`, `[carraspea]`, `[susurra]`, `[irónica]`, `[sorprendida]`, `[seria]`, `[emocionada]`, `[lento]` y `[duda]` solo las dice un modelo expresivo (`eleven_v3`, `eleven_v4`); con la voz clásica se omiten y `validar` lo avisa.
+
+**Segunda voz (candidata)**: cada espacio tiene `voz_comentario`, la que opina, bromea y comenta, distinta de la que informa. Una escena con `voz: "comentario"` la usa; en pantalla sus subtítulos van en caja invertida con la etiqueta «OPINIÓN», para que opinión y dato no se confundan. Es para un video polémico cuando salga algo muy relevante y Emi lo pida: antes, él elige la voz por oído con una muestra.
+
+`voz` sin `--execute` enseña el plan: cuántos tramos, con qué voz y velocidad, y cuántos caracteres cuesta.
+
+## De dónde sale cada imagen
+
+En el guion visual, cada plano se decide entre tres fuentes:
+
+- **Código** para lo que se explica: cita, lista, flujo, línea de tiempo, barras, calendario, cifras. No cuesta y es exacto.
+- **Apify** para lo real: instituciones, edificios, lugares, documentos y hechos. Plano `imagen` con `foto_real: true` y `credito` a la vista. Un video que habla de instituciones reales sin ninguna foto real está incompleto.
+- **Kie** para objetos y situaciones que no existen como foto libre. Un solo sujeto por prompt, sin superficies; croma magenta si hay vidrio, pantallas o verde; revisar cada recorte.
+
+## Estilo pizarra o motion
+
+`estilo: "pizarra"` en el guion hace el mismo video con la marca del espacio sobre cuadrícula blanca y pide que casi todo se dibuje con código. Narrativa, planos, voz, música, auditorías y saldos son los mismos; `validar` avisa si se llena de imágenes generadas.
 
 ## Música, efectos y remates (siempre)
 
@@ -119,7 +143,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 ## Aprender de cada video (obligatorio)
 
-Después de cada entrega y de cada comentario de Emi, guardar la lección: `$V aprender "qué pasó y qué regla queda"` para todos los espacios, o con `--espacio E` si es propia de una marca. Las lecciones no se borran. Si una lección cambia el compositor o el validador, hacer el cambio en `plantilla/` o `vox.py` con su prueba y registrarlo en `CHANGELOG.md`.
+Después de cada entrega y de cada comentario de Emi, guardar la lección: `$V aprender "qué pasó y qué regla queda"`. **Vale para todos los espacios**: lo técnico, de oficio, de proceso o de narrativa que se aprende en una marca se aplica a las demás. Con `--espacio E` solo va el espíritu de esa marca (tono, público, voz, límites, aprobaciones). Toda mejora de la plantilla se prueba con cuadros en los cuatro espacios. Las lecciones no se borran. Si una lección cambia el compositor o el validador, hacer el cambio en `plantilla/` o `vox.py` con su prueba y registrarlo en `CHANGELOG.md`.
 
 ## Saldos (obligatorio en cada entrega)
 

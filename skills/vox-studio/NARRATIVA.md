@@ -57,6 +57,13 @@ No hace falta un corte por red: hace falta un corte que cumpla las cuatro.
 - Señalar lo esencial: resaltador, tachado, color de acento solo en lo que importa.
 - El primer cuadro debe detener el scroll sin sonido: titular grande y un objeto reconocible.
 
+**Voz**
+
+- Cambiar de tema es cambiar de ritmo: respiro y esa escena más despacio (`cambio_tema`), para que quien mira note que empezó otra cosa.
+- Pausa antes del remate y después de la cifra que debe pesar; nunca pausas de relleno.
+- Sonar a persona: frases cortas, una autocorrección o una pregunta por video, muletillas medidas. Nada que suene leído.
+- Opinión y dato, separados a la vista y al oído: si alguien opina, es otra voz y va marcada como opinión.
+
 **Para compartir**
 
 - Preguntarse antes de producir: ¿a quién se lo mandaría alguien y con qué frase? Si no hay respuesta, falta ángulo.

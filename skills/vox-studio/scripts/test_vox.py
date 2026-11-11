@@ -305,6 +305,11 @@ class Oficio(unittest.TestCase):
         for pieza in ("const Planos", "const CitaDoc", "const Lista", "const Calendario", "const DatoGrande", "const Duo",
                       "const Flujo", "const Barras", "const LineaTiempo", "const Etiquetas", "const Apunte"):
             self.assertIn(pieza, tsx)  # cada tipo de plano del guion tiene su componente
+        # Un trazo con punta redonda deja un punto visible aunque su avance sea cero: solo se dibuja cuando ya empezó.
+        import re as _re
+        for m in _re.finditer(r"<path[^>]*strokeLinecap=\"round\"[^>]*strokeDashoffset=\{1 - (\w+)\}[^>]*/>", tsx):
+            antes = tsx[max(0, m.start() - 480):m.start()]
+            self.assertRegex(antes, rf"{m.group(1)} > 0", m.group(0)[:60])
         for tipo in vox.PLANOS:
             self.assertIn(f"p.tipo === '{tipo}'", tsx)  # ningún tipo validado se queda sin dibujar
 
@@ -400,7 +405,7 @@ class Tiempos(unittest.TestCase):
         self.assertIn("dias", errores([{"tipo": "calendario", "dias": 99}]))
         self.assertIn("dos imágenes", errores([{"tipo": "duo", "imagenes": ["img/a.png"]}]))
         self.assertIn("remate_en", errores([{"tipo": "dato", "dato": "1"}], remate="ZAS", sonido="boom", remate_en="nueve"))
-        self.assertEqual(vox.imagenes_de({"imagen_archivo": "img/a.png", "planos": [{"imagen_archivo": "img/a.png"}, {"imagenes": ["img/b.png", "img/c.png"]}]}),
+        self.assertEqual(vox.imagenes_de({"imagen_archivo": "img/a.png", "planos": [{"tipo": "imagen", "imagen_archivo": "img/a.png"}, {"tipo": "duo", "imagenes": ["img/b.png", "img/c.png"]}]}),
                          ["img/a.png", "img/b.png", "img/c.png"])
 
     def test_motion_con_codigo_y_explicacion_a_la_par(self):
@@ -432,6 +437,179 @@ class Tiempos(unittest.TestCase):
         self.assertIn("solo va en planos de imagen", errores({"tipo": "dato", "dato": "1", "etiquetas": [{"texto": "a", "x": 0.5, "y": 0.5}]}))
         self.assertIn("entre 0 y 1", errores({"tipo": "imagen", "imagen_archivo": "img/a.png", "etiquetas": [{"texto": "a", "x": 2, "y": 0.5}]}))
         self.assertIn("apunte", errores({"tipo": "dato", "dato": "1", "apunte": {"texto": "x" * 60}}))
+
+    def test_miniatura_de_commons(self):
+        u = "https://upload.wikimedia.org/wikipedia/commons/a/ab/Edificio_%28M%C3%A9xico%29.jpg"
+        self.assertEqual(vox.miniatura_commons(u), "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Edificio_%28M%C3%A9xico%29.jpg/960px-Edificio_%28M%C3%A9xico%29.jpg")
+        self.assertTrue(vox.miniatura_commons(u.replace(".jpg", ".svg")).endswith(".svg.png"))
+        self.assertEqual(vox.miniatura_commons("https://ejemplo.org/foto.jpg"), "")
+        self.assertEqual(vox.miniatura_commons(u + "?utm_source=commons"), vox.miniatura_commons(u))  # Apify añade parámetros
+
+    def test_marcas_de_voz(self):
+        s = {"narracion": "Sí, cheque. [pausa] En pleno [ríe] dos mil veintiséis. [pausa larga]"}
+        self.assertEqual(vox.narracion_limpia(s), "Sí, cheque. En pleno dos mil veintiséis.")
+        self.assertEqual(vox.texto_para_voz(s, "eleven_multilingual_v2"), 'Sí, cheque. <break time="0.5s" /> En pleno dos mil veintiséis. <break time="1.0s" />')
+        self.assertEqual(vox.texto_para_voz(s, "eleven_v3"), "Sí, cheque. [pause] En pleno [laughs] dos mil veintiséis. [long pause]")
+        al = [{"t": x, "a": 0.0, "b": 0.1} for x in ['Sí,', 'cheque.', '<break', 'time="0.5s"', '/>', 'En', '[laughs]', 'pleno', '[long', 'pause]', 'ya.']]
+        self.assertEqual([w["t"] for w in vox.sin_etiquetas(al)], ["Sí,", "cheque.", "En", "pleno", "ya."])
+        g = guion(); g["escenas"][1]["narracion"] += " [grita]"
+        self.assertIn("marcas de voz desconocidas", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["escenas"][1]["narracion"] = "Y esto [ríe] da risa. [pausa]"
+        self.assertEqual(vox.validar_guion(g), [])
+        self.assertIn("modelo expresivo", " | ".join(vox.avisos_guion(g)))  # la voz clásica no ríe: se avisa
+        palabras, fin = alinear(g)
+        self.assertEqual(len(palabras), len(vox.texto_completo(g).split()))  # las marcas no cuentan como palabras
+        vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])
+
+    def test_cambio_de_tema_y_segunda_voz(self):
+        perfil = dict(vox.perfiles()["castorena"])
+        g = guion(); g["perfil"] = "castorena"
+        uno = vox.plan_de_voz(g, perfil)
+        self.assertEqual(len(uno), 1)
+        self.assertEqual(vox.firma_de_voz(g, uno), vox.huella(vox.texto_completo(g), perfil["voz"]["voice_id"], perfil["voz"]["modelo"],
+                                                             *([f"vel={uno[0]['velocidad']}"] if uno[0]["velocidad"] != 1.0 else [])))  # huella de siempre
+        g["escenas"][2]["cambio_tema"] = True
+        tramos = vox.plan_de_voz(g, perfil)
+        self.assertEqual([t["cambio"] for t in tramos][:3], [False, True, False] if len(g["escenas"]) > 3 else [False, True])
+        lento = tramos[1]
+        self.assertAlmostEqual(lento["velocidad"], round(uno[0]["velocidad"] * vox.CAMBIO_TEMA["velocidad"], 3))
+        self.assertEqual(lento["silencio"], vox.CAMBIO_TEMA["silencio"])
+        self.assertEqual(sum(t["palabras"] for t in tramos), len(vox.texto_completo(g).split()))
+        self.assertNotEqual(vox.firma_de_voz(g, tramos), vox.firma_de_voz(g, uno))
+        g["escenas"][0]["cambio_tema"] = True
+        self.assertIn("cambio_tema", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["perfil"] = "castorena"; g["escenas"][1]["voz"] = "comentario"
+        self.assertEqual(vox.validar_guion(g), [])
+        tramos = vox.plan_de_voz(g, perfil)
+        self.assertEqual([t["comentario"] for t in tramos][:2], [False, True])
+        self.assertEqual(tramos[1]["voz"]["voice_id"], perfil["voz_comentario"]["voice_id"])
+        self.assertNotEqual(tramos[1]["voz"]["voice_id"], perfil["voz"]["voice_id"])
+        self.assertEqual(tramos[1]["silencio"], vox.SILENCIO_ENTRE_VOCES)
+        sin = {k: v for k, v in perfil.items() if k != "voz_comentario"}
+        with self.assertRaises(vox.ErrorVox):
+            vox.plan_de_voz(g, sin)
+        palabras, fin = alinear(g)
+        palabras[len(g["escenas"][0]["narracion"].split())]["c"] = True
+        v = vox.armar_video(g, palabras, fin, perfil)
+        self.assertTrue(v["escenas"][1]["comentario"])
+        self.assertTrue(any(w.get("c") for w in v["palabras"]))
+        self.assertEqual(v["etiquetaComentario"], "OPINIÓN")
+        for nombre, pf in vox.perfiles().items():
+            self.assertNotEqual(pf["voz_comentario"]["voice_id"], pf["voz"]["voice_id"], nombre)  # la que opina no es la que informa
+
+    def test_estilo_pizarra(self):
+        g = guion(); g["estilo"] = "pizarra"
+        self.assertEqual(vox.validar_guion(g), [])
+        self.assertIn("estilo pizarra sin `planos`", " | ".join(vox.avisos_guion(g)))
+        g["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=[{"tipo": "imagen", "imagen_archivo": "img/a.png"}])
+        self.assertIn("casi todo se dibuja", " | ".join(vox.avisos_guion(g)))
+        g["escenas"][1]["planos"] = [{"tipo": "dato", "dato": "1"}, {"tipo": "flujo", "en": "tres", "pasos": [{"texto": "a"}, {"texto": "b"}]}]
+        self.assertNotIn("pizarra", " | ".join(vox.avisos_guion(g)))
+        palabras, fin = alinear(g)
+        for nombre, pf in vox.perfiles().items():  # cualquier espacio puede hacer un video de pizarra con su marca
+            v = vox.armar_video({**g, "perfil": nombre}, palabras, fin, pf)
+            self.assertTrue(v["perfil"]["cuadricula"])
+            self.assertEqual(v["perfil"]["colores"]["papel"], vox.PAPEL_PIZARRA)
+            self.assertEqual(v["perfil"]["colores"]["acento"], pf["colores"]["acento"])
+        g["estilo"] = "acuarela"
+        self.assertIn("estilo", " | ".join(vox.validar_guion(g)))
+
+    def test_hallazgos_de_la_auditoria_del_11_de_noviembre(self):
+        def errores(narracion, planos=None, **extra):
+            g = guion(); g["escenas"][1].update(narracion=narracion, **extra)
+            if planos is not None:
+                g["escenas"][1]["planos"] = planos
+            return " | ".join(vox.validar_guion(g))
+        # Marcas pegadas a un signo o a una palabra, y corchetes que no son marca: se rechazan antes de pagar.
+        for mala in ("Espera [pausa], ya llegó.", "Eso dijo. [pausa]Y se fue.", "Mira[pausa] esto ahora.", "¡[ríe] Qué bien salió!"):
+            self.assertIn("separada por espacios", errores(mala), mala)
+        self.assertIn("corchetes", errores("Cita [sic y sigue hablando sin cerrar nunca."))
+        self.assertIn("corchetes", errores("Esto <break> no va."))
+        self.assertEqual(errores("Eso dijo. [pausa] Y se fue."), "")
+        # Rutas e imágenes solo en planos de imagen; nada sale de public/.
+        self.assertIn("no lleva imágenes", errores("Uno dos tres.", [{"tipo": "dato", "dato": "5", "imagen_archivo": "../../secreto.txt"}]))
+        self.assertIn("no lleva imágenes", errores("Uno dos tres.", [{"tipo": "dato", "dato": "5", "imagenes": 7}]))
+        self.assertEqual(vox.imagenes_de({"planos": [{"tipo": "dato", "imagen_archivo": "../x.txt"}, {"tipo": "imagen", "imagen_archivo": "../y.png"}, {"tipo": "duo", "imagenes": 7}]}), [])
+        self.assertIn("debe ser texto", errores("Uno dos tres.", [{"tipo": "dato", "dato": "5", "etiqueta": None}]))
+        # Foto real en un plano: la biblioteca conserva que es foto y su crédito.
+        f = vox.fichas_de_imagenes({"planos": [{"tipo": "imagen", "imagen_archivo": "img/scjn.jpg", "foto_real": True, "credito": "Foto: Autor · CC BY-SA 4.0"}]})
+        self.assertEqual(f["img/scjn.jpg"], {"foto_real": True, "credito": "Foto: Autor · CC BY-SA 4.0"})
+        # Una pieza anclada después del plano siguiente no se vería: se rechaza.
+        n = "Primero uno y luego dos y al final tres."
+        mal = [{"tipo": "lista", "items": [{"texto": "Uno", "en": "uno"}, {"texto": "Tres", "en": "tres"}]}, {"tipo": "dato", "dato": "2", "en": "dos"}]
+        self.assertIn("cuando ya entró el plano 2", errores(n, mal))
+        # Anclas repetidas: cada pieza toma la aparición siguiente, no la misma palabra.
+        g = guion(); e = g["escenas"][1]
+        e["narracion"] = "Primero pagas la renta completa y al final pagas la multa entera con recargos."
+        e["planos"] = [{"tipo": "dato", "dato": "1"}, {"en": "Primero", "tipo": "lista", "items": [{"texto": "Renta", "en": "pagas"}, {"texto": "Multa", "en": "pagas"}]}]
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g, paso=0.4)
+        esc = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])["escenas"][1]
+        dichas = [round(w["a"] * vox.FPS) - esc["desde"] for w in palabras if w["t"] == "pagas"]
+        renta, multa = [it["desde"] for it in esc["planos"][1]["items"]]
+        self.assertEqual(multa, dichas[1] - 4)  # la segunda pieza va con el segundo «pagas», no con el primero
+        self.assertLess(renta, dichas[1] - 20)
+        # Anclas con comillas, paréntesis o porcentaje.
+        self.assertEqual(vox.buscar_ancla(["«gratis»,", "(INEGI)", "días…", "12%"], "INEGI"), 1)
+        self.assertEqual(vox.buscar_ancla(["«gratis»,", "(INEGI)", "días…", "12%"], "12"), 3)
+        # Piezas a ritmo fijo y remate: siempre dentro de su plano, con tiempo de verse.
+        g = guion(); e = g["escenas"][1]
+        e["narracion"] = "Uno dos tres cuatro cinco seis siete ocho cheque."
+        e.update(remate="ZAS", sonido="boom", remate_en="cheque",
+                 planos=[{"tipo": "dato", "dato": "1"}, {"en": "seis", "tipo": "linea", "hitos": [{"fecha": str(2020 + k), "texto": "hito"} for k in range(4)]}])
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g, paso=0.3)
+        esc = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])["escenas"][1]
+        linea = esc["planos"][1]
+        self.assertTrue(all(linea["desde"] <= h["desde"] <= linea["desde"] + linea["dur"] - 12 for h in linea["hitos"]), linea)
+        self.assertEqual([h["desde"] for h in linea["hitos"]], sorted(h["desde"] for h in linea["hitos"]))
+        self.assertLessEqual(esc["remateEn"], esc["dur"] - 30)
+        # Cita: el resaltado se normaliza igual que el texto.
+        g = guion(); g["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=[{"tipo": "cita", "texto": "El patrón  deberá pagar\nel salario.", "resaltar": "patrón  deberá", "origen": "LFT"}])
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g)
+        cita = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])["escenas"][1]["planos"][0]
+        self.assertIn(cita["resaltar"], cita["texto"])
+        # Portada: si la escena no trae imagen propia, se toma la primera de sus planos.
+        g = guion()
+        for x in g["escenas"]:
+            x.pop("imagen_archivo", None)
+        g["escenas"][0]["planos"] = [{"tipo": "imagen", "imagen_archivo": "img/p.png"}]
+        palabras, fin = alinear(g)
+        self.assertEqual(vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])["portada"]["imagen"], "img/p.png")
+        # Velocidad con más de tres decimales: la huella sigue siendo la de siempre.
+        g = guion(); g["voz_velocidad"] = 1.0625
+        pf = vox.perfiles()["personal"]
+        self.assertEqual(vox.firma_de_voz(g, vox.plan_de_voz(g, pf)), vox.huella(vox.texto_completo(g), pf["voz"]["voice_id"], pf["voz"]["modelo"], "vel=1.0625"))
+
+    def test_tramos_pagados_no_se_vuelven_a_cobrar(self):
+        g = guion(); g["perfil"] = "castorena"; g["escenas"][2]["cambio_tema"] = True
+        perfil = vox.perfiles()["castorena"]
+        llamadas = []
+        real = vox.narrar
+        def falso(texto, voz, velocidad=1.0, previo="", siguiente=""):
+            llamadas.append(texto)
+            if len(llamadas) == 2 and not getattr(falso, "sano", False):
+                raise vox.ErrorVox("fallo simulado del proveedor")
+            ws = [{"t": w, "a": i * 0.3, "b": i * 0.3 + 0.2} for i, w in enumerate(texto.split())]
+            return (Path(__file__).parent / "__silencio.mp3").read_bytes(), ws
+        d = Path(tempfile.mkdtemp())
+        import subprocess
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=44100:cl=mono", "-t", "1", str(Path(__file__).parent / "__silencio.mp3")], check=True)
+        antes = set(Path(tempfile.gettempdir()).glob("vox-voz-*"))
+        try:
+            vox.narrar = falso
+            with self.assertRaises(vox.ErrorVox):
+                vox.narrar_guion(g, perfil, d / "voz.mp3", d / "tramos")
+            self.assertEqual(set(Path(tempfile.gettempdir()).glob("vox-voz-*")), antes)  # sin carpetas temporales huérfanas
+            self.assertEqual(len(list((d / "tramos").glob("*.mp3"))), 1)  # el primer tramo quedó pagado y guardado
+            falso.sano = True
+            palabras = vox.narrar_guion(g, perfil, d / "voz.mp3", d / "tramos")
+            self.assertEqual(len(palabras), len(vox.texto_completo(g).split()))
+            self.assertEqual(llamadas.count(llamadas[0]), 1)  # el tramo 1 no se volvió a pedir
+        finally:
+            vox.narrar = real
+            (Path(__file__).parent / "__silencio.mp3").unlink(missing_ok=True)
 
     def test_bucle_abierto(self):
         g = guion()
