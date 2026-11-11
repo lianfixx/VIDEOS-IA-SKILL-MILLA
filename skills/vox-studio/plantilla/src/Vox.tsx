@@ -78,7 +78,8 @@ const entrar = (verbo: string, f: number, fps: number): React.CSSProperties => {
     case 'mordidas': {
       const pasos = [0, 0.18, 0.31, 0.62, 0.74, 1];
       const k = pasos[Math.min(pasos.length - 1, Math.floor(f / 2.5))];
-      return {clipPath: `inset(0 ${(1 - k) * 100}% 0 0)`};
+      // Al terminar no queda recorte; mientras dura, el recorte deja pasar acentos y resaltador.
+      return k >= 1 ? {} : {clipPath: `inset(-40% ${(1 - k) * 100}% -40% -10%)`};
     }
     default:
       return {transform: `scale(${s})`};
@@ -105,6 +106,21 @@ const FUENTES: Record<string, {ancho: number; tope: number; espacio: number}> = 
   Anton: {ancho: 0.47, tope: 176, espacio: -1},
   Gelasio: {ancho: 0.64, tope: 132, espacio: -2},
 };
+// Ancho real de cada mayúscula de Gelasio 700, en em (leído de la fuente): una media por letra
+// dejaba salir del margen las líneas con M, N, O, D o G.
+const ANCHOS: Record<string, Record<string, number>> = {
+  Gelasio: {A: 0.76, B: 0.76, C: 0.72, D: 0.83, E: 0.72, F: 0.67, G: 0.81, H: 0.91, I: 0.45, J: 0.6, K: 0.82, L: 0.69, M: 1.02, N: 0.84, Ñ: 0.84, O: 0.82, P: 0.7, Q: 0.82, R: 0.8, S: 0.65, T: 0.68, U: 0.83, V: 0.76, W: 1.13, X: 0.81, Y: 0.73, Z: 0.69, Á: 0.76, É: 0.72, Í: 0.45, Ó: 0.82, Ú: 0.83, Ü: 0.83, '¿': 0.55, '?': 0.55, '¡': 0.38, '!': 0.38, '0': 0.7, '1': 0.49, '2': 0.63, '3': 0.62, '4': 0.65, '5': 0.6, '6': 0.65, '7': 0.55, '8': 0.68, '9': 0.65, $: 0.64, '%': 0.88, '.': 0.33, ',': 0.33, ':': 0.37},
+};
+const SEPARA = 0.22; // espacio entre palabras del titular, en em
+/** Ancho de una línea del titular en em: con la tabla de la fuente si existe; si no, con su media por letra. */
+const anchoLinea = (linea: string, fuente: string, media: number): number => {
+  const tabla = ANCHOS[fuente];
+  if (!tabla) return Math.max(linea.length, 3) * media;
+  const palabras = linea.toUpperCase().split(' ');
+  const letras = palabras.reduce((a, p) => a + [...p].reduce((b, ch) => b + (tabla[ch] ?? 0.84), 0), 0);
+  // 0.16 em: lo que el resaltador sobresale a los lados.
+  return Math.max(letras + SEPARA * (palabras.length - 1) + 0.16, 3 * media);
+};
 const FuenteCtx = React.createContext('Anton');
 const medidas = (keyword: string, fuente: string) => {
   const m = FUENTES[fuente] ?? FUENTES.Anton;
@@ -112,7 +128,7 @@ const medidas = (keyword: string, fuente: string) => {
   // Titular en bloque: cada línea crece hasta llenar el ancho útil (como una portada de revista),
   // con tope por línea y sin que una línea corta supere 1.7 veces a la más pequeña.
   const tope = (lineas.length >= 3 ? 0.9 : 1.05) * m.tope;
-  const libres = lineas.map((l) => Math.min(tope, (SEGURO.der - SEGURO.izq) / (Math.max(l.length, 3) * m.ancho)));
+  const libres = lineas.map((l) => Math.min(tope, (SEGURO.der - SEGURO.izq) / anchoLinea(l, fuente, m.ancho)));
   const menor = Math.min(...libres);
   const tams = libres.map((v) => Math.min(v, menor * 1.7));
   return {lineas, tams, fin: 326 + tams.reduce((a, b) => a + b * 1.06, 0), espacio: m.espacio};
@@ -136,7 +152,7 @@ const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({
                 const marca = !!e.resaltar && sinSignos(p) === sinSignos(e.resaltar);
                 const trazo = spring({frame: f - 16 - j * 4, fps, config: {damping: 200, stiffness: 140}});
                 return (
-                  <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * 0.22}}>
+                  <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * SEPARA}}>
                     {marca && (
                       <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
                     )}

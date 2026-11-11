@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.8.3: acentos y márgenes del titular, llamado de cierre por video
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: primer video semanal de Castorena (DOF y SJF) en dos cortes; la auditoría de sus fotogramas encontró dos fallas de la plantilla.
+- Cambios: (1) la entrada `mordidas` dejaba un recorte permanente que cortaba los acentos de las mayúsculas de la primera línea («DIA HABIL») y lo que saliera del ancho; ya no deja recorte al terminar. (2) El titular en Gelasio se mide con el ancho real de cada letra (tabla `ANCHOS`), no con una media: cuatro líneas de estos guiones medían entre 877 y 997 px para 870 px útiles. (3) `cierre` en el guion sustituye el llamado del espacio solo en ese video (hasta 16 letras).
+- Archivos: `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/{SKILL.md,TECNICA.md}` y este registro.
+- Verificación: pruebas de vox-studio 45/45 → aprobado; `tsc --noEmit` → aprobado; anchos medidos con fontTools sobre `gelasio-latin-700-normal.woff2` → aprobado. Render de los dos cortes con la corrección → en curso al registrar. Anton (personal y MILLA) no cambia: conserva la media por letra → no ejecutado ningún render de esos espacios.
+- Pendiente: revisar la hoja de fotogramas del nuevo render; medir Anton con el mismo método.
+
 ## 2026-11-11 · Vox Studio 0.8.2: velocidad de la voz
 
 - Agente: Claude Code (sesión en la nube)

@@ -177,6 +177,8 @@ def validar_guion(g: dict) -> list[str]:
         e.append(f"falta musica.animo: analiza de qué va el video (`vox.py sonido GUION`) y elige uno de {sorted(SON.ANIMOS)} o 'ninguna'")
     if mus.get("animo") == "ninguna" and len(str(mus.get("motivo", ""))) < 10:
         e.append("musica 'ninguna' exige musica.motivo")
+    if not isinstance(g.get("cierre", ""), str) or len(g.get("cierre", "")) > 16:
+        e.append("cierre: texto de hasta 16 caracteres (sustituye al llamado del espacio solo en este video)")
     port = g.get("portada") or {}
     if len(str(port.get("texto", ""))) > 34 or len(partir(str(port.get("texto", "")))) > 3:
         e.append("portada.texto: máximo 34 caracteres y 3 líneas")
@@ -344,7 +346,7 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         "titulo": g["titulo"], "perfil": perfil, "voz": "audio/voz.mp3",
         "musica": "" if animo == "ninguna" else "audio/musica.wav", "animo": animo,
         "finVoz": round(palabras[-1]["b"], 3), "portada": portada, "sfx": True, "escenas": escenas,
-        "cierre": str(perfil.get("cierre") or "COMENTA")[:16].upper(),
+        "cierre": str(g.get("cierre") or perfil.get("cierre") or "COMENTA")[:16].upper(),
         "palabras": [{"t": p["t"], "a": round(p["a"], 3), "b": round(p["b"], 3)} for p in palabras],
     }
 

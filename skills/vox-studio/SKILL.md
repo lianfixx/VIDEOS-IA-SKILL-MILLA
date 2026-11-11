@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.2"
+  version: "0.8.3"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -54,7 +54,7 @@ Esta skill hace video y nada más: guion, imagen, voz, sonido, montaje, portada 
 
 ## Cierre
 
-Cuando termina la voz cae un sello con el llamado del espacio (`cierre` en `perfil.json`: «COMENTA», «TE LEEMOS», «SU OPINIÓN», «OPINA») y una flecha hacia el botón de comentarios; el video dura 1.5 s más que la narración para que se lea. Las escenas de más de 5 s reciben un pulso del recorte a la mitad.
+Cuando termina la voz cae un sello con el llamado del espacio (`cierre` en `perfil.json`: «COMENTA», «TE LEEMOS», «SU OPINIÓN», «OPINA») y una flecha hacia el botón de comentarios; el video dura 1.5 s más que la narración para que se lea. Un video puede cambiar el llamado solo para sí con `cierre` en el guion (hasta 16 letras), por ejemplo cuando un corte tutea en un espacio que habla de usted. Las escenas de más de 5 s reciben un pulso del recorte a la mitad.
 
 ## Portada
 

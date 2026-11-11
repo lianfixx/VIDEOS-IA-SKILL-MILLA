@@ -288,6 +288,16 @@ class Oficio(unittest.TestCase):
         self.assertGreaterEqual(v["frames"] / vox.FPS - v["finVoz"], 1.2)  # hay tiempo para leer el cierre
         for p in vox.perfiles().values():
             self.assertTrue(0 < len(p["cierre"]) <= 16)
+        g["cierre"] = "Opina"  # un video puede cambiar el llamado de su espacio
+        self.assertEqual(vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])["cierre"], "OPINA")
+        g["cierre"] = "x" * 17
+        self.assertIn("cierre", " | ".join(vox.validar_guion(g)))
+
+    def test_plantilla_no_recorta_acentos_ni_desborda(self):
+        tsx = (vox.SKILL / "plantilla" / "src" / "Vox.tsx").read_text(encoding="utf-8") if hasattr(vox, "SKILL") else \
+            (Path(vox.__file__).resolve().parents[1] / "plantilla" / "src" / "Vox.tsx").read_text(encoding="utf-8")
+        self.assertNotIn("clipPath: `inset(0 ${(1 - k) * 100}% 0 0)`", tsx)  # `mordidas` recortaba Á, Í, Ó de la primera línea
+        self.assertIn("anchoLinea(l, fuente, m.ancho)", tsx)  # el titular se mide con el ancho real de las letras
 
 
 class ImagenAuditada(unittest.TestCase):
