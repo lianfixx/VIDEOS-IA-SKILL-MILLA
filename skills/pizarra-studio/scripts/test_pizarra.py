@@ -249,5 +249,23 @@ class Hoja(unittest.TestCase):
             pizarra.cuadros_de_prueba(Path("/tmp"), 0)
 
 
+class Sincronia(unittest.TestCase):
+    def test_desfase_entre_dos_envolventes(self):
+        import math
+        base = [abs(math.sin(i / 7.0)) * (1 if (i // 50) % 2 else 0.2) for i in range(2000)]
+        self.assertEqual(pizarra.desfase_ms(base, base), 0)
+        self.assertEqual(pizarra.desfase_ms(base, [0.0] * 25 + base), 25)
+        self.assertEqual(pizarra.desfase_ms([0.0] * 12 + base, base), -12)
+
+    def test_sin_render_no_mide(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(pizarra.ErrorVox):
+                pizarra.medir_sincronia(Path(tmp))
+
+    def test_techos_del_limitador_van_de_abierto_a_cerrado(self):
+        self.assertEqual(list(pizarra.TECHOS_LIMITADOR), sorted(pizarra.TECHOS_LIMITADOR, reverse=True))
+        self.assertLessEqual(max(pizarra.TECHOS_LIMITADOR), 0.75)
+
+
 if __name__ == "__main__":
     unittest.main()

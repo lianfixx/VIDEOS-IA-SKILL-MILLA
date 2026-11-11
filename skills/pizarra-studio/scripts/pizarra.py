@@ -228,6 +228,65 @@ def sin_efectos(texto: str) -> bool:
     return t.startswith(("no", "sin")) or "solo voz" in t
 
 
+TECHOS_LIMITADOR = (0.75, 0.68, 0.62, 0.56)  # del más abierto al más cerrado; se usa el primero que deja el pico en rango
+
+
+# ---------- sincronía ----------
+
+def desfase_ms(a, b, paso_ms: float = 1.0, maximo: int = 300) -> int:
+    """Cuánto hay que retrasar `a` para que coincida con `b` (envolventes al mismo paso). Positivo: `b` va tarde."""
+    import numpy as np
+    n = min(len(a), len(b))
+    a = np.asarray(a[:n], dtype=float) - float(np.mean(a[:n])); b = np.asarray(b[:n], dtype=float) - float(np.mean(b[:n]))
+    k = max(range(-maximo, maximo + 1), key=lambda k: float((a[max(0, -k):n - max(0, k)] * b[max(0, k):n - max(0, -k)]).sum()))
+    return round(k * paso_ms)
+
+
+def _envolvente(ruta: Path, paso_ms: int):
+    import numpy as np
+    sr = 8000
+    crudo = subprocess.run(["ffmpeg", "-v", "error", "-i", str(ruta), "-f", "s16le", "-ac", "1", "-ar", str(sr), "-"],
+                           capture_output=True, check=True).stdout
+    x = np.frombuffer(crudo, dtype=np.int16).astype(np.float32)
+    h = sr * paso_ms // 1000
+    n = len(x) // h
+    return np.sqrt((x[:n * h].reshape(n, h) ** 2).mean(1))
+
+
+def medir_sincronia(d: Path) -> dict:
+    """Mide, sobre el archivo rendido: (1) el desfase de la voz dentro del MP4 y (2) cuánto se adelanta o atrasa
+    el subtítulo respecto al arranque real de la voz en cada inicio de frase. No juzga si la animación acompaña:
+    eso se mira en cuadros antes y después de cada palabra."""
+    import numpy as np
+    final, voz, palabras = d / "out" / "final.mp4", d / "audio" / "vo.wav", d / "audio" / "words.json"
+    for f in (final, voz, palabras):
+        if not f.is_file():
+            raise ErrorVox(f"falta {f}: la sincronía se mide con voz y con un render hecho")
+    desfase = desfase_ms(_envolvente(voz, 1), _envolvente(final, 1))
+    w = json.loads(palabras.read_text(encoding="utf-8"))
+    e = _envolvente(voz, 10)
+    umbral = 0.08 * float(np.percentile(e, 95))
+    errores = []
+    for i, x in enumerate(w):
+        if i and w[i - 1]["w"][-1] not in ".:!?":
+            continue
+        i0 = int(x["s"] * 100)
+        arranques = [j for j in range(max(8, i0 - 40), min(len(e), i0 + 40)) if e[j] > umbral and e[j - 8:j].max() < umbral]
+        if arranques:
+            errores.append({"palabra": x["w"], "s": x["s"], "ms": round((min(arranques, key=lambda j: abs(j - i0)) - i0) * 10)})
+    ms = sorted(v["ms"] for v in errores[1:]) or [0]  # la primera palabra arranca con el silencio inicial de la toma
+    avisos = []
+    if abs(desfase) > 40:
+        avisos.append(f"la voz va {desfase} ms desfasada dentro del video (máximo 40)")
+    if max(abs(ms[0]), abs(ms[-1])) > 200:
+        avisos.append(f"un subtítulo se separa {max(abs(ms[0]), abs(ms[-1]))} ms de la voz (máximo 200)")
+    info = {"render": vox.huella(final.read_bytes().hex()[:4096], str(final.stat().st_size))[:16], "desfase_voz_ms": desfase,
+            "subtitulos_ms": {"min": ms[0], "mediana": ms[len(ms) // 2], "max": ms[-1], "frases": len(errores)},
+            "detalle": errores, "avisos": avisos}
+    (d / "out" / "sincronia.json").write_text(json.dumps(info, ensure_ascii=False, indent=1), encoding="utf-8")
+    return info
+
+
 # ---------- voz ----------
 
 def narrar_guion(d: Path, ejecutar: bool, prueba: bool = False) -> dict:
@@ -456,15 +515,21 @@ def rendir(d: Path, prueba: bool = False) -> dict:
         ganancia_master = 0.0
         if hay_voz or hay_cama:
             # El limitador se come parte de la ganancia: se parte siempre del bruto y se ajusta midiendo (una sola codificación final).
-            ganancia_master = round(-14.0 - _lufs(bruto), 2)
-            for _ in range(4):
-                vox._correr(["ffmpeg", "-y", "-v", "error", "-i", str(bruto), "-c:v", "copy", "-af",
-                             f"volume={ganancia_master:.2f}dB,alimiter=limit=0.75:level=false:attack=3:release=60", "-ar", "48000",
-                             "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(final)])
-                falta = -14.0 - _lufs(final)
-                if abs(falta) <= 0.5:
+            # Una voz muy expresiva deja picos que la codificación AAC empuja por encima del techo:
+            # si el pico real pasa de PICO_MAX se baja el techo del limitador y se repite.
+            for techo in TECHOS_LIMITADOR:
+                ganancia_master = round(-14.0 - _lufs(bruto), 2)
+                for _ in range(4):
+                    vox._correr(["ffmpeg", "-y", "-v", "error", "-i", str(bruto), "-c:v", "copy", "-af",
+                                 f"volume={ganancia_master:.2f}dB,alimiter=limit={techo}:level=false:attack=3:release=60", "-ar", "48000",
+                                 "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(final)])
+                    falta = -14.0 - _lufs(final)
+                    if abs(falta) <= 0.5:
+                        break
+                    ganancia_master = round(ganancia_master + falta * 1.2, 2)
+                pico = vox.medir(final)["pico_dbtp"]
+                if pico is None or float(pico) <= vox.PICO_MAX:
                     break
-                ganancia_master = round(ganancia_master + falta * 1.2, 2)
         else:
             shutil.copyfile(bruto, final)
         m = vox.medir(final) if (hay_voz or hay_cama) else {"lufs": None, "pico_dbtp": None}
@@ -594,6 +659,7 @@ def main(argv=None) -> int:
     for nombre in ("entrevista", "cierre"):
         p = sub.add_parser(nombre); p.add_argument("dir")
     p = sub.add_parser("render"); p.add_argument("dir"); p.add_argument("--prueba", action="store_true")
+    p = sub.add_parser("sincronia"); p.add_argument("dir")
     p = sub.add_parser("voz"); p.add_argument("dir"); p.add_argument("--execute", action="store_true"); p.add_argument("--prueba", action="store_true")
     p = sub.add_parser("musica"); p.add_argument("dir"); p.add_argument("--animo", choices=sorted(SON.ANIMOS), required=True)
     p.add_argument("--segundos", type=float, default=None)
@@ -619,6 +685,13 @@ def main(argv=None) -> int:
                           "cambiar MOTOR_COMMIT y registrarlo en CHANGELOG.md. No se actualiza solo.")
             except (ErrorVox, IndexError) as exc:
                 print(f"No se pudo consultar el repositorio del autor: {str(exc)[:80]}")
+        elif a.cmd == "sincronia":
+            i = medir_sincronia(Path(a.dir))
+            t = i["subtitulos_ms"]
+            print(f"Voz dentro del video: {i['desfase_voz_ms']} ms de desfase. Subtítulos frente a la voz en {t['frases']} inicios de frase: "
+                  f"de {t['min']} a {t['max']} ms (mediana {t['mediana']}; positivo = el subtítulo entra antes).")
+            print("\n".join("  ⚠ " + x for x in i["avisos"]) or "  Sin avisos. Falta mirar un cuadro antes y otro después de cada palabra ancla.")
+            return 1 if i["avisos"] else 0
         elif a.cmd == "proyecto":
             d = Path(a.dir)
             crear_proyecto(d, a.perfil, a.modo, a.estilo)

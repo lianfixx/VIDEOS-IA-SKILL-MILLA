@@ -1,5 +1,15 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.4.0: comando `sincronia`, master que cuida el pico y mejoras de Vox aplicadas
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: voz de Laura más rápida, animada y fluida; auditar el video y el código; implementar aquí las mejoras de Vox; usar Kie y Apify si hace falta; mejorar el storytelling.
+- Motivo y evidencia: la sincronía se venía midiendo a mano en cada versión; con la voz expresiva el render avisó de un pico de −1.39 dBTP (techo −1.5) que el limitador fijo no evitaba.
+- Cambios: `pizarra.py` gana `sincronia DIR` (desfase de la voz dentro del MP4 por correlación y distancia subtítulo–voz en cada inicio de frase; deja `out/sincronia.json` y avisa por encima de 40 y 200 ms) y el master prueba techos de limitador de 0.75 a 0.56 hasta dejar el pico real en rango. `SKILL.md` documenta la auditoría de sincronía y la sección «Lo que se trae de Vox Studio». Perfil `pan`: voz Laura D con `speed` 1.2, `stability` 0.35, `style` 0.45 (candidata; es la misma voz de MILLA y Castorena, elegida por Emi). Producción privada ¡ACCIÓNate! rehecha: guion con el balón como hilo, barra de avance, subtítulos de 3 palabras, sellos, portada y seis recortes fotográficos de Kie.
+- Archivos: `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}`, `espacios/pan/{perfil.json,aprendizajes.md}`, `espacios/APRENDIZAJES-PIZARRA.md` y este registro.
+- Verificación: pruebas de pizarra-studio 24/24 y de vox-studio 52/52 → aprobado; `render` → sin avisos (−14.56 LUFS, pico −2.26 dBTP, 43.2 s); `sincronia` → voz a 3 ms, subtítulos de −20 a 200 ms, sin avisos; 33 palabras ancla comprobadas en cuadros del MP4 → aprobado; QR leído en tres cuadros → aprobado; Kie: 6 imágenes, recortes revisados uno por uno → aprobado. Apify → no ejecutado (sin token y sin necesidad). Cómo suena la voz → no verificable por una IA.
+- Pendiente: que Emi escuche; rango dinámico del audio 1.4 LU (parejo); la barra de avance, los subtítulos de 3 palabras y los sellos viven en la copia del motor y en el `video.js` de esta producción, no en una plantilla reutilizable.
+
 ## 2026-11-11 · Espacio pan: voz Ana Sofía (candidata) en lugar de Diego
 
 - Agente: Claude Code (sesión en la nube)

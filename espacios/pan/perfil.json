@@ -10,13 +10,13 @@
   },
   "voz": {
     "proveedor": "elevenlabs",
-    "voice_id": "ewn5JTa3lNPY8QVuZJi6",
-    "nombre": "Ana Sofía - Conversational",
+    "voice_id": "0TMU0XAYky7JI2rdHId5",
+    "nombre": "Laura D - Expressive & Friendly",
     "modelo": "eleven_multilingual_v2",
     "ajustes": {
-      "speed": 1.0,
-      "stability": 0.45,
-      "style": 0.2
+      "speed": 1.2,
+      "stability": 0.35,
+      "style": 0.45
     }
   },
   "tono": "Crítico y directo, con datos verificables y fuente en pantalla. La postura es de Emi; no hablar a nombre del partido sin autorización.",

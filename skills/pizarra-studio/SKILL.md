@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.3.1"
+  version: "0.4.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -70,6 +70,7 @@ $P musica $D --animo energia                                # música original p
 $P qa $D                                                    # cuadros de prueba + zonas que tapa TikTok, con la misma línea de tiempo del render
 $P render $D                                                # render, mezcla, master, auditoría, manifiesto y copia ligera
 $P revisar $D                                               # transiciones y tamaño teléfono + informe; sin él no hay cierre
+$P sincronia $D                                             # voz frente al video y subtítulos frente a la voz, medidos sobre el MP4
 $P cierre $D                                                # saldos: gastado y restante
 ```
 
@@ -92,6 +93,10 @@ El ritmo y la expresividad de la voz se ajustan en `voz.ajustes` del perfil del 
 - Humor del espacio: en `personal` cabe el sarcasmo; en `pan`, la crítica con datos; en `milla` y `castorena`, sobriedad.
 - Nombres de terceros, clientes o asuntos en curso no salen en pantalla sin permiso expreso.
 
+## 5 bis. Lo que se trae de Vox Studio
+
+Antes de producir se leen también `skills/vox-studio/SKILL.md`, `TECNICA.md` y el `MARCA.md` del espacio; valen aquí aunque el motor sea otro: una historia con hilo (un objeto o una frase que abre y cierra), barra de avance, subtítulos de hasta 3 palabras y legibles en teléfono, un sello de remate por idea, nada cruza el titular al entrar, portada, y el título en pantalla refuerza la narración sin repetirla. Recortes fotográficos (`vox.py imagen` + `recorte`) solo si el video no dice ser todo código, mirando cada PNG antes de montarlo.
+
 ## 6. Que funcione en TikTok
 
 Gancho escrito en pantalla antes de 0.3 s. Una idea por escena, de 8 a 10 escenas para 60 s. Texto e imágenes dentro de x 90–960, y 230–1440 en vertical (la hoja de `qa` sombrea en rojo lo que tapa la interfaz). Cierre con una pregunta que divida opiniones. Viral no es exagerar: es que la primera frase prometa algo que el video cumple.
@@ -101,7 +106,8 @@ Gancho escrito en pantalla antes de 0.3 s. Una idea por escena, de 8 a 10 escena
 1. `qa`: mirar **todos** los cuadros de `out/hoja.jpg`: texto cortado o encimado, dibujos tapando texto, escenas vacías, algo bajo las zonas rojas. Para cada transición, cuadros cada 0.2 s alrededor (`node render.mjs --stills ...`).
 2. `render`: corregir todos los avisos de `out/auditoria.json` (formato, duración frente a lo pedido, voz que se corta o video que sobra, sonoridad −14 ± 1 LUFS, pico, música corta, silencios).
 3. `revisar`: mirar `out/hoja-transiciones.png` (cada cambio de escena antes, durante y después) y `out/hoja-telefono.png` (tamaño real de un teléfono); anotar en `out/revision.json` cada hallazgo con su arreglo, los pendientes y quién revisó. Corregir los tres peores, volver a rendir y a revisar. `cierre` se niega si el informe falta o es de un render anterior.
-4. Ver el MP4 completo. Lo que una IA no puede juzgar (cómo suena la voz, si el chiste funciona, si se siente natural) se le pregunta a Emi con el video delante, en cada video.
+4. `sincronia`: la voz no debe ir a más de 40 ms del video ni un subtítulo a más de 200 ms de su frase. Además, sacar del MP4 un cuadro 0.2 s antes y otro 0.5 s después de cada palabra que dispara algo en pantalla: el elemento falta antes y está después. Los tiempos de la animación se atan a palabras de `audio/words.json`, no se escriben a mano.
+5. Ver el MP4 completo. Lo que una IA no puede juzgar (cómo suena la voz, si el chiste funciona, si se siente natural) se le pregunta a Emi con el video delante, en cada video.
 
 ## 8. Entregar, saldos y aprendizaje
 
