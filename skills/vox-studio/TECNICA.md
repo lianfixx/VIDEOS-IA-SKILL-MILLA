@@ -22,7 +22,8 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 4. Cada escena empieza 0.12 s antes de su primera palabra. `frame = round(segundos × 30)`. La suma de duraciones es exactamente el total.
 5. Una escena de menos de 24 frames se rechaza; una de más de 7 s genera aviso.
 6. `armar` reconstruye todo esto desde `estados/voz.json` sin volver a pagar la voz, mientras texto, voz, modelo y velocidad no cambien (huella SHA-256).
-7. Velocidad de la voz: `voz_velocidad` del guion o `voz.velocidad` del perfil, de 0.7 a 1.2 (`voice_settings.speed` de ElevenLabs); 1.0 no se envía y no altera la huella de las voces ya pagadas.
+7. Planos: cada plano del guion entra 4 frames antes del inicio real de su palabra ancla (`buscar_ancla`: primera coincidencia sin signos ni mayúsculas, posterior al plano anterior), con al menos 18 frames entre planos; `dur` llega hasta el siguiente plano o el fin de la escena. Los `items` de una lista usan su propia ancla o entran cada 9 frames. Al entrar un plano, el anterior sale de cuadro en 7 frames (desplazamiento, nunca opacidad). El primer plano usa el reloj adelantado de la escena para llegar ya compuesto.
+8. Velocidad de la voz: `voz_velocidad` del guion o `voz.velocidad` del perfil, de 0.7 a 1.2 (`voice_settings.speed` de ElevenLabs); 1.0 no se envía y no altera la huella de las voces ya pagadas.
 
 ## 3. Composición
 

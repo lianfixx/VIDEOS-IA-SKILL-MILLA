@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.5"
+  version: "0.9.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -23,9 +23,22 @@ Cada marca vive en [su carpeta](../../espacios/README.md) y no se mezcla: `espac
 
 ## Voz del guion
 
-Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
+Crítico, con postura, teórico cuando ayude y con humor puntual (un chiste cada 2 o 3 escenas, nunca a costa del dato), ajustado al tono del espacio. Gancho en la primera frase; la pantalla debe entenderse en silencio. De 4 a 9 escenas, cada una contada con varios planos (ver abajo). Un solo video sirve a WhatsApp, LinkedIn, TikTok y X: vertical, con subtítulos, fuente en pantalla y todo dentro de la zona segura. El `keyword` refuerza, no repite la narración: hasta 3 líneas y palabras de 16 letras o menos. La última escena narra `cta_pregunta`, una pregunta que divida opiniones. Campos y ejemplo: [guion.ejemplo.json](plantilla/guion.ejemplo.json).
 
 `validar` añade avisos de oficio (⚠) que no bloquean pero deben atenderse o justificarse: gancho de más de 14 palabras, escena de más de 22 palabras sin cambio de plano, video fuera de 55–200 palabras (unos 20–75 s), escenas sin nada que ver, cifras sin fuente y keywords que arrancan igual. `armar` avisa además de cualquier escena que dure más de 7 s en la voz real.
+
+## Planos: contar la historia, no ilustrarla (siempre)
+
+Una escena con un solo recorte quieto no cuenta nada: Emi lo rechazó en el primer video de Castorena (11/11/2026). Cada escena de más de unas 12 palabras lleva `planos`: de 2 a 5 cosas que se ven una tras otra, cada una entrando justo cuando la voz dice su palabra ancla (`en`). El primero abre la escena; el anterior sale de cuadro cuando entra el siguiente. Tipos:
+
+- `imagen`: otro recorte (`imagen_archivo`). Varias imágenes por escena, no una.
+- `cita`: recorte del documento con la frase clave subrayada a mano (`texto` literal de la fuente, `resaltar`, `origen`). Es la fuente a la vista: úsala para la norma o la tesis que sostiene la escena.
+- `lista`: de 2 a 4 `items` que se palomean (`marca: "si"`) o se tachan (`"no"`), cada uno con su propia ancla.
+- `calendario`: `dias` que se tachan uno a uno, o `celdas` propias (`t`, `estado: tachado | marcado`) para plazos y cómputos.
+- `dato`: cifra que cuenta hasta su valor, con `etiqueta` y, si se pide, `tachar`.
+- `duo`: dos recortes frente a frente con una ficha en medio (`entre`: O, VS, +).
+
+Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
 
 ## Música, efectos y remates (siempre)
 

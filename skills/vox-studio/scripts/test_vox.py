@@ -302,6 +302,9 @@ class Oficio(unittest.TestCase):
         self.assertIn("anchoLinea(l, fuente, m.ancho)", tsx)  # el titular se mide con el ancho real de las letras
         self.assertIn("tildeAlta(p, fuente)", tsx)  # el resaltador sube para cubrir la tilde de la mayúscula
         self.assertIn("kicker && tildeAlta(", tsx)  # la etiqueta no tapa la tilde de la primera línea
+        for pieza in ("const Planos", "const CitaDoc", "const Lista", "const Calendario", "const DatoGrande", "const Duo"):
+            self.assertIn(pieza, tsx)  # cada tipo de plano del guion tiene su componente
+        self.assertEqual(set(vox.PLANOS), {"imagen", "cita", "lista", "calendario", "dato", "duo"})
 
 
 class ImagenAuditada(unittest.TestCase):
@@ -358,6 +361,51 @@ class Tiempos(unittest.TestCase):
                 vox.velocidad_voz({"voz_velocidad": mala}, {})
         self.assertNotIn("speed", vox.ajustes_voz())
         self.assertEqual(vox.ajustes_voz(1.15)["speed"], 1.15)
+
+    def test_planos_entran_con_su_palabra(self):
+        g = guion()
+        e = g["escenas"][1]
+        e["narracion"] = "Hacienda decide dónde pagas con tarjeta, transferencia o QR."
+        e["planos"] = [
+            {"tipo": "cita", "texto": "podrá ser la única forma de pago", "resaltar": "única forma", "origen": "DOF · Art. 13"},
+            {"en": "tarjeta", "tipo": "lista", "items": [{"texto": "Tarjeta", "marca": "si", "en": "tarjeta"}, {"texto": "QR", "marca": "si", "en": "QR"}, {"texto": "Efectivo", "marca": "no"}]},
+        ]
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g, paso=0.4)
+        v = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"])
+        esc = v["escenas"][1]
+        cita, lista = esc["planos"]
+        self.assertEqual(cita["desde"], 0)
+        k = [w["t"] for w in palabras].index("tarjeta,")
+        self.assertEqual(lista["desde"], round(palabras[k]["a"] * vox.FPS) - esc["desde"] - 4)  # tiempo real de la palabra
+        self.assertEqual(cita["dur"], lista["desde"])
+        self.assertEqual(lista["desde"] + lista["dur"], esc["dur"])
+        tiempos = [it["desde"] for it in lista["items"]]
+        self.assertEqual(tiempos, sorted(tiempos))
+        self.assertEqual([it["texto"] for it in lista["items"]], ["TARJETA", "QR", "EFECTIVO"])
+
+    def test_planos_mal_escritos_se_rechazan(self):
+        def errores(planos, **extra):
+            g = guion(); g["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=planos, **extra)
+            return " | ".join(vox.validar_guion(g))
+        self.assertIn("tipo", errores([{"tipo": "video"}]))
+        self.assertIn("no lleva `en`", errores([{"tipo": "dato", "dato": "1", "en": "uno"}]))
+        self.assertIn("palabra de la narración", errores([{"tipo": "dato", "dato": "1"}, {"tipo": "dato", "dato": "2", "en": "nueve"}]))
+        self.assertIn("posterior", errores([{"tipo": "dato", "dato": "1"}, {"tipo": "dato", "dato": "2", "en": "cinco"}, {"tipo": "dato", "dato": "3", "en": "dos"}]))
+        self.assertIn("fragmento literal", errores([{"tipo": "cita", "texto": "texto copiado de la fuente", "resaltar": "otra cosa", "origen": "DOF"}]))
+        self.assertIn("origen", errores([{"tipo": "cita", "texto": "texto copiado de la fuente"}]))
+        self.assertIn("2 a 4 items", errores([{"tipo": "lista", "items": [{"texto": "a"}]}]))
+        self.assertIn("dias", errores([{"tipo": "calendario", "dias": 99}]))
+        self.assertIn("dos imágenes", errores([{"tipo": "duo", "imagenes": ["img/a.png"]}]))
+        self.assertIn("remate_en", errores([{"tipo": "dato", "dato": "1"}], remate="ZAS", sonido="boom", remate_en="nueve"))
+        self.assertEqual(vox.imagenes_de({"imagen_archivo": "img/a.png", "planos": [{"imagen_archivo": "img/a.png"}, {"imagenes": ["img/b.png", "img/c.png"]}]}),
+                         ["img/a.png", "img/b.png", "img/c.png"])
+
+    def test_aviso_de_imagen_quieta(self):
+        g = guion(); g["escenas"][1]["narracion"] = "Una frase de trece palabras que se queda mirando un solo recorte muy quieto."
+        self.assertIn("una sola imagen quieta", " | ".join(vox.avisos_guion(g)))
+        g["escenas"][1]["planos"] = [{"tipo": "dato", "dato": "1"}, {"tipo": "dato", "dato": "2", "en": "trece"}]
+        self.assertNotIn("una sola imagen quieta", " | ".join(vox.avisos_guion(g)))
 
     def test_caracteres_a_palabras(self):
         t = "Hola,  mundo cruel"

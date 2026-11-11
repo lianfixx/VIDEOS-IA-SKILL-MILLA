@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.9.0: planos dentro de la escena (guion visual)
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, al ver el primer video de Castorena: «solo generas una imagen estática»; pidió más imágenes, efectos y storytelling, y recordó que el mismo video es para WhatsApp, LinkedIn, TikTok y X.
+- Cambios: (1) `planos` por escena: `imagen`, `cita` (recorte del documento con la frase subrayada), `lista` (palomeada o tachada), `calendario`, `dato` (cifra que cuenta, con tachado) y `duo`; cada plano entra con el tiempo real de su palabra ancla (`en`) y el anterior sale de cuadro; `remate_en` ancla el sello; sonido al entrar cada plano. (2) `validar` comprueba planos y anclas y avisa de escenas largas con una sola imagen; `catalogar` y `armar` consideran todas las imágenes de la escena. (3) Corte suelto de Castorena rehecho con 20 planos en 8 escenas, misma voz (sin costo de narración) y dos imágenes nuevas. (4) Tres lecciones nuevas.
+- Archivos: `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/plantilla/guion.ejemplo.json`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md}`, `biblioteca/`, `espacios/APRENDIZAJES.md`, `espacios/castorena/aprendizajes.md` y este registro.
+- Verificación: pruebas de vox-studio 48/48 → aprobado; `tsc --noEmit` → aprobado; `check_skill` → aprobado. Citas de los arts. 13 y 16 copiadas del texto del DOF consultado en esta sesión → aprobado. Render: 56.09 s, H.264 1080×1920, −14.08 LUFS, pico −2.12 dBTP; un aviso de imagen (0.5 % bajo la descripción de TikTok en la escena 08) → aprobado técnicamente con ese aviso. Tira de 35 cuadros y cuadros sueltos de cada tipo de plano revisados por la IA → aprobado. Los sonidos de entrada de plano no están en la auditoría de audio → no ejecutado. Escucha y visto bueno de Emi → no ejecutado. Los «recursos de X» que Emi mencionó no estaban en la sesión ni en el repositorio → no ejecutado.
+- Pendiente: que Emi comparta esas referencias; su opinión del corte nuevo; probar los planos en Anton (personal, MILLA, PAN), que no se han rendido.
+
 ## 2026-11-11 · Vox Studio 0.8.5: Castorena en corte suelto
 
 - Agente: Claude Code (sesión en la nube)

@@ -3,12 +3,64 @@
   "titulo": "Título interno del video",
   "opinion_emi": "Lo que Emi piensa del tema, en sus palabras. Se le pregunta antes de escribir.",
   "cta_pregunta": "¿Tú de qué lado estás?",
-  "musica": {"animo": "tension"},
-  "portada": {"texto": "TE MINTIERON", "resaltar": "MINTIERON", "imagen_archivo": "img/01.png"},
+  "musica": {
+    "animo": "tension"
+  },
+  "portada": {
+    "texto": "TE MINTIERON",
+    "resaltar": "MINTIERON",
+    "imagen_archivo": "img/01.png"
+  },
   "escenas": [
-    {"id": "01", "narracion": "Gancho: la frase que detiene el scroll.", "keyword": "TE MINTIERON", "resaltar": "MINTIERON", "kicker": "Ojo", "imagen_archivo": "img/01.png", "nota": "apunte a mano", "sonido": "boom"},
-    {"id": "02", "narracion": "El dato que sostiene el gancho.", "keyword": "EL DATO DURO", "resaltar": "DATO", "dato": "73%", "fuente": "INEGI, 2025", "sonido": "ding"},
-    {"id": "03", "narracion": "La opinión de Emi, dicha sin rodeos.", "keyword": "MI POSTURA", "resaltar": "POSTURA", "imagen_archivo": "img/03.png", "transicion": "rasgado", "sonido": "scratch", "remate": "PLOT TWIST"},
-    {"id": "04", "narracion": "¿Tú de qué lado estás?", "keyword": "¿DE QUÉ LADO?", "resaltar": "LADO", "dato": "?"}
+    {
+      "id": "01",
+      "narracion": "Gancho: la frase que detiene el scroll.",
+      "keyword": "TE MINTIERON",
+      "resaltar": "MINTIERON",
+      "kicker": "Ojo",
+      "imagen_archivo": "img/01.png",
+      "nota": "apunte a mano",
+      "sonido": "boom"
+    },
+    {
+      "id": "02",
+      "narracion": "El dato que sostiene el gancho.",
+      "keyword": "EL DATO DURO",
+      "resaltar": "DATO",
+      "dato": "73%",
+      "fuente": "INEGI, 2025",
+      "sonido": "ding",
+      "planos": [
+        {
+          "tipo": "cita",
+          "texto": "El texto literal de la fuente, con la frase clave.",
+          "resaltar": "la frase clave",
+          "origen": "INEGI, 2025"
+        },
+        {
+          "en": "sostiene",
+          "tipo": "dato",
+          "dato": "73%",
+          "etiqueta": "lo que mide el dato"
+        }
+      ]
+    },
+    {
+      "id": "03",
+      "narracion": "La opinión de Emi, dicha sin rodeos.",
+      "keyword": "MI POSTURA",
+      "resaltar": "POSTURA",
+      "imagen_archivo": "img/03.png",
+      "transicion": "rasgado",
+      "sonido": "scratch",
+      "remate": "PLOT TWIST"
+    },
+    {
+      "id": "04",
+      "narracion": "¿Tú de qué lado estás?",
+      "keyword": "¿DE QUÉ LADO?",
+      "resaltar": "LADO",
+      "dato": "?"
+    }
   ]
 }

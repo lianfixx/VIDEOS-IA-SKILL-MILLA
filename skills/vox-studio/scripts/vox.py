@@ -70,6 +70,10 @@ MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
 COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
 ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lento
 LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
+# Planos: lo que se ve dentro de una escena. Cada uno entra cuando la voz dice su palabra ancla (`en`).
+PLANOS = ("imagen", "cita", "lista", "calendario", "dato", "duo")
+MAX_PLANOS = 5
+MIN_PLANO = 18  # frames; con menos no da tiempo de leerlo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import sonido as SON  # noqa: E402  (música y efectos hechos con código)
@@ -120,6 +124,154 @@ def leer_aprendizajes(espacio: str = "") -> str:
 
 def limpia(palabra: str) -> str:
     return palabra.strip(SIGNOS).upper()
+
+
+def imagenes_de(s: dict) -> list[str]:
+    """Todas las imágenes que usa una escena: la suya y las de sus planos."""
+    out = [s.get("imagen_archivo", "")] if isinstance(s.get("imagen_archivo", ""), str) else []
+    for pl in s.get("planos") or []:
+        if isinstance(pl, dict):
+            out.append(pl.get("imagen_archivo", ""))
+            out.extend(pl.get("imagenes") or [])
+    vistas: list[str] = []
+    for x in out:
+        if isinstance(x, str) and x and x not in vistas:
+            vistas.append(x)
+    return vistas
+
+
+def buscar_ancla(palabras: list[str], ancla: str, desde: int = 0) -> int:
+    """Índice de la primera palabra de la narración igual al ancla (sin signos ni mayúsculas), o -1."""
+    clave = limpia(str(ancla)).lower()
+    for j in range(desde, len(palabras)):
+        if clave and limpia(palabras[j]).lower() == clave:
+            return j
+    return -1
+
+
+def validar_planos(s: dict, p: str) -> list[str]:
+    """Reglas de los planos de una escena. El primero abre la escena; los demás entran con su ancla, en orden."""
+    e: list[str] = []
+    planos = s.get("planos")
+    if planos is None:
+        return e
+    if not isinstance(planos, list) or not planos or len(planos) > MAX_PLANOS or not all(isinstance(x, dict) for x in planos):
+        return [f"{p}: planos debe ser una lista de 1 a {MAX_PLANOS} objetos"]
+    narr = str(s.get("narracion", "")).split()
+    pos = 0
+    for j, pl in enumerate(planos):
+        q = f"{p}, plano {j + 1}"
+        tipo = pl.get("tipo")
+        if tipo not in PLANOS:
+            e.append(f"{q}: tipo {tipo!r} no existe; opciones {list(PLANOS)}")
+            continue
+        if j == 0 and pl.get("en"):
+            e.append(f"{q}: el primer plano abre la escena; no lleva `en`")
+        if j > 0:
+            k = buscar_ancla(narr, pl.get("en", ""), pos)
+            if k < 0:
+                e.append(f"{q}: `en` debe ser una palabra de la narración posterior al plano anterior (se recibió {pl.get('en')!r})")
+            else:
+                pos = k + 1
+        if tipo == "imagen" and not (isinstance(pl.get("imagen_archivo"), str) and pl["imagen_archivo"] and ruta_segura(pl["imagen_archivo"])):
+            e.append(f"{q}: imagen_archivo debe ser una ruta relativa a public/")
+        if tipo == "cita":
+            texto, marca = str(pl.get("texto", "")), str(pl.get("resaltar", ""))
+            if not 12 <= len(texto) <= 150:
+                e.append(f"{q}: la cita lleva de 12 a 150 caracteres, copiados de la fuente")
+            if marca and marca not in texto:
+                e.append(f"{q}: resaltar debe ser un fragmento literal de la cita")
+            if not 3 <= len(str(pl.get("origen", ""))) <= 40:
+                e.append(f"{q}: una cita exige `origen` (de dónde sale), de hasta 40 caracteres")
+        if tipo == "lista":
+            items = pl.get("items")
+            if not isinstance(items, list) or not 2 <= len(items) <= 4 or not all(isinstance(x, dict) for x in items):
+                e.append(f"{q}: la lista lleva de 2 a 4 items")
+            else:
+                ipos = pos
+                for it in items:
+                    if not 1 <= len(str(it.get("texto", ""))) <= 16:
+                        e.append(f"{q}: cada item lleva texto de hasta 16 caracteres")
+                    if it.get("marca", "") not in ("", "si", "no"):
+                        e.append(f"{q}: marca debe ser 'si', 'no' o vacía")
+                    if it.get("en"):
+                        k = buscar_ancla(narr, it["en"], max(0, ipos - 1))
+                        if k < 0:
+                            e.append(f"{q}: el item {it.get('texto')!r} pide una palabra que la narración no dice después ({it['en']!r})")
+                        else:
+                            ipos = k + 1
+        if tipo == "calendario":
+            celdas, dias = pl.get("celdas"), pl.get("dias")
+            if celdas is not None:
+                if not isinstance(celdas, list) or not 2 <= len(celdas) <= 14 or not all(
+                        isinstance(x, dict) and 1 <= len(str(x.get("t", ""))) <= 3 and x.get("estado", "") in ("", "tachado", "marcado") for x in celdas):
+                    e.append(f"{q}: celdas lleva de 2 a 14 objetos {{t (hasta 3 letras), estado: '', 'tachado' o 'marcado'}}")
+            elif not (isinstance(dias, int) and not isinstance(dias, bool) and 2 <= dias <= 31):
+                e.append(f"{q}: el calendario pide `dias` (2 a 31) o `celdas`")
+            if len(str(pl.get("etiqueta", ""))) > 30:
+                e.append(f"{q}: etiqueta de hasta 30 caracteres")
+        if tipo == "dato":
+            if not 1 <= len(str(pl.get("dato", ""))) <= LIMITES["dato"]:
+                e.append(f"{q}: dato de 1 a {LIMITES['dato']} caracteres")
+            if len(str(pl.get("etiqueta", ""))) > 30:
+                e.append(f"{q}: etiqueta de hasta 30 caracteres")
+        if tipo == "duo":
+            imgs = pl.get("imagenes")
+            if not isinstance(imgs, list) or len(imgs) != 2 or not all(isinstance(x, str) and x and ruta_segura(x) for x in imgs):
+                e.append(f"{q}: un duo lleva dos imágenes (rutas relativas a public/)")
+            if len(str(pl.get("entre", ""))) > 3:
+                e.append(f"{q}: `entre` lleva hasta 3 letras (O, VS, +)")
+    ancla = s.get("remate_en")
+    if ancla and buscar_ancla(narr, ancla) < 0:
+        e.append(f"{p}: remate_en debe ser una palabra de la narración")
+    return e
+
+
+def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> list[dict]:
+    """Planos con su frame de entrada (relativo a la escena), tomado del tiempo real de la palabra ancla."""
+    narr = [w["t"] for w in palabras]
+    def cuadro(k: int) -> int:
+        return max(0, int(round(palabras[k]["a"] * FPS)) - desde - 4)  # entra 4 frames antes de la palabra
+    out, pos, previo = [], 0, -MIN_PLANO
+    for j, pl in enumerate(s.get("planos") or []):
+        en = 0
+        if j > 0:
+            k = buscar_ancla(narr, pl.get("en", ""), pos)
+            if k < 0:
+                raise ErrorVox(f"la escena {s['id']} no dice {pl.get('en')!r} después del plano anterior")
+            pos = k + 1
+            en = max(cuadro(k), previo + MIN_PLANO)
+            if en > dur - MIN_PLANO:
+                raise ErrorVox(f"el plano {j + 1} de la escena {s['id']} entraría a {dur - en} frames del final; ánclalo antes")
+        previo = en
+        n: dict = {"tipo": pl["tipo"], "desde": en}
+        if pl["tipo"] == "imagen":
+            n["imagen"] = pl["imagen_archivo"]
+        elif pl["tipo"] == "cita":
+            n.update(texto=" ".join(str(pl["texto"]).split()), resaltar=str(pl.get("resaltar", "")), origen=str(pl["origen"]))
+        elif pl["tipo"] == "lista":
+            items, ipos = [], pos
+            for m, it in enumerate(pl["items"]):
+                t = en + 8 + 9 * m
+                if it.get("en"):
+                    k = buscar_ancla(narr, it["en"], max(0, ipos - 1))
+                    if k >= 0:
+                        ipos, t = k + 1, max(cuadro(k), en + 4)
+                if items:
+                    t = max(t, items[-1]["desde"] + 5)
+                items.append({"texto": str(it["texto"]).upper(), "marca": it.get("marca", ""), "desde": t})
+            n["items"] = items
+        elif pl["tipo"] == "calendario":
+            n["celdas"] = pl.get("celdas") or [{"t": str(x + 1), "estado": "tachado"} for x in range(pl["dias"])]
+            n["etiqueta"] = str(pl.get("etiqueta", ""))
+        elif pl["tipo"] == "dato":
+            n.update(dato=str(pl["dato"]), etiqueta=str(pl.get("etiqueta", "")), tachar=bool(pl.get("tachar", False)))
+        elif pl["tipo"] == "duo":
+            n.update(imagenes=list(pl["imagenes"]), entre=str(pl.get("entre", "")).upper())
+        out.append(n)
+    for j, n in enumerate(out):
+        n["dur"] = (out[j + 1]["desde"] if j + 1 < len(out) else dur) - n["desde"]
+    return out
 
 
 def partir(texto: str) -> list[str]:
@@ -230,6 +382,7 @@ def validar_guion(g: dict) -> list[str]:
         img = s.get("imagen_archivo", "")
         if img and not ruta_segura(img):
             e.append(f"{p}: imagen_archivo debe ser una ruta relativa a public/, sin '..'")
+        e.extend(validar_planos(s, p))
         ent = s.get("entrada")
         if ent and ent not in ENTRADAS:
             e.append(f"{p}: entrada {ent!r} no existe; opciones {ENTRADAS}")
@@ -259,13 +412,17 @@ def avisos_guion(g: dict) -> list[str]:
         a.append(f"{total} palabras en total (~{total / 2.7:.0f} s): muy corto para desarrollar una idea")
     if total > 200:
         a.append(f"{total} palabras en total (~{total / 2.7:.0f} s): pasa de 75 s; recorta o divide en dos videos")
+    def n_planos(s: dict) -> int:
+        return len(s["planos"]) if isinstance(s.get("planos"), list) else 0
     for i, n in enumerate(cuenta):
-        if n > 22:
-            a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos")
-    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato")]
+        if n > 22 and n_planos(escenas[i]) < 2:
+            a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos o dale `planos`")
+        elif n > 12 and n_planos(escenas[i]) < 2:
+            a.append(f"escena {i + 1}: {n} palabras con una sola imagen quieta; cuéntala con `planos` (cita, lista, calendario, dato, duo u otra imagen)")
+    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato") and not n_planos(s)]
     if sin_imagen:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
-    if sum(1 for s in escenas if s.get("imagen_archivo")) < max(2, len(escenas) // 2):
+    if sum(1 for s in escenas if imagenes_de(s)) < max(2, len(escenas) // 2):
         a.append("menos de la mitad de las escenas lleva imagen; el estilo pide algo que ver casi siempre")
     if not any(s.get("fuente") for s in escenas) and any(ch.isdigit() for s in escenas for ch in str(s.get("narracion", ""))):
         a.append("hay cifras en la narración y ninguna escena muestra `fuente`")
@@ -321,9 +478,18 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         if dur < MIN_ESCENA:
             raise ErrorVox(f"la escena {s['id']} dura {dur} frames; el mínimo es {MIN_ESCENA}. Únela a otra o alarga su narración")
         img = s.get("imagen_archivo", "")
-        if img and publico is not None and not (publico / img).is_file():
-            raise ErrorVox(f"la escena {s['id']} pide {img} y no existe en {publico}")
+        for x in imagenes_de(s):
+            if publico is not None and not (publico / x).is_file():
+                raise ErrorVox(f"la escena {s['id']} pide {x} y no existe en {publico}")
+        suyas = palabras[sum(conteos[:i]):sum(conteos[:i + 1])]
+        planos = planos_en_tiempo(s, suyas, desde, dur)
+        remate_en = None
+        if s.get("remate") and s.get("remate_en"):
+            k = buscar_ancla([w["t"] for w in suyas], s["remate_en"])
+            if k >= 0:
+                remate_en = max(0, int(round(suyas[k]["a"] * FPS)) - desde - 2)
         escenas.append({
+            "planos": planos, "remateEn": remate_en,
             "id": s["id"], "desde": desde, "dur": dur,
             "keyword": " ".join(str(s["keyword"]).split()).upper(), "resaltar": limpia(s.get("resaltar") or ""),
             "kicker": s.get("kicker", ""), "nota": s.get("nota", ""), "dato": s.get("dato", ""),
@@ -838,10 +1004,9 @@ def catalogar(d: Path) -> list[dict]:
     cat = leer_catalogo()
     conocidos = {x["sha256"] for x in cat}
     nuevos = []
-    for s in g["escenas"]:
-        img = s.get("imagen_archivo")
-        origen = d / "public" / img if img else None
-        if not origen or not origen.is_file():
+    for s, img in [(s, x) for s in g["escenas"] for x in imagenes_de(s)]:
+        origen = d / "public" / img
+        if not origen.is_file():
             continue
         sha = hashlib.sha256(origen.read_bytes()).hexdigest()
         if sha in conocidos:
@@ -916,7 +1081,7 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
     for e in video["escenas"]:  # ritmo real, medido en la voz
-        if e["dur"] / FPS > ESCENA_LARGA:
+        if e["dur"] / FPS > ESCENA_LARGA and len(e.get("planos") or []) < 2:
             print(f"⚠ la escena {e['id']} dura {e['dur'] / FPS:.1f} s: divídela o acepta el pulso automático a media escena")
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
     (d / "src" / "data" / "video.json").write_text(json.dumps(video, ensure_ascii=False, indent=1), encoding="utf-8")

@@ -130,5 +130,29 @@
   "origen": "productions/castorena/pagos-digitales-suelto",
   "fecha": "2026-11-11",
   "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-suelto-01b-156f7e4f",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-suelto-01b-156f7e4f.png",
+  "sha256": "156f7e4f2aa337040c42fc40f3e053d8b2b7883e2abc664ca4d765dd7d8d43b5",
+  "muestra": "A single generic paper banknote with a red cardboard price tag tied to it with a string, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-suelto",
+  "fecha": "2026-11-11",
+  "usos": 1
+ },
+ {
+  "id": "castorena-pagos-digitales-suelto-04a-354e102d",
+  "espacio": "castorena",
+  "archivo": "castorena/castorena-pagos-digitales-suelto-04a-354e102d.png",
+  "sha256": "354e102d8fff594ac9710bcb0944d2830a6d67983fac87ef20cca0e22270a956",
+  "muestra": "A handheld card payment terminal with a cracked dark screen and a thin wisp of grey smoke rising from it, floating, product shot",
+  "descripcion": "",
+  "foto_real": false,
+  "origen": "productions/castorena/pagos-digitales-suelto",
+  "fecha": "2026-11-11",
+  "usos": 1
  }
 ]

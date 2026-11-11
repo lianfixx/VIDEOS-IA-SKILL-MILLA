@@ -36,6 +36,19 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 
 El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST», «ASÍ NO», «$$$»).
 
+## Planos dentro de una escena (`planos`)
+
+| Plano | Qué muestra | Cuándo |
+|---|---|---|
+| `imagen` | otro recorte | cambiar de objeto al cambiar de idea |
+| `cita` | recorte del documento con la frase subrayada | la norma, la tesis o la declaración que sostiene la escena |
+| `lista` | filas que se palomean o se tachan | qué sí y qué no; requisitos; opciones |
+| `calendario` | días que se tachan o celdas marcadas | plazos, cómputos, vigencias |
+| `dato` | cifra que cuenta hasta su valor, con etiqueta y tachado opcional | montos, artículos, años |
+| `duo` | dos recortes con una ficha en medio | disyuntivas y comparaciones |
+
+Cada plano entra con la palabra ancla (`en`) en su tiempo real de voz y suena al entrar (papel, pop o deslizar; marcador en las citas). `remate_en` ancla el sello a una palabra.
+
 ## Movimiento
 
 - Entradas (`entrada`): `sello`, `desliza-izq`, `cae`, `desliza-der`, `desdobla`, `mordidas`.
