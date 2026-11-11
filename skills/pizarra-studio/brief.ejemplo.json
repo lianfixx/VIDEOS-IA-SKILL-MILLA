@@ -12,8 +12,8 @@
     "duracion_s": "60",
     "tono": "divertido y salseante, humor sarcástico",
     "estilo": "pizarrón",
-    "personaje": "una persona dibujada que me represente",
-    "voz": "la del espacio",
+    "personaje": "sin personaje",
+    "voz": "la voz del espacio",
     "musica": "ironia",
     "efectos": "sí",
     "gancho": "Firmaste. Felicidades: acabas de aceptar algo que no leíste.",
@@ -22,5 +22,8 @@
     "referencias": "ninguna"
   },
   "decidido_por_defecto": [],
-  "aprobaciones": {"resumen": false, "storyboard": false}
+  "aprobaciones": {
+    "resumen": false,
+    "storyboard": false
+  }
 }

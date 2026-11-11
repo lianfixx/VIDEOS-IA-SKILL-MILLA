@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.1.2"
+  version: "0.2.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -23,11 +23,11 @@ Los videos se dibujan con el motor público [`santmun/video-pizarra`](https://gi
 
 ```bash
 P="python3 skills/pizarra-studio/scripts/pizarra.py"
-$P instalar     # clona el motor en ~/.claude/skills/video-pizarra (o PIZARRA_MOTOR) y comprueba dependencias
+$P instalar     # clona el motor en ~/.cache/pizarra-studio/motor (o PIZARRA_MOTOR) y comprueba dependencias
 $P motor        # dice si el autor publicó algo nuevo; no se actualiza solo
 ```
 
-Adoptar una versión nueva del motor exige leer el código nuevo, probar un render, cambiar `MOTOR_COMMIT` en `pizarra.py` y registrarlo en `CHANGELOG.md`. Su documentación de uso (API de escenas, modo historia, errores conocidos) está en la carpeta instalada, en `references/`: leerla antes de escribir escenas.
+Adoptar una versión nueva del motor exige leer el código nuevo, probar un render, cambiar `MOTOR_COMMIT` en `pizarra.py` y registrarlo en `CHANGELOG.md`. Su documentación de uso (API de escenas, modo historia, errores conocidos) está en la carpeta instalada, en `references/`: leerla antes de escribir escenas. El motor vive en una carpeta propia para que nadie lo actualice por su cuenta; `proyecto` se niega a usarlo si no está en el commit revisado o si tiene archivos modificados, y cada producción anota con qué versión se creó.
 
 Funciona con cualquier IA que tenga terminal: todo son comandos de `pizarra.py`, Node, Python y FFmpeg. Sin terminal se avanza entrevista, guion y storyboard, y se entrega para producir donde sí la haya. No fingir un render.
 
@@ -53,7 +53,7 @@ Datos en fuentes verificables, cada cifra con su fuente; nada de cifras derivada
 
 ## 3. Storyboard y aprobación
 
-`STORYBOARD.md` en la producción: por escena, fondo, herramienta, texto en pantalla, qué hace el personaje y transición de salida. A Emi se le muestra una línea por escena. Solo con su visto bueno se marca `aprobaciones.storyboard: true`. `render` se niega a producir un entregable sin las dos aprobaciones.
+`STORYBOARD.md` en la producción: por escena, fondo, herramienta, texto en pantalla, qué se dibuja y qué le pasa (la acción) y transición de salida. A Emi se le muestra una línea por escena. Solo con su visto bueno se marca `aprobaciones.storyboard: true`. `render` se niega a producir un entregable sin las dos aprobaciones, y `voz --execute` no gasta un solo carácter sin ellas ni si Emi no pidió la voz del espacio.
 
 ## 4. Flujo de producción
 
@@ -64,17 +64,20 @@ $P entrevista $D                                            # hasta que diga «c
 # escribir $D/guion.json: {"escenas": [{"id": "01", "narracion": "..."}]}  (solo si lleva voz)
 $P voz $D --execute                                         # una sola toma; devuelve cuánto dura cada escena
 # construir scenes.js (pizarrón) o video.js (estilos) con esas duraciones exactas
-$P qa $D                                                    # cuadros de prueba + zonas que tapa TikTok
-$P musica $D --animo energia                                # música original por código + rejilla de beats exacta
+$P musica $D --animo energia                                # música original por código + rejilla de beats exacta (mide el video)
+$P qa $D                                                    # cuadros de prueba + zonas que tapa TikTok, con la misma línea de tiempo del render
 $P render $D                                                # render, mezcla, master, auditoría y copia ligera
 $P cierre $D                                                # saldos: gastado y restante
 ```
 
 `render --prueba` rinde un borrador técnico (`out/prueba.mp4`) sin exigir la entrevista; sirve para comprobar el sistema y **nunca es un entregable**.
 
-La marca del espacio llega al motor sola: `proyecto` escribe `marca.js` con los colores y la tipografía de `espacios/<espacio>/perfil.json`. En el pizarrón se usa `bootVideo(construir, { ...window.MARCA, speed: 1 })`; en estilos, `import marca from './marca.js'` y `...marca` dentro del objeto del video.
+La marca del espacio llega al motor sola: `proyecto` escribe `marca.js` desde `espacios/<espacio>/perfil.json`.
 
-Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed: 1`; las transiciones no se ajustan al beat. Sin voz, las transiciones caen en los golpes de la música.
+- **Pizarrón**: colores de la marca (este motor usa sus propias letras de trazo a mano). Se usa `bootVideo(construir, { ...window.MARCA, speed: 1 })`.
+- **Estilos**: colores, tipografía, el estilo elegido, sin mascota ni persona, y subtítulos con los tiempos reales de la voz. En `video.js`: `import marca from './marca.js'` y `...marca` **después** de las claves de la plantilla y antes de `scenes`, para que la marca mande. El `format` se escribe a mano según la respuesta de Emi (`'9:16'` o `'16:9'`).
+
+Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed: 1`; las transiciones no se ajustan al beat (la herramienta lo aplica igual en la medición, en `qa` y en el render). Sin voz, en el pizarrón las transiciones caen en los golpes de la música; en estilos eso solo ocurre si `video.js` declara `beats: 'audio/beats.json'`, y nunca se declara cuando hay voz porque desincroniza. Si Emi respondió «sin efectos», el render los apaga.
 
 ## 5. Que se vea hecho por una persona
 
@@ -92,8 +95,8 @@ Gancho escrito en pantalla antes de 0.3 s. Una idea por escena, de 8 a 10 escena
 
 ## 7. Auditar antes de entregar
 
-1. `qa`: mirar **todos** los cuadros de `out/hoja.jpg`: texto cortado o encimado, personaje tapando texto, escenas vacías, algo bajo las zonas rojas. Para cada transición, cuadros cada 0.2 s alrededor (`node render.mjs --stills ...`).
-2. `render`: corregir todos los avisos de `out/auditoria.json` (formato, duración frente a lo pedido, sonoridad −14 ± 1 LUFS, pico, música corta, silencios).
+1. `qa`: mirar **todos** los cuadros de `out/hoja.jpg`: texto cortado o encimado, dibujos tapando texto, escenas vacías, algo bajo las zonas rojas. Para cada transición, cuadros cada 0.2 s alrededor (`node render.mjs --stills ...`).
+2. `render`: corregir todos los avisos de `out/auditoria.json` (formato, duración frente a lo pedido, voz que se corta o video que sobra, sonoridad −14 ± 1 LUFS, pico, música corta, silencios).
 3. Ver el MP4 completo. Lo que una IA no puede juzgar (cómo suena la voz, si el chiste funciona, si se siente natural) se le pregunta a Emi con el video delante, en cada video.
 
 ## 8. Entregar, saldos y aprendizaje

@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.2.0: revisión independiente (15 fallas) corregida
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: fusionar a `main` con la skill terminada antes del primer video.
+- Cambios: `pizarra.py` reescrito con las 15 correcciones de una revisión independiente: (1) `voz --execute` exige entrevista aprobada y que Emi haya pedido la voz del espacio antes de gastar; (2) medición, cuadros de prueba y render usan la misma línea de tiempo (modo B con voz); (3) una cama sin sonido ya no satura la mezcla y la respuesta «sin efectos» apaga los efectos; (4) formato y duración del brief se interpretan antes de rendir y aceptan «horizontal 16:9», «45 a 60», «1:00», «1 minuto»; (5) aviso si la voz se corta o el video sobra; (6) en estilos la marca lleva estilo, sin mascota ni persona y subtítulos con tiempos reales; (7) respuestas que no son texto no cuentan; (8) `proyecto` se arma aparte, se renombra al final y solo acepta `productions/<espacio>/`; (9) el motor vive en `~/.cache/pizarra-studio/motor`, se rechaza si tiene archivos modificados y cada producción anota su commit; (10) se borran entregables anteriores al empezar y los temporales siempre; (11) la medición no ensucia `stills/`; (12) el navegador se busca en más rutas y solo se devuelve si existe; (13) import con mensaje claro si falta Vox Studio; (14) ejemplo y textos alineados con «sin personaje», `musica` antes de `qa`; (15) límites y tiempo máximo en `qa`, primera escena en 0, ganancia final calculada desde una sola fuente.
+- Archivos: `skills/pizarra-studio/{SKILL.md,brief.ejemplo.json,scripts/pizarra.py,scripts/test_pizarra.py}`, `espacios/{ESTILOS.md,APRENDIZAJES-PIZARRA.md}`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 19/19 → aprobado; flujo real completo con el motor reinstalado en su carpeta nueva (proyecto, voz desde caché sin gasto, música, cuadros, render de prueba: 22.8 s, −14.36 LUFS, pico −2.23 dBTP) → aprobado técnicamente, con el aviso esperado de que la escena de prueba no sigue a la voz; `render` sin entrevista → rechazado, como debe.
+- Pendiente: primer video real; modo historia y render horizontal completo sin probar.
+
 ## 2026-11-11 · Pizarra Studio 0.1.2: los cinco estilos probados y duración medida en ambos motores
 
 - Agente: Claude Code (sesión en la nube)

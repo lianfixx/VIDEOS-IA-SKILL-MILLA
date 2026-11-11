@@ -80,7 +80,7 @@ Comprobado con servicios reales (no simulados): narración ElevenLabs con alinea
 
 ## Pizarra Studio (11 de noviembre de 2026)
 
-Skill independiente en `skills/pizarra-studio/`; el motor de dibujo es externo (`santmun/video-pizarra`, commit `dc6adc4`) y se instala con `pizarra.py instalar`.
+Skill independiente en `skills/pizarra-studio/`; el motor de dibujo es externo (`santmun/video-pizarra`, commit `dc6adc4`) y se instala con `pizarra.py instalar` en `~/.cache/pizarra-studio/motor`.
 
 ```bash
 python3 -m unittest discover -s skills/pizarra-studio/scripts -p 'test_*.py'

@@ -7,7 +7,7 @@ Guía común para recomendar; la decisión es de Emi. Cada skill conserva sus pr
 | Emi pide | Skill | Cómo se ve |
 |---|---|---|
 | estilo vox, box, documental, collage | [Vox Studio](../skills/vox-studio/SKILL.md) | papel, titulares en bloque, recortes y fotos, cámara que viaja |
-| pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno, minimal | [Pizarra Studio](../skills/pizarra-studio/SKILL.md) | todo se dibuja en vivo, personaje que actúa, fondos que cambian |
+| pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno, minimal | [Pizarra Studio](../skills/pizarra-studio/SKILL.md) | todo se dibuja en vivo, objetos que actúan, fondos que cambian |
 
 ## Para qué sirve cada estilo de pizarra
 
@@ -15,7 +15,7 @@ Guía común para recomendar; la decisión es de Emi. Cada skill conserva sus pr
 |---|---|---|
 | Pizarrón | explicar un tema con humor, noticias, «te lo cuento fácil» | el asunto pide solemnidad |
 | Acuarela | historias, temas humanos, educación | datos duros y comparativas |
-| Acuarela viva | intros con energía, historias con personaje | marcas sobrias |
+| Acuarela viva | intros con energía, historias con color | marcas sobrias |
 | Cuaderno | listas, pasos, estudio, tutoriales | piezas institucionales |
 | Minimal | marcas premium, despachos, consultoría | temas que piden juego |
 

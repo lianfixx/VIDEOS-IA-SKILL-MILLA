@@ -36,6 +36,45 @@ class Entrevista(unittest.TestCase):
         b = {**pizarra.BRIEF_BASE, "respuestas": {**pizarra.BRIEF_BASE["respuestas"], **pref}}
         self.assertEqual(len(pizarra.faltantes(b)["preguntas"]), 15)
 
+    def test_respuestas_que_no_son_texto_no_cuentan(self):
+        b = brief_completo()
+        for k in b["respuestas"]:
+            if k != "opinion_emi":
+                b["respuestas"][k] = None
+        self.assertEqual(len(pizarra.faltantes(b)["preguntas"]), 16)
+        b["respuestas"] = ["x"]
+        with self.assertRaises(vox.ErrorVox):
+            pizarra.faltantes(b)
+
+    def test_lectura_del_brief(self):
+        self.assertEqual(pizarra.leer_formato("horizontal 16:9"), (1920, 1080))
+        self.assertEqual(pizarra.leer_formato("Horizontal (YouTube)"), (1920, 1080))
+        self.assertEqual(pizarra.leer_formato("vertical 9:16"), (1080, 1920))
+        self.assertEqual(pizarra.leer_duracion("60s"), (60, 60))
+        self.assertEqual(pizarra.leer_duracion("45 a 60"), (45, 60))
+        self.assertEqual(pizarra.leer_duracion("1:00"), (60, 60))
+        self.assertEqual(pizarra.leer_duracion("1 minuto"), (60, 60))
+        self.assertIsNone(pizarra.leer_duracion("lo que haga falta"))
+        self.assertTrue(pizarra.sin_efectos("sin efectos") and pizarra.sin_efectos("No") and not pizarra.sin_efectos("sí"))
+
+    def test_voz_no_se_paga_sin_entrevista_ni_si_emi_no_la_pidio(self):
+        real = vox.narrar
+        vox.narrar = lambda *a: self.fail("no debía llamar al proveedor")
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                d = Path(tmp)
+                (d / "guion.json").write_text(json.dumps({"escenas": [{"id": "01", "narracion": "Hola a todos."}]}))
+                (d / "brief.json").write_text(json.dumps({**pizarra.BRIEF_BASE, "espacio": "personal"}))
+                with self.assertRaises(vox.ErrorVox):
+                    pizarra.narrar_guion(d, True)
+                b = brief_completo(); b["respuestas"]["voz"] = "solo texto en pantalla"
+                (d / "brief.json").write_text(json.dumps(b))
+                with self.assertRaises(vox.ErrorVox) as cm:
+                    pizarra.narrar_guion(d, True)
+                self.assertIn("No se narra", str(cm.exception))
+        finally:
+            vox.narrar = real
+
     def test_postura_de_relleno_no_cuenta(self):
         b = brief_completo(); b["respuestas"]["opinion_emi"] = "ok"
         self.assertIn("opinion_emi", pizarra.faltantes(b)["preguntas"])
@@ -67,8 +106,13 @@ class Marca(unittest.TestCase):
         self.assertEqual(pizarra.marca_para_motor(vox.perfiles()["castorena"], "estilos")["font"]["display"], "Gelasio")
 
     def test_proyecto_no_mezcla_espacios_ni_inventa_estilo(self):
-        self.assertEqual(pizarra.main(["proyecto", "/tmp/x/milla/tema", "--perfil", "personal", "--modo", "pizarron"]), 2)
-        self.assertEqual(pizarra.main(["proyecto", "/tmp/x/personal/tema", "--perfil", "personal", "--modo", "estilos"]), 2)
+        self.assertEqual(pizarra.main(["proyecto", "/tmp/x/productions/milla/tema", "--perfil", "personal", "--modo", "pizarron"]), 2)
+        self.assertEqual(pizarra.main(["proyecto", "/tmp/x/productions/personal/tema", "--perfil", "personal", "--modo", "estilos"]), 2)
+        self.assertEqual(pizarra.main(["proyecto", "/tmp/x/personal/tema", "--perfil", "personal", "--modo", "pizarron"]), 2)  # fuera de productions/
+
+    def test_estilos_sin_personaje_y_con_subtitulos_reales(self):
+        cfg = pizarra.marca_para_motor(vox.perfiles()["personal"], "estilos", "cuaderno")
+        self.assertEqual((cfg["style"], cfg["mascot"], cfg["person"], cfg["words"]), ("cuaderno", "none", False, "audio/words.json"))
 
 
 class Motor(unittest.TestCase):
@@ -98,7 +142,7 @@ class Sonido(unittest.TestCase):
         self.assertEqual(r["tempo"], 120.0)
         self.assertEqual(r["beats"][:3], [0.0, 0.5, 1.0])
         self.assertEqual(len(r["beats"]), len(r["strength"]))
-        self.assertEqual(r["strength"][:5], [1.0, 0.45, 0.45, 0.45, 1.0])
+        self.assertEqual(r["strength"][:5], [1.5, 0.5, 0.5, 0.5, 1.5])
         self.assertEqual(r["sections"], [0.0, 3.0, 6.5])
 
     def test_voz_reparte_tiempos_reales_sin_volver_a_pagar(self):
@@ -124,6 +168,7 @@ class Sonido(unittest.TestCase):
                 vox.narrar = real
             self.assertEqual(len(llamadas), 1)
             self.assertEqual([t["inicio"] for t in r["escenas"]], [0.0, 1.5])
+            self.assertEqual(pizarra.args_modo(d), ["--mode", "B"])  # con voz, sin ajuste al beat: en qa, medición y render
             self.assertAlmostEqual(r["escenas"][0]["dur"], 1.5)
             palabras = json.loads((d / "audio" / "words.json").read_text())
             self.assertEqual(palabras[0], {"w": "Uno", "s": 0.0, "e": 0.4})
@@ -136,21 +181,35 @@ class Duracion(unittest.TestCase):
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 d = Path(tmp)
-                pizarra._node = lambda d, *a: "stills done (1), duration 60.33s\n"
+                pizarra._node = lambda d, *a, **k: "stills done (1), duration 60.33s\n"
                 self.assertAlmostEqual(pizarra.duracion_del_video(d), 60.33)
                 (d / "engine").mkdir(); (d / "video.js").write_text("")
                 visto = {}
-                def estilos(d, *a):
+                def estilos(d, *a, **k):
                     visto["args"] = a
                     return "stills: 1 → _medir/  (duración 43.00s)\n"
                 pizarra._node = estilos
                 self.assertAlmostEqual(pizarra.duracion_del_video(d), 43.0)
                 self.assertIn("--outdir", visto["args"])  # no ensucia stills/
-                pizarra._node = lambda d, *a: "nada"
+                pizarra._node = lambda d, *a, **k: "nada"
                 with self.assertRaises(vox.ErrorVox):
                     pizarra.duracion_del_video(d)
         finally:
             pizarra._node = real
+
+
+class Navegador(unittest.TestCase):
+    def test_no_devuelve_rutas_que_no_existen(self):
+        previo = os.environ.get("CHROME_PATH")
+        os.environ["CHROME_PATH"] = "/no/existe/chrome"
+        try:
+            self.assertNotEqual(pizarra.navegador(), "/no/existe/chrome")
+            self.assertTrue(pizarra.navegador() == "" or Path(pizarra.navegador()).is_file())
+        finally:
+            if previo is None:
+                del os.environ["CHROME_PATH"]
+            else:
+                os.environ["CHROME_PATH"] = previo
 
 
 class Hoja(unittest.TestCase):
@@ -168,6 +227,8 @@ class Hoja(unittest.TestCase):
                 self.assertEqual(im.getpixel((110, 200))[1] > 240, True)  # zona útil: intacta
         with tempfile.TemporaryDirectory() as tmp, self.assertRaises(vox.ErrorVox):
             pizarra.hoja(Path(tmp), Path(tmp) / "h.jpg")
+        with self.assertRaises(vox.ErrorVox):
+            pizarra.cuadros_de_prueba(Path("/tmp"), 0)
 
 
 if __name__ == "__main__":
