@@ -14,7 +14,7 @@ loadFont({family: 'Gelasio', url: gelasioUrl, weight: '700'});
 export type Colores = {papel: string; tinta: string; acento: string; apoyo: string};
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
-  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string;
+  nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string; secuencia?: {carpeta: string; cuadros: number; bucle?: boolean; inicio?: number} | null; tratada?: boolean;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
@@ -140,15 +140,16 @@ const Titular: React.FC<{e: Escena; c: Colores; f: number; indice: number}> = ({
         const verbo = j === 0 ? e.entrada : verbos[(indice + j) % verbos.length];
         const temblor = `rotate(${(azar(indice * 7 + j) - 0.5) * 1.2}deg)`; // inclinación fija por línea; no vibra
         return (
-          <div key={j} style={{...entrar(verbo, f - 3 - j * 4, fps), height: tam * 1.06}}>
+          <div key={j} style={{...entrar(verbo, f - 3 - j * 4, fps), height: tam * 1.06, position: 'relative', zIndex: lineas.length - j}}>{/* la línea de arriba queda encima del resaltado de la de abajo */}
             <div style={{transform: temblor, fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: tam, lineHeight: 1, color: c.tinta, whiteSpace: 'nowrap', letterSpacing: espacio}}>
               {linea.split(' ').map((p, k) => {
                 const marca = !!e.resaltar && sinSignos(p) === sinSignos(e.resaltar);
                 const trazo = spring({frame: f - 16 - j * 4, fps, config: {damping: 200, stiffness: 140}});
                 return (
                   <span key={k} style={{position: 'relative', display: 'inline-block', marginRight: tam * 0.22}}>
+                    {/* Una mayúscula con tilde sobresale de la caja y, en color papel, se perdía: ahí la caja sube. */}
                     {marca && (
-                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
+                      <span style={{position: 'absolute', left: -tam * 0.08, right: -tam * 0.08, top: /[ÁÉÍÓÚÜÑ]/.test(p) ? -tam * 0.13 : fuente === 'Anton' ? tam * 0.1 : tam * 0.04, bottom: fuente === 'Anton' ? -tam * 0.02 : -tam * 0.12, background: c.acento, transform: `rotate(-1.6deg) scaleX(${trazo})`, transformOrigin: 'left center', borderRadius: `${tam * 0.06}px ${tam * 0.16}px ${tam * 0.05}px ${tam * 0.14}px`}} />
                     )}
                     <span style={{position: 'relative'}}>{p}</span>
                     {marca && <span style={{position: 'absolute', left: 0, top: 0, color: c.papel, clipPath: `inset(-20% ${(1 - trazo) * 100}% -20% 0)`}}>{p}</span>}
@@ -182,7 +183,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: DER_BAJO - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
-      {(e.imagen || e.dato) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
+      {(e.imagen || e.dato || e.secuencia) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
       {(e.imagen || e.dato) && <svg width={alto * 1.3} height={alto * 1.3} viewBox="-100 -100 200 200" style={{position: 'absolute'}}>
         {Array.from({length: 12}).map((_, n) => {
           const ang = (n / 12) * Math.PI * 2 + indice;
@@ -192,10 +193,16 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
       </svg>}
       <div style={{...entrada, position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
         <div style={{transform: `${vaiven} scale(${pulso})`}}>
-          {e.imagen ? (
+          {e.secuencia ? (
+            // Secuencia rendida aparte (objeto 3D horneado o Blender): un cuadro por frame. Función pura del tiempo.
+            // En bucle gira sin fin; sin bucle sigue la entrada del objeto y se queda en su último cuadro.
+            <Img src={staticFile(`${e.secuencia.carpeta}/${String(e.secuencia.bucle === false
+              ? Math.min(e.secuencia.cuadros - 1, Math.max(0, Math.floor(f - 8 - (e.secuencia.inicio ?? 0))))
+              : ((Math.max(0, Math.floor(f)) % e.secuencia.cuadros) + e.secuencia.cuadros) % e.secuencia.cuadros).padStart(4, '0')}.png`)} style={{display: 'block', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain'}} />
+          ) : e.imagen ? (
             e.foto ? (
               <div style={{background: '#fff', padding: '18px 18px 60px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
-                <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: 'grayscale(1) contrast(1.25)'}} />
+                <Img src={staticFile(e.imagen)} style={{display: 'block', maxWidth: 620, maxHeight: alto - 150, filter: e.tratada ? 'none' : 'grayscale(1) contrast(1.25)'}} />
               </div>
             ) : (
               <Img src={staticFile(e.imagen)} style={{display: 'block', width: 'auto', height: alto * 0.98, maxWidth: DER_BAJO - SEGURO.izq - 60, objectFit: 'contain', filter: `${borde(7, '#fff')} drop-shadow(14px 14px 0 ${c.tinta})`}} />
@@ -204,7 +211,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
             <div style={{fontFamily: 'Anton', fontSize: Math.min(alto * 0.62, 900 / Math.max(2, e.dato.length)), color: c.papel, background: c.tinta, padding: '10px 46px', boxShadow: `14px 14px 0 ${c.acento}`, border: `8px solid ${c.papel}`, outline: `6px solid ${c.tinta}`}}>{e.dato}</div>
           ) : null}
           {/* cinta adhesiva */}
-          {(e.imagen || e.dato) && <div style={{position: 'absolute', top: -26, left: '38%', width: 190, height: 52, background: c.acento, opacity: 0.82, transform: 'rotate(-5deg)'}} />}
+          {(e.imagen || e.dato) && !e.secuencia && <div style={{position: 'absolute', top: -26, left: '38%', width: 190, height: 52, background: c.acento, opacity: 0.82, transform: 'rotate(-5deg)'}} />}
         </div>
       </div>
     </div>

@@ -2,8 +2,8 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.9.0"
-  release_date: "2026-11-10"
+  version: "0.12.0"
+  release_date: "2026-11-11"
   language: "es-MX"
 ---
 
@@ -37,6 +37,8 @@ En cada video, antes de producir: leer el guion completo, entender de qué va y 
 - `sonido` por escena: `boom`, `scratch`, `trombon`, `ding`, `redoble`, `suspenso`, `caja`, `error`. Son remates sintetizados aquí, no grabaciones ajenas. Uno por idea; repetido pierde la gracia.
 - `remate` por escena (opcional, hasta 14 letras): sello que cae a media escena con su sonido, por ejemplo «PLOT TWIST» o «ASÍ NO». Exige `sonido` en esa escena y no va en la primera.
 - En `milla` y `castorena`: música `serio`, sin remates de chiste. En `personal` es donde cabe el humor sonoro.
+
+**Complemento opcional: Flow Music.** Emi comparó las dos (11/11/2026) y prefiere la música de código; una pista de Flow Music solo entra cuando él la pide o el género no existe en código, con `musica.archivo` y `musica.origen`. Cómo conseguirla y montarla: [FLOW-MUSIC.md](FLOW-MUSIC.md).
 
 El validador rechaza un guion sin `musica.animo` o sin ningún `sonido`. Si hace falta un efecto, ánimo o remate visual que no existe, se programa en `sonido.py` o en `plantilla/src/Vox.tsx` con su prueba y se deja disponible para los videos siguientes. No usar audios ni imágenes de memes con derechos de terceros.
 
@@ -97,7 +99,22 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 - Subtítulos: solo con los tiempos por palabra que devuelve el proveedor de voz.
 - **Nada tiembla**: flotación lenta, rebotes amortiguados. Sin fades. Entradas y transiciones (`viaje`, `barrido`, `rasgado`) variadas; el validador rechaza repetir la anterior.
 - Texto dentro de la zona segura de TikTok (x 90–960, y 230–1440).
-- Música y efectos: siempre, compuestos con código (ver arriba). Música de terceros solo con derechos documentados.
+- Música y efectos: siempre, compuestos con código (ver arriba). Una pista externa (Flow Music) solo como complemento y con su origen escrito en el guion.
+
+## 3D, sombreadores, Blender y ComfyUI (la respuesta por defecto es no)
+
+Existen, pero **el estilo es el recorte ilustrado**: tiene trazo, carácter y humor, y un objeto 3D es más frío. El primer demo que los usó en casi todas las escenas le gustó menos a Emi (11/11/2026). Regla: lo normal es un video sin ninguno; a veces uno; nunca más de uno salvo que Emi lo pida.
+
+Antes de proponer uno se contestan, en orden, las cinco preguntas de [TRES-D.md](TRES-D.md) (qué dice la voz, si el movimiento es la idea, qué se pierde, si es el mejor momento del video, si Emi lo eligió). Al primer «no», va recorte. Resumen del momento de cada uno:
+
+- **Barras 3D**: la voz compara 2 a 5 cantidades reales y lo que importa es la diferencia. Solo en `dato` o `prueba`, con `fuente`. Una sola cifra va en `dato`.
+- **Monedas 3D**: dinero que se acumula mientras la voz lo dice. Si el dinero es solo el tema, recorte.
+- **Globo / caja**: casi nunca; solo si girar es la idea («en todas partes») o no existe recorte que lo diga.
+- **Semitono / duotono**: solo sobre fotos reales; nunca sobre ilustraciones. Uno solo por video.
+- **Blender**: un modelo real que Emi tenga y que haya que ver por todos lados; texto con volumen solo si él lo pide para gancho o portada.
+- **ComfyUI**: solo con el servidor de Emi (`COMFY_URL`) y cuando Kie no pueda. Aquí no hay tarjeta gráfica.
+
+Nunca en la escena de `opinion` ni en el `cierre`. `validar` rechaza más de un 3D por video, un objeto fuera de su momento o sin `porque`; más de uno solo con el pedido de Emi escrito en `excepcion_3d`. **Antes de rendir, `$V comparar $D --escena ID` deja la escena con y sin el recurso lado a lado: se le enseña a Emi y él elige; si duda, gana la plana.**
 
 ## Auditar y corregir
 
@@ -116,7 +133,7 @@ Una IA puede revisar imagen; no puede oír. `visto_y_escuchado_por_emi` solo lo 
 
 ## Compuertas: cuándo detenerse y preguntar
 
-Se trabaja de corrido salvo en estos puntos, donde se para y se le pregunta a Emi: falta su postura o no eligió gancho; un dato no tiene fuente verificable; falta una imagen real (captura, logo, foto) que no debe inventarse; la referencia que dio no queda clara (se le enseña un cuadro de prueba antes de hacer todo el video); el gasto pasaría de lo ya autorizado. Mejor una pregunta que un video entero bien hecho sobre una suposición.
+Se trabaja de corrido salvo en estos puntos, donde se para y se le pregunta a Emi: falta su postura o no eligió gancho; un dato no tiene fuente verificable; falta una imagen real (captura, logo, foto) que no debe inventarse; una escena llevaría 3D, tratamiento, Blender o ComfyUI (se le enseña la comparación con y sin, y elige él); la referencia que dio no queda clara (se le enseña un cuadro de prueba antes de hacer todo el video); el gasto pasaría de lo ya autorizado. Mejor una pregunta que un video entero bien hecho sobre una suposición.
 
 ## Aprender de cada video (obligatorio)
 

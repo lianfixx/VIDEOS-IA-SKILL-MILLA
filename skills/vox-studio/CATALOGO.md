@@ -21,6 +21,8 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 | `ironia` | 104 bpm, mayor, pizzicato | sarcasmo, absurdo, humor |
 | `motivacion` | 110 bpm, mayor | superación, cierre con llamado |
 
+Pista externa opcional (`musica.archivo` + `musica.origen`): Flow Music, solo cuando Emi la pide. Ver [FLOW-MUSIC.md](FLOW-MUSIC.md).
+
 ## Efectos (`sonido`) y remates (`remate`)
 
 | Efecto | Qué es | Cuándo |
@@ -51,6 +53,15 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 - Modelos (`--modelo`): `nano-banana-2-lite` (4 créditos), `seedream/5-lite-text-to-image` (5.5 créditos).
 - Fondo de recorte (`--croma`): `verde`, `magenta`, `ninguno`.
 - Fotos reales: `foto` y `foto-bajar` (Apify), solo con fuente y licencia comprobadas.
+
+## 3D y tratamientos (por defecto no; como mucho uno por video)
+
+- Objetos 3D del compositor (`objeto3d.tipo`): `moneda`, `monedas`, `barras`, `caja`, `globo`.
+- Tratamientos de imprenta (`tratamiento`): `semitono`, `duotono`.
+- Blender (`blender --tipo`): `texto`, `moneda`, `caja`, `modelo`; acabados `plano` y `real`; imagen fija o giro (`secuencia`).
+- ComfyUI (`comfy`): flujos exportados por Emi, con su servidor.
+
+El momento exacto de cada uno, las cinco preguntas previas y la comparación con y sin (`comparar`): [TRES-D.md](TRES-D.md).
 
 ## Tipografías
 

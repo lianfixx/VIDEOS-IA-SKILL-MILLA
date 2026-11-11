@@ -15,6 +15,11 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
   biblioteca [--buscar TEXTO] [--espacio E]  qué hay para reciclar
   reciclar ID --dir DIR                    copia un recurso de la biblioteca a una producción
   sonido GUION                             analiza el guion y propone música, efectos y remates
+  blender --dir D --perfil E --tipo texto|moneda|caja|modelo --out RUTA --porque "..." [--acabado plano|real] [--giro N]
+                                           objeto 3D rendido con Blender (PNG transparente o secuencia que gira)
+  blender-instalar                         instala Blender como módulo de Python (solo cuando haga falta)
+  comfy --dir D --flujo F.json --out RUTA --porque "..." [--execute]   imagen desde el servidor ComfyUI de Emi (COMFY_URL)
+  comparar DIR --escena ID                 la misma escena con 3D (o tratamiento) y en plano, lado a lado, para que Emi elija
   revisar DIR                              hojas de transiciones y de tamaño teléfono + informe de revisión (obligatorio antes de `cierre`)
   referencia ARCHIVO --dir DIR             convierte una imagen o video de referencia de Emi en una hoja para mirarla
   render DIR                               render + portada + master a -14 LUFS + hoja de fotogramas para auditar
@@ -31,7 +36,9 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+import io
 import json
+import math
 import os
 import re
 import shutil
@@ -70,7 +77,21 @@ CROMAS = {"verde": "pure green (#00FF00)", "magenta": "pure magenta (#FF00FF)"}
 SIGNOS = "¿¡?!.,;:"
 MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
 COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
+LADO_HORNO = 720        # px del lienzo donde se hornea un objeto 3D
+ADELANTO_PRIMERA = 60   # cuadros que el compositor adelanta la primera escena (Vox.tsx: `k === 0 ? frame + 60`)
+LISTO = ".listo"        # marca de secuencia horneada completa
 ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lento
+# Recursos de más costo o riesgo de «verse a IA»: cada uno exige decir por qué hace falta en esa escena.
+OBJETOS_3D = ["moneda", "monedas", "barras", "caja", "globo"]   # Three.js dentro del compositor, colores planos + contorno
+TRATAMIENTOS = ["semitono", "duotono"]                             # sombreadores de imprenta para fotos y recortes
+BLENDER_TIPOS = ["texto", "moneda", "caja", "modelo"]             # render fuera del compositor: PNG o secuencia con transparencia
+# En qué momento del guion cabe cada objeto 3D (por la `funcion` de la escena). Fuera de ahí estorba:
+# el gancho necesita un sujeto con carácter, y la opinión y el cierre son de Emi, no de un render.
+LUGAR_3D = {"barras": {"dato", "prueba"}, "monedas": {"dato", "prueba", "giro"}, "moneda": {"dato", "prueba", "giro"},
+            "caja": {"contexto", "giro"}, "globo": {"contexto", "dato"}}
+SIN_3D = {"opinion", "cierre"}   # tampoco una secuencia de Blender
+MAX_3D = 1                       # escenas con 3D por video, salvo que Emi pida otra cosa (`excepcion_3d`)
+MODELOS_3D = {".glb", ".gltf", ".obj", ".stl"}                    # formatos de modelo que Blender importa aquí
 # Para qué existe cada escena. Si no se puede decir, la escena sobra.
 FUNCIONES = ["gancho", "contexto", "dato", "giro", "prueba", "opinion", "remate", "cierre"]
 CIFRA = re.compile(r"\d+\s*%|\$\s*\d|\d[\d.,]*\s*(?:mil|millones|pesos|dólares|años|veces|por ciento)\b|\b\d{2,}[\d.,]*\b", re.I)
@@ -169,6 +190,7 @@ def validar_guion(g: dict) -> list[str]:
         conocidos = perfiles()
     except ErrorVox as exc:
         return [str(exc)]
+    excepcion = len(str(g.get("excepcion_3d", "")).strip()) >= 15  # Emi pidió expresamente más 3D del que marca la guía
     if g.get("perfil") not in conocidos:
         e.append(f"perfil desconocido: {g.get('perfil')!r}; usa uno de {sorted(conocidos)}")
     if len(str(g.get("opinion_emi", "")).strip()) < 20:
@@ -182,6 +204,14 @@ def validar_guion(g: dict) -> list[str]:
         e.append(f"falta musica.animo: analiza de qué va el video (`vox.py sonido GUION`) y elige uno de {sorted(SON.ANIMOS)} o 'ninguna'")
     if mus.get("animo") == "ninguna" and len(str(mus.get("motivo", ""))) < 10:
         e.append("musica 'ninguna' exige musica.motivo")
+    if "archivo" in mus:  # pista externa (p. ej. Flow Music): complemento, solo cuando Emi la pide
+        arch = mus.get("archivo")
+        if not (isinstance(arch, str) and ruta_segura(arch) and Path(arch).suffix.lower() in {".wav", ".mp3", ".m4a"}):
+            e.append("musica.archivo debe ser una ruta relativa a la producción a un .wav, .mp3 o .m4a (p. ej. originales/musica/pista.wav)")
+        if len(str(mus.get("origen", "")).strip()) < 15:
+            e.append("musica.archivo exige musica.origen: de dónde salió la pista, quién la generó y cuándo (derechos documentados)")
+        if mus.get("animo") == "ninguna":
+            e.append("musica.archivo con animo 'ninguna' se contradice: elige el ánimo de la pista")
     port = g.get("portada") or {}
     if len(str(port.get("texto", ""))) > 34 or len(partir(str(port.get("texto", "")))) > 3:
         e.append("portada.texto: máximo 34 caracteres y 3 líneas")
@@ -233,6 +263,59 @@ def validar_guion(g: dict) -> list[str]:
             e.append(f"{p}: falta `funcion` (para qué existe la escena); opciones {FUNCIONES}")
         if CIFRA.search(n) and not str(s.get("fuente", "")).strip() and len(str(g.get("cifras_sin_fuente", "")).strip()) < 10:
             e.append(f"{p}: la narración trae una cifra y la escena no muestra `fuente`. Un dato sin fuente no se publica")
+        o3 = s.get("objeto3d")
+        if o3 is not None:
+            if not (isinstance(o3, dict) and o3.get("tipo") in OBJETOS_3D):
+                e.append(f"{p}: objeto3d.tipo debe ser uno de {OBJETOS_3D}")
+            else:
+                vals = o3.get("valores", [])
+                if not (isinstance(vals, list) and len(vals) <= 5 and all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0 for v in vals)):
+                    e.append(f"{p}: objeto3d.valores debe ser una lista de hasta 5 números finitos no negativos")
+                elif o3["tipo"] == "barras" and len(vals) < 2:
+                    e.append(f"{p}: unas barras necesitan al menos 2 valores reales")
+                elif o3["tipo"] == "barras" and max(vals) <= 0:
+                    e.append(f"{p}: unas barras con todos los valores en cero no muestran nada")
+                elif o3["tipo"] == "monedas" and vals and not (isinstance(vals[0], int) and 2 <= vals[0] <= 8):
+                    e.append(f"{p}: en monedas, valores[0] es cuántas se apilan: un entero de 2 a 8")
+                elif "resaltar" in o3:
+                    r = o3["resaltar"]
+                    if o3["tipo"] != "barras":
+                        e.append(f"{p}: objeto3d.resaltar solo existe en barras")
+                    elif not (isinstance(r, int) and not isinstance(r, bool) and 0 <= r < len(vals)):
+                        e.append(f"{p}: objeto3d.resaltar debe ser el índice (desde 0) de una de las {len(vals)} barras")
+                if len(str(o3.get("porque", "")).strip()) < 15:
+                    e.append(f"{p}: objeto3d.porque: di en una frase qué explica mejor en 3D que en plano; si no hay respuesta, no va en 3D")
+                if o3["tipo"] == "barras" and not str(s.get("fuente", "")).strip():
+                    e.append(f"{p}: unas barras son datos: la escena necesita `fuente`")
+                if not excepcion and s.get("funcion") in FUNCIONES and s["funcion"] not in LUGAR_3D[o3["tipo"]]:
+                    e.append(f"{p}: {o3['tipo']} en 3D no va en una escena de `{s['funcion']}`; solo en {sorted(LUGAR_3D[o3['tipo']])}. "
+                             "Ahí funciona mejor un recorte (ver TRES-D.md)")
+            if s.get("imagen_archivo") or s.get("dato"):
+                e.append(f"{p}: objeto3d ocupa el lugar del recorte; quita imagen_archivo o dato")
+        sec = s.get("secuencia")
+        if sec is not None:
+            if not (isinstance(sec, dict) and isinstance(sec.get("carpeta"), str) and ruta_segura(sec["carpeta"])
+                    and isinstance(sec.get("cuadros"), int) and not isinstance(sec.get("cuadros"), bool) and 2 <= sec["cuadros"] <= 240):
+                e.append(f"{p}: secuencia necesita `carpeta` (relativa a public/) y `cuadros` (2 a 240)")
+            if s.get("imagen_archivo") or s.get("dato") or s.get("objeto3d"):
+                e.append(f"{p}: secuencia ocupa el lugar del recorte; quita imagen_archivo, dato u objeto3d")
+            if isinstance(sec, dict) and len(str(sec.get("porque", "")).strip()) < 15:
+                e.append(f"{p}: secuencia.porque: di en una frase qué explica el giro que no explica una imagen fija")
+            if not excepcion and s.get("funcion") in SIN_3D:
+                e.append(f"{p}: una secuencia 3D no va en una escena de `{s['funcion']}`: ese momento es de Emi, no de un objeto")
+        alt = s.get("alternativa_plana")
+        if alt is not None:
+            if not (isinstance(alt, dict) and alt and set(alt) <= {"dato", "imagen_archivo"} and all(isinstance(v, str) and v.strip() for v in alt.values())
+                    and ruta_segura(alt.get("imagen_archivo", "x"))):
+                e.append(f"{p}: alternativa_plana es {{\"dato\": \"...\"}} o {{\"imagen_archivo\": \"img/...png\"}}: cómo se vería la escena sin 3D")
+            elif not (s.get("objeto3d") or s.get("secuencia")):
+                e.append(f"{p}: alternativa_plana solo tiene sentido en una escena con objeto3d o secuencia")
+        tr3 = s.get("tratamiento")
+        if tr3:
+            if tr3 not in TRATAMIENTOS:
+                e.append(f"{p}: tratamiento {tr3!r} no existe; opciones {TRATAMIENTOS}")
+            elif not s.get("imagen_archivo"):
+                e.append(f"{p}: tratamiento solo aplica a una escena con imagen_archivo")
         if s.get("remate") and not s.get("sonido"):
             e.append(f"{p}: un remate cae con su sonido; elige `sonido` para esta escena")
         if s.get("remate") and i == 0:
@@ -252,6 +335,15 @@ def validar_guion(g: dict) -> list[str]:
             e.append(f"{p}: transicion {tr!r} no existe; opciones {sorted(set(TRANSICIONES))}")
         if i > 1 and trs[i] == trs[i - 1]:
             e.append(f"{p}: repite la transición de la escena anterior ({trs[i]})")
+    con_3d = [i + 1 for i, s in enumerate(escenas) if s.get("objeto3d") or s.get("secuencia")]
+    if len(con_3d) > MAX_3D and not excepcion:
+        e.append(f"escenas {con_3d} llevan 3D: va como mucho {MAX_3D} por video, en el momento en que más explica. "
+                 "Deja la mejor y vuelve las demás a recorte o dato. Si Emi pidió más, escribe su pedido en `excepcion_3d`")
+    trats = {s.get("tratamiento") for s in escenas if s.get("tratamiento") in TRATAMIENTOS}
+    if len(trats) > 1:
+        e.append("el video mezcla semitono y duotono: las fotos de un mismo video llevan un solo tratamiento")
+    if "excepcion_3d" in g and not excepcion:
+        e.append("excepcion_3d: escribe lo que Emi pidió, con sus palabras y la fecha (mínimo 15 caracteres); no se usa por iniciativa propia")
     funs = [s.get("funcion") for s in escenas]
     if escenas and all(f in FUNCIONES for f in funs):
         if funs[0] != "gancho":
@@ -282,10 +374,22 @@ def avisos_guion(g: dict) -> list[str]:
     for i, n in enumerate(cuenta):
         if n > 22:
             a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos")
-    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato")]
+    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato") and not s.get("objeto3d") and not s.get("secuencia")]
+    n3d = sum(1 for s in escenas if s.get("objeto3d") or s.get("secuencia"))
+    if n3d > max(1, len(escenas) // 3):
+        a.append(f"{n3d} escenas en 3D de {len(escenas)}: el 3D es un acento, no el estilo; deja solo las que de verdad lo necesitan")
+    for i, s in enumerate(escenas):
+        o3 = s.get("objeto3d") if isinstance(s.get("objeto3d"), dict) else {}
+        vals = [v for v in o3.get("valores", []) if isinstance(v, (int, float)) and not isinstance(v, bool)] if isinstance(o3.get("valores", []), list) else []
+        if o3.get("tipo") == "barras" and len(vals) >= 2 and min(vals) > 0 and max(vals) / min(vals) < 1.3:
+            a.append(f"escena {i + 1}: las barras se parecen demasiado (la mayor es {max(vals) / min(vals):.2f} veces la menor): la diferencia no se verá; di la cifra con `dato`")
+        if (o3 or s.get("secuencia")) and not s.get("alternativa_plana"):
+            a.append(f"escena {i + 1}: lleva 3D sin `alternativa_plana`; anota cómo se vería en plano y enséñale a Emi las dos con `comparar`")
+        if s.get("tratamiento") and not s.get("foto_real"):
+            a.append(f"escena {i + 1}: `tratamiento` sobre una imagen que no es foto real; en una ilustración la trama ensucia. Úsalo solo si la imagen es fotográfica")
     if sin_imagen:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
-    if sum(1 for s in escenas if s.get("imagen_archivo")) < max(2, len(escenas) // 2):
+    if sum(1 for s in escenas if s.get("imagen_archivo") or s.get("objeto3d") or s.get("secuencia")) < max(2, len(escenas) // 2):
         a.append("menos de la mitad de las escenas lleva imagen; el estilo pide algo que ver casi siempre")
     primeras = [str(s.get("keyword", "")).split()[:1] for s in escenas]
     if len({tuple(x) for x in primeras}) < len(primeras) - 1:
@@ -341,6 +445,11 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         img = s.get("imagen_archivo", "")
         if img and publico is not None and not (publico / img).is_file():
             raise ErrorVox(f"la escena {s['id']} pide {img} y no existe en {publico}")
+        sec = s.get("secuencia") if isinstance(s.get("secuencia"), dict) else None
+        if sec and publico is not None:
+            faltan = [n for n in range(sec["cuadros"]) if not (publico / sec["carpeta"] / f"{n:04d}.png").is_file()]
+            if faltan:
+                raise ErrorVox(f"la escena {s['id']} pide {sec['cuadros']} cuadros en {sec['carpeta']} y faltan {len(faltan)} (el primero, {faltan[0]:04d}.png)")
         escenas.append({
             "id": s["id"], "desde": desde, "dur": dur,
             "keyword": " ".join(str(s["keyword"]).split()).upper(), "resaltar": limpia(s.get("resaltar") or ""),
@@ -348,6 +457,11 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             "fuente": s.get("fuente", ""), "imagen": img, "foto": bool(s.get("foto_real", False)),
             "entrada": ents[i], "transicion": trs[i],
             "sonido": s.get("sonido", ""), "remate": str(s.get("remate", "")).upper(),
+            "objeto3d": ({k: v for k, v in s["objeto3d"].items() if k in ("tipo", "valores", "resaltar")} if isinstance(s.get("objeto3d"), dict) else None),
+            "tratamiento": s.get("tratamiento", ""),
+            "alternativa": ({"dato": s["alternativa_plana"].get("dato", ""), "imagen": s["alternativa_plana"].get("imagen_archivo", "")}
+                            if isinstance(s.get("alternativa_plana"), dict) else None),
+            "secuencia": ({"carpeta": s["secuencia"]["carpeta"].strip("/"), "cuadros": s["secuencia"]["cuadros"]} if isinstance(s.get("secuencia"), dict) else None),
         })
     port = g.get("portada") or {}
     con_imagen = next((x for x in escenas if x["imagen"]), None)
@@ -371,8 +485,12 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
 
 # ---------- red ----------
 
-def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120, tope: int = 64 * 1024 * 1024) -> bytes:
-    if urllib.parse.urlparse(url).scheme != "https":
+LOCALES = {"127.0.0.1", "localhost", "::1"}
+
+
+def _pedir(url: str, *, metodo="GET", cabeceras=None, cuerpo=None, espera=120, tope: int = 64 * 1024 * 1024, http_local: bool = False) -> bytes:
+    u = urllib.parse.urlparse(url)
+    if u.scheme != "https" and not (http_local and u.scheme == "http" and u.hostname in LOCALES):
         raise ErrorVox("solo se permiten URLs https")
     datos = json.dumps(cuerpo).encode() if cuerpo is not None else None
     req = urllib.request.Request(url, data=datos, method=metodo, headers={"User-Agent": "vox-studio/0.4 (video tool; python-urllib)", **(cabeceras or {})})
@@ -750,7 +868,9 @@ def auditar_video(d: Path, datos: dict) -> dict:
 
     ocupacion = {}
     for e in datos["escenas"]:  # a tres cuartos de cada escena ya entró todo y no hay transición encima
-        tinta = cuadro(min(datos["frames"] - 1, e["desde"] + int(e["dur"] * 0.75)))
+        ultima = e is datos["escenas"][-1]
+        # La última escena se mira ya asentada: a tres cuartos puede estar cayendo el sello de cierre.
+        tinta = cuadro(datos["frames"] - 6 if ultima else min(datos["frames"] - 1, e["desde"] + int(e["dur"] * 0.75)))
         for nombre, (x0, y0, x1, y1) in ZONAS_TIKTOK.items():
             frac = float(tinta[y0:y1, x0:x1].mean())
             ocupacion[f"{e['id']} · {nombre}"] = round(frac * 100, 2)
@@ -766,16 +886,147 @@ def auditar_video(d: Path, datos: dict) -> dict:
     return informe
 
 
+def recortar_al_contenido(archivos: list[Path], margen: int = 14) -> tuple[int, int]:
+    """Quita el aire transparente alrededor del objeto. En una secuencia el recorte es el mismo
+    para todos los cuadros (la unión de sus contornos), para que el objeto no salte de tamaño."""
+    from PIL import Image
+    caja = None
+    for f in archivos:
+        with Image.open(f) as im:
+            b = im.convert("RGBA").getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
+        if b:
+            caja = b if caja is None else (min(caja[0], b[0]), min(caja[1], b[1]), max(caja[2], b[2]), max(caja[3], b[3]))
+    if caja is None:
+        raise ErrorVox("el render salió vacío: no hay nada que recortar")
+    with Image.open(archivos[0]) as im0:
+        w, h = im0.size
+    caja = (max(0, caja[0] - margen), max(0, caja[1] - margen), min(w, caja[2] + margen), min(h, caja[3] + margen))
+    for f in archivos:
+        with Image.open(f) as im:
+            rec = im.convert("RGBA").crop(caja)
+        rec.save(f)
+    return caja[2] - caja[0], caja[3] - caja[1]
+
+
+def plan_horno(datos: dict, publico: Path) -> tuple[dict, list[dict]]:
+    """Qué hay que rendir aparte con WebGL y cómo queda el video una vez horneado.
+
+    El 3D y los sombreadores no se dibujan dentro del video principal: se hornean a imágenes
+    con transparencia y el video solo las pega. Así el render no depende de WebGL ni se frena.
+    """
+    from PIL import Image
+    colores = datos["perfil"]["colores"]
+    # La firma incluye el código que dibuja: si cambia, lo horneado antes deja de valer.
+    fuentes = [publico.parent / "src" / n for n in ("Tres.tsx", "Root.tsx")]
+    codigo = huella(*[sha_archivo(f) for f in fuentes if f.is_file()], str(datos.get("fps", FPS)), str(LADO_HORNO))
+    listo = json.loads(json.dumps(datos))
+    trabajos, tratadas = [], {}
+    for i, e in enumerate(listo["escenas"]):
+        if e.get("objeto3d"):
+            # La primera escena arranca ya asentada (el compositor le adelanta 60 cuadros): se hornea ese mismo tramo.
+            inicio = ADELANTO_PRIMERA - 8 if i == 0 else 0
+            cuadros = e["dur"] + 16  # cubre la entrada adelantada y el viaje de cámara de salida
+            firma = huella(json.dumps(e["objeto3d"], sort_keys=True), json.dumps(colores, sort_keys=True), str(cuadros), str(inicio), codigo)[:12]
+            carpeta = f"horno/{e['id']}-{firma}"
+            trabajos.append({"modo": "objeto", "destino": carpeta, "cuadros": cuadros,
+                             "props": {"modo": "objeto", "colores": colores, "lado": LADO_HORNO, "alto": LADO_HORNO, "frames": cuadros, "inicio": inicio,
+                                       "objeto3d": e["objeto3d"], "src": "", "tratamiento": ""}})
+            e["secuencia"] = {"carpeta": carpeta, "cuadros": cuadros, "bucle": False, "inicio": inicio}
+        elif e.get("tratamiento") and e.get("imagen"):
+            origen = publico / e["imagen"]
+            with Image.open(origen) as im:
+                w, h = im.size
+            k = min(900 / w, 900 / h, 1.0)
+            firma = huella(sha_archivo(origen), e["tratamiento"], json.dumps(colores, sort_keys=True), codigo)[:12]
+            destino = f"horno/{e['id']}-{e['tratamiento']}-{firma}.png"
+            trabajos.append({"modo": "foto", "destino": destino, "cuadros": 1,
+                             "props": {"modo": "foto", "colores": colores, "lado": max(2, round(w * k)), "alto": max(2, round(h * k)), "frames": 1, "inicio": 0,
+                                       "objeto3d": None, "src": e["imagen"], "tratamiento": e["tratamiento"]}})
+            tratadas[e["imagen"]] = destino
+            e["imagen"], e["tratada"] = destino, True  # `foto` se conserva: una foto real tratada sigue llevando su marco
+        e.pop("objeto3d", None)
+        e.pop("tratamiento", None)
+        e.pop("alternativa", None)
+    port = listo.get("portada") or {}
+    if port.get("imagen") in tratadas:  # la portada muestra la misma imagen que el video, ya tratada
+        port["imagen"] = tratadas[port["imagen"]]
+    return listo, trabajos
+
+
+def _con_contenido(archivo: Path) -> bool:
+    from PIL import Image
+    with Image.open(archivo) as im:
+        return im.convert("RGBA").getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox() is not None
+
+
+def hornear(d: Path, trabajos: list[dict], navegador: str) -> int:
+    """Rinde lo pendiente del horno con WebGL por software. Lo ya horneado (misma firma) no se repite.
+
+    Todo se arma y se comprueba en `out/_horno*` y solo al final se mueve a `public/horno`:
+    un horneado fallido o interrumpido nunca queda donde la siguiente corrida lo daría por bueno.
+    """
+    hechos = 0
+    horno = d / "public" / "horno"
+    for t in trabajos:
+        destino = d / "public" / t["destino"]
+        completo = destino.is_file() if t["modo"] == "foto" else (destino / LISTO).is_file()
+        if completo:
+            continue
+        props = d / "out" / "_horno.json"
+        props.parent.mkdir(exist_ok=True)
+        props.write_text(json.dumps(t["props"], ensure_ascii=False))
+        comun = ["--props=out/_horno.json", "--gl=swangle", "--log=error"] + ([f"--browser-executable={navegador}"] if navegador else [])
+        tmp, tmp_foto = d / "out" / "_horno", d / "out" / "_horno.png"
+        shutil.rmtree(tmp, ignore_errors=True)
+        tmp_foto.unlink(missing_ok=True)
+        try:
+            if t["modo"] == "foto":
+                _correr(["npx", "remotion", "still", "src/index.ts", "Horno", "out/_horno.png", "--image-format=png"] + comun, cwd=d)
+                if not (tmp_foto.is_file() and _con_contenido(tmp_foto)):
+                    raise ErrorVox(f"el tratamiento de {t['props']['src']} salió vacío: la imagen no cargó o WebGL falló")
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(tmp_foto, destino)
+            else:
+                _correr(["npx", "remotion", "render", "src/index.ts", "Horno", "out/_horno", "--sequence", "--image-format=png"] + comun, cwd=d)
+                salidos = sorted(tmp.glob("*.png"))
+                if len(salidos) != t["cuadros"]:
+                    raise ErrorVox(f"el horno entregó {len(salidos)} cuadros y se esperaban {t['cuadros']}")
+                ordenados = []
+                for n, f in enumerate(salidos):  # primero a nombres temporales: «element-0003.png» y «0003.png» no chocan
+                    ordenados.append(f.rename(tmp / f"c{n:04d}.tmp"))
+                ordenados = [f.rename(tmp / f"{n:04d}.png") for n, f in enumerate(ordenados)]
+                recortar_al_contenido(ordenados)
+                (tmp / LISTO).write_text(str(t["cuadros"]))
+                shutil.rmtree(destino, ignore_errors=True)
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(tmp, destino)
+        finally:
+            props.unlink(missing_ok=True)
+            shutil.rmtree(tmp, ignore_errors=True)
+            tmp_foto.unlink(missing_ok=True)
+        hechos += 1
+    # Lo horneado que ya no pide ninguna escena se borra: `public/` entero se copia en cada render.
+    vigentes = {(d / "public" / t["destino"]).resolve() for t in trabajos}
+    if horno.is_dir():
+        for viejo in horno.iterdir():
+            if viejo.resolve() not in vigentes:
+                shutil.rmtree(viejo) if viejo.is_dir() else viejo.unlink()
+    return hechos
+
+
 def rendir(d: Path) -> dict:
     datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
-    cmd = ["npx", "remotion", "render", "src/index.ts", "Vox", "out/video.mp4", "--props=src/data/video.json",
+    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
+    listo, trabajos = plan_horno(datos, d / "public")
+    hornear(d, trabajos, navegador if Path(navegador).exists() else "")
+    (d / "src" / "data" / "_render.json").write_text(json.dumps(listo, ensure_ascii=False), encoding="utf-8")
+    cmd = ["npx", "remotion", "render", "src/index.ts", "Vox", "out/video.mp4", "--props=src/data/_render.json",
            "--codec=h264", "--audio-codec=aac", "--pixel-format=yuv420p", "--log=error",
            "--crf=16", "--jpeg-quality=95", "--color-space=bt709"]  # fuente limpia: TikTok vuelve a comprimir
-    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
     if Path(navegador).exists():
         cmd.append(f"--browser-executable={navegador}")
     _correr(cmd, cwd=d)
-    foto = ["npx", "remotion", "still", "src/index.ts", "Portada", "out/portada.png", "--props=src/data/video.json", "--log=error"]
+    foto = ["npx", "remotion", "still", "src/index.ts", "Portada", "out/portada.png", "--props=src/data/_render.json", "--log=error"]
     _correr(foto + [c for c in cmd if c.startswith("--browser-executable")], cwd=d)
     tipo = masterizar(d / "out" / "video.mp4", d / "out" / "final.mp4")
     hoja_de_fotogramas(d / "out" / "final.mp4", datos, d / "out" / "hoja.png")
@@ -787,6 +1038,55 @@ def rendir(d: Path) -> dict:
                         "render": {"codec": "h264", "crf": 16, "jpeg_quality": 95, "color": "bt709", "audio": "aac 192k 48 kHz"},
                         "medido": {"lufs": m["lufs"], "pico_dbtp": m["pico_dbtp"], "duracion_s": m["duracion_s"]}})
     return m
+
+
+def comparar(d: Path, escena_id: str) -> Path:
+    """La misma escena con el recurso (3D, secuencia o tratamiento) y sin él, lado a lado, para que Emi elija.
+
+    «Sin» es la `alternativa_plana` del guion; si no hay, unas barras se vuelven su cifra en un recuadro,
+    una foto tratada vuelve a ser la foto, y lo demás queda solo con el titular.
+    """
+    from PIL import Image, ImageDraw
+    datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
+    k = next((i for i, e in enumerate(datos["escenas"]) if e["id"] == escena_id), None)
+    if k is None:
+        raise ErrorVox(f"no hay escena {escena_id!r}; existen {[e['id'] for e in datos['escenas']]}")
+    orig = datos["escenas"][k]
+    if not (orig.get("objeto3d") or orig.get("secuencia") or orig.get("tratamiento")):
+        raise ErrorVox(f"la escena {escena_id} no lleva 3D, secuencia ni tratamiento: no hay nada que comparar")
+    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
+    con, trabajos = plan_horno(datos, d / "public")
+    hornear(d, trabajos, navegador if Path(navegador).exists() else "")
+    sin = json.loads(json.dumps(con))
+    e, alt = sin["escenas"][k], orig.get("alternativa") or {}
+    e["secuencia"], e["tratada"] = None, False
+    e["imagen"] = alt.get("imagen") or (orig.get("imagen", "") if orig.get("tratamiento") else "")
+    e["dato"] = alt.get("dato", "")
+    if not e["imagen"] and not e["dato"] and (orig.get("objeto3d") or {}).get("tipo") == "barras":
+        vals = orig["objeto3d"].get("valores", [])
+        v = vals[orig["objeto3d"].get("resaltar", len(vals) - 1)]
+        e["dato"] = str(int(v)) if float(v).is_integer() else str(v)
+    cuadro = orig["desde"] + int(orig["dur"] * 0.75)
+    piezas = []
+    for nombre, version in (("con", con), ("sin", sin)):
+        props = d / "out" / f"_cmp_{nombre}.json"
+        props.write_text(json.dumps(version, ensure_ascii=False), encoding="utf-8")
+        try:
+            _correr(["npx", "remotion", "still", "src/index.ts", "Vox", f"out/_cmp_{nombre}.png", f"--frame={cuadro}", f"--props=out/_cmp_{nombre}.json", "--log=error"]
+                    + ([f"--browser-executable={navegador}"] if Path(navegador).exists() else []), cwd=d)
+            with Image.open(d / "out" / f"_cmp_{nombre}.png") as im:
+                piezas.append(im.convert("RGB").resize((540, 960)))
+        finally:
+            props.unlink(missing_ok=True)
+            (d / "out" / f"_cmp_{nombre}.png").unlink(missing_ok=True)
+    hoja = Image.new("RGB", (540 * 2 + 30, 960 + 70), (20, 20, 20))
+    dib = ImageDraw.Draw(hoja)
+    for n, (pieza, rotulo) in enumerate(zip(piezas, ("A · CON EL RECURSO", "B · EN PLANO"))):
+        hoja.paste(pieza, (n * 570, 70))
+        dib.text((n * 570 + 16, 22), rotulo, fill=(255, 255, 255), font_size=30)
+    salida = d / "out" / f"comparacion-{escena_id}.png"
+    hoja.save(salida)
+    return salida
 
 
 # ---------- revisión del render (lo que se entrega se miró) ----------
@@ -896,6 +1196,87 @@ def hoja_de_referencia(origen: Path, destino: Path) -> Path:
         dur = duracion_audio(origen)
         _correr(["ffmpeg", "-y", "-v", "error", "-i", str(origen), "-vf", f"fps={8 / max(dur, 1):.4f},scale=240:-2,tile=8x1", "-frames:v", "1", str(salida)])
     return salida
+
+
+# ---------- Blender: un objeto 3D rendido aparte ----------
+
+def blender_disponible() -> bool:
+    return subprocess.run([sys.executable, "-c", "import bpy"], capture_output=True).returncode == 0
+
+
+def rendir_con_blender(espec: dict, espera: int = 1800) -> dict:
+    """Llama a `blender_objeto.py` en otro proceso. Devuelve lo que informó (versión, cuadros) y los segundos que tardó."""
+    if not blender_disponible():
+        raise ErrorVox("Blender no está instalado: ejecuta `vox.py blender-instalar` (descarga unos 430 MB)")
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as fh:
+        json.dump(espec, fh, ensure_ascii=False)
+        ruta = fh.name
+    t0 = time.time()
+    try:
+        r = subprocess.run([sys.executable, "-W", "ignore", str(Path(__file__).with_name("blender_objeto.py")), ruta],
+                           capture_output=True, text=True, timeout=espera)
+    except subprocess.TimeoutExpired as exc:
+        raise ErrorVox(f"Blender no terminó en {espera} s") from exc
+    finally:
+        Path(ruta).unlink(missing_ok=True)
+    listo = re.search(r'\{"ok": true.*\}', r.stdout)
+    if r.returncode != 0 or not listo:
+        raise ErrorVox("Blender falló: " + (r.stderr or r.stdout)[-500:])
+    return {**json.loads(listo.group(0)), "segundos": round(time.time() - t0, 1)}
+
+
+# ---------- ComfyUI: generación en un servidor propio ----------
+
+def comfy_base() -> str:
+    """Dirección del servidor de ComfyUI de Emi. Sin ella no hay ComfyUI: aquí no se instala ni se simula."""
+    url = os.environ.get("COMFY_URL", "").rstrip("/")
+    if not url:
+        raise ErrorVox("ComfyUI necesita un servidor con tarjeta gráfica: define COMFY_URL con su dirección https. "
+                       "Este entorno no tiene GPU; para imágenes sin servidor propio se usa `imagen` (Kie).")
+    u = urllib.parse.urlparse(url)
+    if not u.hostname or not (u.scheme == "https" or (u.scheme == "http" and u.hostname in LOCALES)):
+        raise ErrorVox("COMFY_URL debe ser https. Solo se acepta http si ComfyUI corre en esta misma máquina (http://127.0.0.1:8188); "
+                       "un ComfyUI de otra computadora hay que publicarlo por https.")
+    return url
+
+
+def comfy_validar_flujo(flujo) -> None:
+    if not (isinstance(flujo, dict) and flujo and all(isinstance(n, dict) and "class_type" in n for n in flujo.values())):
+        raise ErrorVox("el flujo no está en formato API de ComfyUI (en la interfaz: «Export (API)»)")
+    if not any("save" in str(n["class_type"]).lower() or "preview" in str(n["class_type"]).lower() for n in flujo.values()):
+        raise ErrorVox("el flujo no tiene un nodo que guarde imagen (SaveImage): no habría nada que bajar")
+
+
+def comfy_generar(flujo: dict, salida: Path, espera: int = 600) -> dict:
+    """Envía un flujo en formato API, espera su resultado y baja la primera imagen."""
+    base = comfy_base()
+    comfy_validar_flujo(flujo)
+    cab = {"Authorization": "Bearer " + os.environ["COMFY_TOKEN"]} if os.environ.get("COMFY_TOKEN") else {}
+    pid = _json(_pedir(f"{base}/prompt", metodo="POST", cabeceras=cab, cuerpo={"prompt": flujo}, http_local=True), "ComfyUI").get("prompt_id")
+    if not pid:
+        raise ErrorVox("ComfyUI no aceptó el flujo (revisa nodos y modelos en el servidor)")
+    limite = time.time() + espera
+    while time.time() < limite:
+        hist = _json(_pedir(f"{base}/history/{pid}", cabeceras=cab, espera=30, http_local=True), "ComfyUI").get(pid)
+        if hist:
+            if (hist.get("status") or {}).get("status_str") == "error":
+                raise ErrorVox("ComfyUI terminó con error en el flujo")
+            for nodo in (hist.get("outputs") or {}).values():
+                for img in nodo.get("images") or []:
+                    q = urllib.parse.urlencode({"filename": img["filename"], "subfolder": img.get("subfolder", ""), "type": img.get("type", "output")})
+                    datos = _pedir(f"{base}/view?{q}", cabeceras=cab, espera=120, tope=40 * 1024 * 1024, http_local=True)
+                    try:
+                        from PIL import Image
+                        with Image.open(io.BytesIO(datos)) as im:
+                            im.verify()
+                    except Exception as exc:  # una página de error guardada como .png contaminaría el video
+                        raise ErrorVox("ComfyUI devolvió algo que no es una imagen") from exc
+                    salida.parent.mkdir(parents=True, exist_ok=True)
+                    salida.write_bytes(datos)
+                    return {"prompt_id": pid, "archivo": img["filename"], "bytes": len(datos)}
+            raise ErrorVox("ComfyUI terminó sin ninguna imagen de salida (falta un nodo SaveImage)")
+        time.sleep(3)
+    raise ErrorVox(f"ComfyUI no terminó en {espera} s; el trabajo {pid} sigue en su cola")
 
 
 # ---------- fotos reales (Apify) ----------
@@ -1011,6 +1392,20 @@ def _guion(ruta: str) -> dict:
     return g
 
 
+def recortar_pista(origen: Path, destino: Path, segundos: float) -> float:
+    """Deja una pista externa a la medida del video: salta el silencio inicial, corta y cierra con un desvanecido corto.
+    Devuelve el segundo de la pista original donde empieza. Falla si la pista es más corta que el video."""
+    if duracion_audio(origen) < segundos + 0.5:
+        raise ErrorVox(f"la pista dura {duracion_audio(origen):.1f} s y el video {segundos:.1f} s: hace falta una más larga")
+    r = _correr(["ffmpeg", "-v", "info", "-i", str(origen), "-af", "silencedetect=noise=-35dB:d=0.05", "-t", "6", "-f", "null", "-"],
+                capture_output=True, text=True).stderr
+    m = re.search(r"silence_start: 0(?:\.0+)?\b.*?silence_end: ([\d.]+)", r, re.S)
+    inicio = min(float(m.group(1)), 5.0) if m else 0.0
+    _correr(["ffmpeg", "-y", "-v", "error", "-ss", f"{inicio:.3f}", "-i", str(origen), "-t", f"{segundos:.3f}",
+             "-af", f"afade=t=out:st={max(0.0, segundos - 0.7):.3f}:d=0.7", "-ar", "48000", "-ac", "2", str(destino)])
+    return round(inicio, 3)
+
+
 def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     import math
     cruda = d / "public" / "audio" / "voz.mp3"
@@ -1025,13 +1420,23 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     SON.sintetizar_efectos(d / "public" / "sfx", semilla, plan["tonica"])
     video["volEfecto"] = VOL_EFECTO
     pista, receta = d / "public" / "audio" / "musica.wav", d / "estados" / "musica.json"
-    if video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
+    externa = (g.get("musica") or {}).get("archivo")
+    if video["musica"] and externa:  # pista que trae Emi (Flow Music): se recorta a la medida y se nivela igual que la de código
+        origen = d / externa
+        if not origen.is_file():
+            raise ErrorVox(f"musica.archivo: no existe {origen}")
+        pista.parent.mkdir(parents=True, exist_ok=True)
+        dur = recortar_pista(origen, pista, video["frames"] / FPS)
+        plan = {**plan, "externa": externa, "origen": g["musica"]["origen"], "sha": sha_archivo(origen), "inicio_s": dur}
+        video["musicaExterna"] = True
+    elif video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
         cortes = [e["desde"] / FPS for e in video["escenas"][1:]]
         SON.guardar(pista, SON.componer(video["animo"], video["frames"] / FPS, semilla, cortes), nivel=-20.0)
+    if video["musica"]:
         mus = float(_loudnorm(pista)["input_i"])
         video["volMusica"] = round(min(1.0, 10 ** ((VOZ_LUFS - MUSICA_BAJO_VOZ - mus) / 20)), 4)
         receta.parent.mkdir(exist_ok=True)
-        receta.write_text(json.dumps(plan))
+        receta.write_text(json.dumps(plan, ensure_ascii=False))
     else:  # sin música: no dejar restos de un armado anterior
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
@@ -1058,6 +1463,14 @@ def main(argv=None) -> int:
     p.add_argument("--croma", choices=sorted(CROMAS) + ["ninguno"], default="verde")
     p = sub.add_parser("recorte"); p.add_argument("entrada"); p.add_argument("salida")
     p = sub.add_parser("render"); p.add_argument("dir")
+    sub.add_parser("blender-instalar")
+    p = sub.add_parser("blender"); p.add_argument("--dir", required=True); p.add_argument("--tipo", choices=BLENDER_TIPOS, required=True)
+    p.add_argument("--out", required=True); p.add_argument("--porque", required=True); p.add_argument("--perfil", required=True)
+    p.add_argument("--texto", default=""); p.add_argument("--modelo", default=""); p.add_argument("--acabado", choices=["plano", "real"], default="plano")
+    p.add_argument("--giro", type=int, default=0); p.add_argument("--tam", type=int, default=1024); p.add_argument("--fuente", default="")
+    p = sub.add_parser("comfy"); p.add_argument("--flujo", required=True); p.add_argument("--out", required=True); p.add_argument("--dir", required=True)
+    p.add_argument("--porque", required=True); p.add_argument("--execute", action="store_true")
+    p = sub.add_parser("comparar"); p.add_argument("dir"); p.add_argument("--escena", required=True)
     p = sub.add_parser("revisar"); p.add_argument("dir")
     p = sub.add_parser("referencia"); p.add_argument("archivo"); p.add_argument("--dir", required=True)
     p = sub.add_parser("sonido"); p.add_argument("guion")
@@ -1239,6 +1652,82 @@ def main(argv=None) -> int:
             if not au["avisos"] and not m["video"]["avisos"]:
                 print("  Sin avisos automáticos de audio ni de imagen.")
             print(f"Audita {a.dir}/out/hoja.png, {a.dir}/out/hoja-tiktok.png (zonas que tapa TikTok en rojo) y {a.dir}/out/portada.png antes de entregar y termina con `cierre` y `catalogar`.")
+        elif a.cmd == "blender-instalar":
+            if blender_disponible():
+                print("Blender (módulo bpy) ya está instalado.")
+            else:
+                print("Instalando Blender como módulo de Python (unos 430 MB)…")
+                _correr([sys.executable, "-m", "pip", "install", "--no-input", "--quiet", "bpy"])
+                print("Instalado." if blender_disponible() else "No se pudo importar bpy tras instalar: revisa la versión de Python.")
+        elif a.cmd == "blender":
+            d = Path(a.dir).resolve()
+            destino = (d / a.out).resolve()
+            partes = Path(a.out).parts
+            if d not in destino.parents or not ruta_segura(a.out) or len(partes) < 2 or partes[0] != "public":
+                raise ErrorVox("--out debe quedar dentro de `public/` de la producción, relativo a ella (p. ej. public/img/moneda.png)")
+            if a.giro and destino.suffix:
+                raise ErrorVox("con --giro, --out es una carpeta (p. ej. public/seq/moneda), sin extensión")
+            if not a.giro and destino.suffix.lower() != ".png":
+                raise ErrorVox("sin --giro, --out es un archivo .png (Blender entrega PNG con transparencia)")
+            if len(a.porque.strip()) < 20:
+                raise ErrorVox("--porque: explica en una frase qué da Blender aquí que no da el 3D del compositor ni una imagen")
+            if a.perfil not in perfiles():
+                raise ErrorVox(f"espacio desconocido: {a.perfil}")
+            if a.tipo == "texto" and not a.texto.strip():
+                raise ErrorVox("--tipo texto necesita --texto")
+            if a.tipo == "modelo" and not (Path(a.modelo).is_file() and Path(a.modelo).suffix.lower() in MODELOS_3D):
+                raise ErrorVox(f"--tipo modelo necesita --modelo con un archivo existente {sorted(MODELOS_3D)}")
+            if not 0 <= a.giro <= 240 or not 256 <= a.tam <= 2048:
+                raise ErrorVox("--giro entre 0 y 240 cuadros; --tam entre 256 y 2048")
+            if a.fuente and not Path(a.fuente).is_file():
+                raise ErrorVox(f"no existe la tipografía {a.fuente}")
+            if a.giro and destino.is_dir():  # cuadros de un giro anterior más largo contaminarían el recorte y el bucle
+                for viejo in destino.glob("*.png"):
+                    viejo.unlink()
+            info = rendir_con_blender({"tipo": a.tipo, "texto": a.texto, "modelo": str(Path(a.modelo).resolve()) if a.modelo else "",
+                                       "colores": perfiles()[a.perfil]["colores"], "acabado": a.acabado, "salida": str(destino),
+                                       "giro": a.giro, "tam": a.tam, "fuente": str(Path(a.fuente).resolve()) if a.fuente else ""})
+            salidos = [destino / f"{n:04d}.png" for n in range(a.giro)] if a.giro else [destino]
+            if not all(f.is_file() for f in salidos):
+                raise ErrorVox("Blender terminó sin escribir todos los cuadros esperados")
+            tam_final = recortar_al_contenido(salidos)
+            info["tam"] = list(tam_final)
+            (d / "estados").mkdir(exist_ok=True)
+            reg = d / "estados" / "blender.json"
+            hechos = json.loads(reg.read_text()) if reg.is_file() else []
+            hechos.append({"salida": a.out, "tipo": a.tipo, "acabado": a.acabado, "giro": a.giro, "porque": a.porque.strip(), **info})
+            reg.write_text(json.dumps(hechos, ensure_ascii=False, indent=1))
+            if a.giro:
+                rel = Path(*partes[1:]).as_posix()
+                print(f"{a.giro} cuadros en {a.out}/ ({info['segundos']} s, Blender {info['blender']}). En la escena: \"secuencia\": {{\"carpeta\": \"{rel}\", \"cuadros\": {a.giro}}}")
+            else:
+                print(f"Imagen en {a.out} ({info['segundos']} s, Blender {info['blender']}). En la escena: \"imagen_archivo\": \"{Path(*partes[1:]).as_posix()}\". Mírala antes de montar.")
+        elif a.cmd == "comfy":
+            d = Path(a.dir).resolve()
+            destino = (d / a.out).resolve()
+            if d not in destino.parents or not ruta_segura(a.out):
+                raise ErrorVox("--out debe quedar dentro de la producción")
+            if len(a.porque.strip()) < 20:
+                raise ErrorVox("--porque: explica qué necesita esta imagen que Kie no puede dar")
+            base_comfy = comfy_base()  # primero el servidor: sin él no tiene sentido leer nada más
+            try:
+                flujo = json.loads(Path(a.flujo).read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                raise ErrorVox(f"no se pudo leer el flujo {a.flujo}: debe ser el JSON de «Export (API)» de ComfyUI") from exc
+            comfy_validar_flujo(flujo)
+            if not a.execute:
+                print(f"En seco: flujo de {len(flujo)} nodos hacia {base_comfy}. Añade --execute para enviarlo.")
+                return 0
+            info = comfy_generar(flujo, destino)
+            (d / "estados").mkdir(exist_ok=True)
+            reg = d / "estados" / "comfy.json"
+            hechos = json.loads(reg.read_text()) if reg.is_file() else []
+            hechos.append({"salida": a.out, "flujo": huella(json.dumps(flujo, sort_keys=True)), "porque": a.porque.strip(), **info})
+            reg.write_text(json.dumps(hechos, ensure_ascii=False, indent=1))
+            print(f"Imagen de ComfyUI en {a.out}. Mírala antes de montar: es generada, se revisa igual que las de Kie.")
+        elif a.cmd == "comparar":
+            f = comparar(Path(a.dir), a.escena)
+            print(f"Comparación en {f}: A con el recurso, B en plano. Enséñasela a Emi y deja la que él elija; si duda, gana B.")
         elif a.cmd == "revisar":
             d = Path(a.dir)
             datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
