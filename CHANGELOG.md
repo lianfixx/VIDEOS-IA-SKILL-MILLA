@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.12.1 y MILLA Video Studio 1.3.2: código solo cuando haga falta y en el mismo estilo
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras la v5: «y no siempre es el código, solo cuando sea necesario y que sea del mismo estilo».
+- Cambios: regla escrita en ambas skills y en la narrativa: una pieza de código entra solo si explica algo que la imagen sola no dice, se ve como el resto del video y se le lista a Emi con su motivo antes de sumarla. Dos avisos de `vox.py` dejaron de sugerir código por defecto: ahora proponen otra imagen primero.
+- Archivos: `skills/vox-studio/{SKILL.md,NARRATIVA.md}`, `skills/vox-studio/scripts/vox.py`, `skills/milla-video-studio/{SKILL.md,references/narrative-motion.md}`, `skills/milla-video-studio/assets/remotion-template/{package.json,package-lock.json}`, `MANUAL_COMPLETO.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 57/57 → aprobado; pruebas de milla-video-studio 45/45 → aprobado; `check_skill` de ambas → aprobado. Ningún render nuevo → no ejecutado: la v5 no se tocó a la espera de que Emi diga qué añadidos conserva.
+- Pendiente: decisión de Emi sobre los cinco añadidos de la v5.
+
 ## 2026-11-11 · Vox Studio 0.12.0 y MILLA Video Studio 1.3.1: el código se suma a las imágenes, no las sustituye
 
 - Agente: Claude Code (sesión en la nube)

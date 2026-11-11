@@ -53,7 +53,7 @@ No hace falta un corte por red: hace falta un corte que cumpla las cuatro.
 
 - Algo cambia cada 2 a 4 segundos: otro plano, un apunte, una etiqueta, una cifra que cuenta. `armar` avisa de cualquier plano quieto más de 4.5 s.
 - Lo que explica va junto a lo explicado y al mismo tiempo: etiquetas sobre la imagen, apuntes a mano al lado, nunca un párrafo aparte.
-- La imagen es la base de cada escena y el código se suma a su lado, no en su lugar: flujo para «quién decide», línea de tiempo para plazos, barras para comparar montos, calendario para cómputos, cita para la norma. Emi rechazó el 11/11/2026 las muestras que cambiaron imágenes por diagramas.
+- La imagen es la base de cada escena. El código se suma a su lado, no en su lugar, solo cuando hace falta para explicar y en el mismo estilo del video: flujo para «quién decide», línea de tiempo para plazos, barras para comparar montos, calendario para cómputos, cita para la norma. Emi rechazó el 11/11/2026 las muestras que cambiaron imágenes por diagramas.
 - Señalar lo esencial: resaltador, tachado, color de acento solo en lo que importa.
 - El primer cuadro debe detener el scroll sin sonido: titular grande y un objeto reconocible.
 

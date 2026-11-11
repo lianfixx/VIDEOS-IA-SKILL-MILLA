@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.12.0"
+  version: "0.12.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -45,6 +45,8 @@ Una escena con un solo recorte quieto no cuenta nada: Emi lo rechazó en el prim
 Cualquier plano puede llevar además un `apunte` (aclaración a mano con flecha, anclada a una palabra) y los de imagen, `etiquetas` que señalan una parte (`x`, `y` de 0 a 1). Y un plano de imagen puede llevar `junto`: una pieza de código (`dato`, `lista`, `calendario`, `barras`, `linea` o `flujo`) que entra a su lado con su palabra mientras la imagen se queda. Así la explicación va a la par de lo que se ve, no después.
 
 **El código se suma; no sustituye.** Emi lo dejó claro el 11/11/2026: el video aprobado «ya estaba perfecto», pidió agregar cosas con código, no reemplazar las imágenes con él. La receta aprobada lleva imagen en cada escena; las piezas de código van al lado de la imagen o como plano adicional. Nunca se quita una imagen para poner un diagrama, y un video aprobado solo se toca para sumarle. `validar` avisa de cualquier escena que quede solo con código.
+
+**Solo cuando haga falta y en el mismo estilo.** Emi lo precisó el mismo día: el código no va siempre. Una pieza de código entra únicamente si explica algo que la imagen sola no dice (un plazo, una proporción, quién decide, la letra de la norma); si la escena ya se entiende, no se le añade nada. Y cuando entra, se ve como el resto del video: colores y tipografías del espacio, papel, cinta, sombra dura y giro leve. Lo que no pueda hacerse en ese estilo no se añade. Antes de sumar piezas a un video, listárselas a Emi con el motivo de cada una.
 
 Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen, del gancho sin segundo plano y del guion sin `bucle`; `armar` avisa de cualquier plano quieto más de 4.5 s en la voz real. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
 

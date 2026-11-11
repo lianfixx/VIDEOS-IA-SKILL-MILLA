@@ -786,7 +786,7 @@ def avisos_guion(g: dict) -> list[str]:
         if n > 22 and n_planos(escenas[i]) < 2:
             a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos o dale `planos`")
         elif n > 12 and n_planos(escenas[i]) < 2:
-            a.append(f"escena {i + 1}: {n} palabras con una sola imagen quieta; cuéntala con `planos` (cita, lista, calendario, dato, duo u otra imagen)")
+            a.append(f"escena {i + 1}: {n} palabras con una sola imagen quieta; cuéntala con `planos`: otra imagen primero y, solo si hace falta para explicar, una pieza de código")
     sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato") and not n_planos(s)]
     if sin_imagen:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
@@ -1470,7 +1470,7 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
         for j, pl in enumerate(e.get("planos") or []):
             extra = len(pl.get("etiquetas") or []) + (1 if pl.get("apunte") else 0)
             if pl["tipo"] not in PLANO_VIVO and not extra and pl["dur"] / FPS > PLANO_QUIETO and not (j == len(e["planos"]) - 1 and e is video["escenas"][-1]):
-                print(f"⚠ escena {e['id']}, plano {j + 1} ({pl['tipo']}): {pl['dur'] / FPS:.1f} s sin nada nuevo; añade otro plano, un apunte o etiquetas")
+                print(f"⚠ escena {e['id']}, plano {j + 1} ({pl['tipo']}): {pl['dur'] / FPS:.1f} s sin nada nuevo; si se siente detenido, dale otra imagen o, solo si aclara algo, un apunte")
         if e["dur"] / FPS > ESCENA_LARGA and len(e.get("planos") or []) < 2:
             print(f"⚠ la escena {e['id']} dura {e['dur'] / FPS:.1f} s: divídela o acepta el pulso automático a media escena")
     (d / "src" / "data").mkdir(parents=True, exist_ok=True)
