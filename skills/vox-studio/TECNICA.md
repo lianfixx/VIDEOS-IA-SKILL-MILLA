@@ -58,6 +58,7 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 |---|---|---|
 | Voz | normalizada a −16 LUFS en dos pasadas | `normalizar` |
 | Música | compuesta a −20 dBFS RMS; ganancia calculada para quedar 17 LU bajo la voz | `_escribir_video` |
+| Pista externa (`musica.archivo`) | salta el silencio inicial (umbral −35 dB), corta a la duración del video, desvanecido final de 0.7 s, 48 kHz estéreo; misma ganancia que la de código; no se ajusta a los cortes | `recortar_pista` |
 | Envolvente de música | ×2.6 en el primer medio segundo, nivel base durante la voz, ×3 al terminar | `Vox.tsx` |
 | Efectos y remates | todos a −20 dBFS RMS, ganancia 0.8: unos 6 dB bajo la voz | `sintetizar_efectos` |
 | Transiciones | papel, deslizar, golpe, pop, rasgar a ganancia 0.3 | `Vox.tsx` |

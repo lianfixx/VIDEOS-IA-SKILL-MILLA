@@ -793,6 +793,31 @@ class Comfy(unittest.TestCase):
             self.con_url(previo)
 
 
+class MusicaExterna(unittest.TestCase):
+    def tono(self, ruta, segundos, silencio=0.0):
+        import subprocess
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", f"sine=frequency=330:duration={segundos}", "-af", f"adelay={int(silencio * 1000)}:all=1", str(ruta)], check=True)
+
+    def test_guion_exige_origen_y_ruta_segura(self):
+        g = guion(); g["musica"]["archivo"] = "originales/musica/p.wav"
+        self.assertIn("musica.origen", " | ".join(vox.validar_guion(g)))
+        g["musica"]["origen"] = "Flow Music, cuenta de Emi, 11/11/2026"
+        self.assertEqual(vox.validar_guion(g), [])
+        for malo in ("../p.wav", "originales/p.txt", 7):
+            g["musica"]["archivo"] = malo
+            self.assertIn("musica.archivo", " | ".join(vox.validar_guion(g)), malo)
+
+    def test_recorta_a_la_medida_y_salta_el_silencio(self):
+        with tempfile.TemporaryDirectory() as d:
+            origen, destino = Path(d) / "o.wav", Path(d) / "m.wav"
+            self.tono(origen, 6, silencio=0.8)
+            inicio = vox.recortar_pista(origen, destino, 4.0)
+            self.assertAlmostEqual(inicio, 0.8, delta=0.08)
+            self.assertAlmostEqual(vox.duracion_audio(destino), 4.0, delta=0.05)
+            with self.assertRaises(vox.ErrorVox):                  # más corta que el video: no se estira ni se repite
+                vox.recortar_pista(origen, destino, 30.0)
+
+
 class Tiempos(unittest.TestCase):
     def test_escenas_salen_de_las_palabras(self):
         g = guion(); palabras, fin = alinear(g)

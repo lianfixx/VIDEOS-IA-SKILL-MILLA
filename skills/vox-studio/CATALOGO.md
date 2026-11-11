@@ -21,6 +21,8 @@ Todo lo de esta lista está programado y probado; se reutiliza tal cual. La mús
 | `ironia` | 104 bpm, mayor, pizzicato | sarcasmo, absurdo, humor |
 | `motivacion` | 110 bpm, mayor | superación, cierre con llamado |
 
+Pista externa opcional (`musica.archivo` + `musica.origen`): Flow Music, solo cuando Emi la pide. Ver [FLOW-MUSIC.md](FLOW-MUSIC.md).
+
 ## Efectos (`sonido`) y remates (`remate`)
 
 | Efecto | Qué es | Cuándo |

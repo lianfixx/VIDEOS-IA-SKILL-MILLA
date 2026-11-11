@@ -204,6 +204,14 @@ def validar_guion(g: dict) -> list[str]:
         e.append(f"falta musica.animo: analiza de qué va el video (`vox.py sonido GUION`) y elige uno de {sorted(SON.ANIMOS)} o 'ninguna'")
     if mus.get("animo") == "ninguna" and len(str(mus.get("motivo", ""))) < 10:
         e.append("musica 'ninguna' exige musica.motivo")
+    if "archivo" in mus:  # pista externa (p. ej. Flow Music): complemento, solo cuando Emi la pide
+        arch = mus.get("archivo")
+        if not (isinstance(arch, str) and ruta_segura(arch) and Path(arch).suffix.lower() in {".wav", ".mp3", ".m4a"}):
+            e.append("musica.archivo debe ser una ruta relativa a la producción a un .wav, .mp3 o .m4a (p. ej. originales/musica/pista.wav)")
+        if len(str(mus.get("origen", "")).strip()) < 15:
+            e.append("musica.archivo exige musica.origen: de dónde salió la pista, quién la generó y cuándo (derechos documentados)")
+        if mus.get("animo") == "ninguna":
+            e.append("musica.archivo con animo 'ninguna' se contradice: elige el ánimo de la pista")
     port = g.get("portada") or {}
     if len(str(port.get("texto", ""))) > 34 or len(partir(str(port.get("texto", "")))) > 3:
         e.append("portada.texto: máximo 34 caracteres y 3 líneas")
@@ -1384,6 +1392,20 @@ def _guion(ruta: str) -> dict:
     return g
 
 
+def recortar_pista(origen: Path, destino: Path, segundos: float) -> float:
+    """Deja una pista externa a la medida del video: salta el silencio inicial, corta y cierra con un desvanecido corto.
+    Devuelve el segundo de la pista original donde empieza. Falla si la pista es más corta que el video."""
+    if duracion_audio(origen) < segundos + 0.5:
+        raise ErrorVox(f"la pista dura {duracion_audio(origen):.1f} s y el video {segundos:.1f} s: hace falta una más larga")
+    r = _correr(["ffmpeg", "-v", "info", "-i", str(origen), "-af", "silencedetect=noise=-35dB:d=0.05", "-t", "6", "-f", "null", "-"],
+                capture_output=True, text=True).stderr
+    m = re.search(r"silence_start: 0(?:\.0+)?\b.*?silence_end: ([\d.]+)", r, re.S)
+    inicio = min(float(m.group(1)), 5.0) if m else 0.0
+    _correr(["ffmpeg", "-y", "-v", "error", "-ss", f"{inicio:.3f}", "-i", str(origen), "-t", f"{segundos:.3f}",
+             "-af", f"afade=t=out:st={max(0.0, segundos - 0.7):.3f}:d=0.7", "-ar", "48000", "-ac", "2", str(destino)])
+    return round(inicio, 3)
+
+
 def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     import math
     cruda = d / "public" / "audio" / "voz.mp3"
@@ -1398,13 +1420,23 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     SON.sintetizar_efectos(d / "public" / "sfx", semilla, plan["tonica"])
     video["volEfecto"] = VOL_EFECTO
     pista, receta = d / "public" / "audio" / "musica.wav", d / "estados" / "musica.json"
-    if video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
+    externa = (g.get("musica") or {}).get("archivo")
+    if video["musica"] and externa:  # pista que trae Emi (Flow Music): se recorta a la medida y se nivela igual que la de código
+        origen = d / externa
+        if not origen.is_file():
+            raise ErrorVox(f"musica.archivo: no existe {origen}")
+        pista.parent.mkdir(parents=True, exist_ok=True)
+        dur = recortar_pista(origen, pista, video["frames"] / FPS)
+        plan = {**plan, "externa": externa, "origen": g["musica"]["origen"], "sha": sha_archivo(origen), "inicio_s": dur}
+        video["musicaExterna"] = True
+    elif video["musica"]:  # pista original, a la medida exacta y siguiendo los cambios de escena
         cortes = [e["desde"] / FPS for e in video["escenas"][1:]]
         SON.guardar(pista, SON.componer(video["animo"], video["frames"] / FPS, semilla, cortes), nivel=-20.0)
+    if video["musica"]:
         mus = float(_loudnorm(pista)["input_i"])
         video["volMusica"] = round(min(1.0, 10 ** ((VOZ_LUFS - MUSICA_BAJO_VOZ - mus) / 20)), 4)
         receta.parent.mkdir(exist_ok=True)
-        receta.write_text(json.dumps(plan))
+        receta.write_text(json.dumps(plan, ensure_ascii=False))
     else:  # sin música: no dejar restos de un armado anterior
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)

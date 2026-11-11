@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.12.0: Flow Music como complemento opcional de la música
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: analizar si las herramientas de su suscripción Google AI Pro mejoran los videos, crear la carpeta de Drive y automatizar Flow Music; tras comparar los dos demos: «me gusta más la A, pero puedes complementar con la B».
+- Cambios: `musica.archivo` y `musica.origen` en el guion para montar una pista externa: `recortar_pista` salta el silencio inicial, corta a la medida, desvanece el final y la deja al nivel de la de código; el origen es obligatorio y queda con su huella en `estados/musica.json`. La música de código sigue siendo la opción por defecto. Guía nueva `FLOW-MUSIC.md` (decisión de Emi, cuándo proponerla, cómo conseguir la pista con su sesión en el box y sus límites) y script `scripts/box/subir_drive.mjs` para subir del box a Drive.
+- Archivos: `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md,FLOW-MUSIC.md,scripts/vox.py,scripts/test_vox.py,scripts/box/subir_drive.mjs}`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 73/73 (dos nuevas) → aprobado. Con ejecución real: pista instrumental pedida en Flow Music con la sesión de Emi en su box, descargada en WAV, subida a la carpeta de Drive «Vox Studio - Música (Flow Music)» y traída aquí → aprobado; demo 2 rendido con ella (−14.03 LUFS, música 16.9 LU bajo la voz, sin avisos) y entregado junto al de música de código; `armar` con `musica.archivo` en el demo → volumen calculado igual que en la prueba manual; demo devuelto a música de código. No comprobado: cuántos créditos de Flow Music gasta cada pista; la API de Gemini (Lyria) no está conectada; Colab se analizó y no se conectó (sus reglas prohíben el túnel que haría falta y ningún video lo necesita).
+- Pendiente: fusionar a `main`; que Emi suba el paquete actualizado a la app.
+
 ## 2026-11-11 · Vox Studio 0.11.0: guía del momento exacto para 3D, tratamientos, Blender y ComfyUI
 
 - Agente: Claude Code (sesión en la nube)
