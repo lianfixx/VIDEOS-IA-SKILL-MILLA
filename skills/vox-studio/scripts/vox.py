@@ -440,9 +440,27 @@ def huella(*partes: str) -> str:
     return hashlib.sha256("\x1f".join(partes).encode()).hexdigest()
 
 
-def narrar(texto: str, voz: dict) -> tuple[bytes, list[dict]]:
+VELOCIDAD_VOZ = (0.7, 1.2)  # rango que acepta ElevenLabs; 1.0 es la voz tal cual
+
+
+def velocidad_voz(g: dict, voz: dict) -> float:
+    """Velocidad de la narración: `voz_velocidad` del guion o `velocidad` del perfil; 1.0 si no se pide."""
+    v = g.get("voz_velocidad", voz.get("velocidad", 1.0))
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not VELOCIDAD_VOZ[0] <= v <= VELOCIDAD_VOZ[1]:
+        raise ErrorVox(f"velocidad de voz {v!r} fuera de rango: usa un número entre {VELOCIDAD_VOZ[0]} y {VELOCIDAD_VOZ[1]}")
+    return float(v)
+
+
+def ajustes_voz(velocidad: float = 1.0) -> dict:
+    a = {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}
+    if velocidad != 1.0:
+        a["speed"] = velocidad
+    return a
+
+
+def narrar(texto: str, voz: dict, velocidad: float = 1.0) -> tuple[bytes, list[dict]]:
     cuerpo = {"text": texto, "model_id": voz.get("modelo", "eleven_multilingual_v2"),
-              "voice_settings": {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}}
+              "voice_settings": ajustes_voz(velocidad)}
     r = _json(_pedir(f"{ELEVEN}/text-to-speech/{voz['voice_id']}/with-timestamps?output_format=mp3_44100_128",
                      metodo="POST", cabeceras=_eleven(), cuerpo=cuerpo, espera=240), "ElevenLabs")
     al = r.get("alignment") or {}
@@ -969,7 +987,9 @@ def main(argv=None) -> int:
             texto = texto_completo(g)
             d = Path(a.dir)
             cache = d / "estados" / "voz.json"
-            firma = huella(texto, voz["voice_id"], voz.get("modelo", ""))
+            vel = velocidad_voz(g, voz)
+            # La velocidad entra en la huella solo si no es la normal: las voces ya pagadas siguen vigentes.
+            firma = huella(texto, voz["voice_id"], voz.get("modelo", ""), *([f"vel={vel}"] if vel != 1.0 else []))
             guardado = json.loads(cache.read_text()) if cache.exists() else {}
             vigente = guardado.get("firma") == firma and (d / "public" / "audio" / "voz.mp3").is_file()
             if vigente:
@@ -978,9 +998,9 @@ def main(argv=None) -> int:
             elif a.cmd == "armar":
                 raise ErrorVox("la narración cambió o no existe: ejecuta `voz --execute` (esto sí gasta caracteres)")
             elif not a.execute:
-                print(f"En seco: {len(texto)} caracteres con la voz {voz['nombre']}. Añade --execute para narrar.")
+                print(f"En seco: {len(texto)} caracteres con la voz {voz['nombre']} (velocidad {vel}). Añade --execute para narrar.")
             else:
-                audio, palabras = narrar(texto, voz)
+                audio, palabras = narrar(texto, voz, vel)
                 destino = d / "public" / "audio" / "voz.mp3"
                 destino.parent.mkdir(parents=True, exist_ok=True)
                 destino.write_bytes(audio)

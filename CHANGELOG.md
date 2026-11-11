@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.8.2: velocidad de la voz
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: primer video semanal de Castorena (DOF y SJF) en dos cortes. La voz salió lenta: 75 s para 142 palabras, con escenas de 9 a 12 s.
+- Cambios: `voz_velocidad` en el guion o `voz.velocidad` en el perfil (0.7 a 1.2) se envía a ElevenLabs como `voice_settings.speed`; 1.0 no se envía ni altera la huella de las voces ya pagadas; la velocidad distinta de 1.0 entra en la huella, así que cambiarla vuelve a narrar.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/{SKILL.md,TECNICA.md}` y este registro.
+- Verificación: pruebas de vox-studio 44/44 → aprobado. Narración real con velocidad 1.15 en los dos cortes: 61.9 s y 56.1 s (antes 75.1 s y 61.7 s) → aprobado. Render de los dos cortes → en curso al registrar; escucha de Emi → no ejecutado.
+- Pendiente: entregar los dos MP4 a Emi, guardar sus comentarios como aprendizajes.
+
 ## 2026-11-10 · Vox Studio 0.8.1: paquete para claude.ai
 
 - Agente: Claude Code (sesión en la nube)

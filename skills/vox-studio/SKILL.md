@@ -2,8 +2,8 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.1"
-  release_date: "2026-11-10"
+  version: "0.8.2"
+  release_date: "2026-11-11"
   language: "es-MX"
 ---
 
@@ -79,6 +79,8 @@ $V render $D                            # render + portada + master + hoja de fo
 $V cierre $D                            # saldos: gastado y restante
 $V catalogar $D                         # guarda los recortes en la biblioteca
 ```
+
+Si la narración sale lenta para un short (más de 60 s o escenas de 9 s o más), `voz_velocidad` en el guion (0.7 a 1.2; también `voz.velocidad` en el perfil) pide a ElevenLabs otro ritmo; cambiarla vuelve a pagar la narración.
 
 Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de Kie por imagen con `nano-banana-2-lite`, 5.5 con `seedream/5-lite-text-to-image`; la voz consume los caracteres de la narración.
 

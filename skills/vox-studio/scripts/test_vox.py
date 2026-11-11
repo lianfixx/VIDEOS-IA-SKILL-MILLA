@@ -335,6 +335,16 @@ class Tiempos(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d, self.assertRaises(vox.ErrorVox):
             vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], Path(d))
 
+    def test_velocidad_de_voz(self):
+        self.assertEqual(vox.velocidad_voz({}, {}), 1.0)
+        self.assertEqual(vox.velocidad_voz({}, {"velocidad": 1.1}), 1.1)
+        self.assertEqual(vox.velocidad_voz({"voz_velocidad": 1.15}, {"velocidad": 1.1}), 1.15)
+        for mala in (1.5, 0.5, "rapido", True):
+            with self.assertRaises(vox.ErrorVox):
+                vox.velocidad_voz({"voz_velocidad": mala}, {})
+        self.assertNotIn("speed", vox.ajustes_voz())
+        self.assertEqual(vox.ajustes_voz(1.15)["speed"], 1.15)
+
     def test_caracteres_a_palabras(self):
         t = "Hola,  mundo cruel"
         p = vox.palabras_desde_alineacion(list(t), [i * 0.1 for i in range(len(t))], [i * 0.1 + 0.1 for i in range(len(t))])
