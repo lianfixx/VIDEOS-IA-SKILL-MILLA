@@ -10,11 +10,11 @@
   },
   "voz": {
     "proveedor": "elevenlabs",
-    "voice_id": "4rOzDieCbHQQyo9tzqZv",
-    "nombre": "Diego - Cálida y Conversacional",
+    "voice_id": "ewn5JTa3lNPY8QVuZJi6",
+    "nombre": "Ana Sofía - Conversational",
     "modelo": "eleven_multilingual_v2",
     "ajustes": {
-      "speed": 1.07,
+      "speed": 1.0,
       "stability": 0.45,
       "style": 0.2
     }

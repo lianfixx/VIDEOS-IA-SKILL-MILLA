@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Espacio pan: voz Ana Sofía (candidata) en lugar de Diego
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras escuchar la versión con Diego: «Está horrible, pon a una mujer mejor».
+- Cambios: `espacios/pan/perfil.json` pasa a Ana Sofía - Conversational (`ewn5JTa3lNPY8QVuZJi6`, mujer joven, mexicana) con `speed` 1.0, `stability` 0.45 y `style` 0.2; candidata hasta que Emi la escuche. Diego queda descartado para este espacio. La producción privada ¡ACCIÓNate! se volvió a narrar y a sincronizar.
+- Archivos: `espacios/pan/{perfil.json,aprendizajes.md}` y este registro.
+- Verificación: voz en el MP4 desfasada 3 ms → aprobado; subtítulos entre 20 ms después y 140 ms antes que la voz en 16 inicios de frase → aprobado; 24 golpes visuales comprobados antes y después de su palabra → aprobado; `render` → sin avisos (−14.41 LUFS, pico −2.09 dBTP, 48.0 s); QR leído en tres cuadros → aprobado. Cómo suena la voz → no verificable por una IA.
+- Pendiente: que Emi escuche a Ana Sofía y diga si se queda.
+
 ## 2026-11-11 · Espacio pan: voz nueva (Diego, candidata) y auditoría de sincronía de ¡ACCIÓNate!
 
 - Agente: Claude Code (sesión en la nube)
