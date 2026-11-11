@@ -22,7 +22,8 @@
 
 - Titulares en Gelasio (equivalente libre de Georgia), no en Anton.
 - Imágenes: fotografía sobria; nada de caricatura.
-- Evitar: colores saturados, humor, emojis, opinar de asuntos en curso, promesas de resultado.
+- Evitar: colores saturados, emojis, opinar de asuntos en curso, promesas de resultado.
+- **Tono de los videos (decisión de Emi, 11/11/2026):** todos en corte suelto, de tú, con ironía, remates y humor de sobremesa; ya no se hace un corte sobrio aparte. La identidad visual (colores, Gelasio, foto sobria) no cambia. El tono formal observado en el sitio sigue valiendo para textos del despacho, no para estos videos.
 - No usar el logotipo ni publicar a nombre del despacho sin su autorización.
 
 ## Sin verificar

@@ -113,10 +113,12 @@ class Sonido(unittest.TestCase):
         self.assertEqual(pr["musica"]["animo"], "tension")
         self.assertEqual(pr["escenas"][0]["sonido"], "boom")
         self.assertIn(pr["escenas"][1]["sonido"], {"caja", "scratch"})
-        g["perfil"] = "castorena"; g["escenas"][2]["narracion"] = "Fracasó y nadie lo vio."
+        g["perfil"] = "milla"; g["escenas"][2]["narracion"] = "Fracasó y nadie lo vio."
         pr = vox.SON.proponer(g)
         self.assertNotIn("trombon", [x["sonido"] for x in pr["escenas"]])
         self.assertTrue(all(not x["remate"] for x in pr["escenas"]))
+        g["perfil"] = "castorena"  # Emi, 11/11/2026: Castorena va en corte suelto, con humor sonoro
+        self.assertIn("trombon", [x["sonido"] for x in vox.SON.proponer(g)["escenas"]])
 
     def test_portada_y_remate_en_la_linea_de_tiempo(self):
         g = guion(); g["escenas"][1]["remate"] = "plot twist"; palabras, fin = alinear(g)
@@ -283,13 +285,13 @@ class Oficio(unittest.TestCase):
     def test_cola_y_cierre_por_espacio(self):
         g = guion(); palabras, fin = alinear(g)
         v = vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])
-        self.assertEqual(v["cierre"], "SU OPINIÓN")
+        self.assertEqual(v["cierre"], "OPINA")
         self.assertEqual(v["frames"], round((fin + vox.COLA) * vox.FPS))
         self.assertGreaterEqual(v["frames"] / vox.FPS - v["finVoz"], 1.2)  # hay tiempo para leer el cierre
         for p in vox.perfiles().values():
             self.assertTrue(0 < len(p["cierre"]) <= 16)
-        g["cierre"] = "Opina"  # un video puede cambiar el llamado de su espacio
-        self.assertEqual(vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])["cierre"], "OPINA")
+        g["cierre"] = "Su opinión"  # un video puede cambiar el llamado de su espacio
+        self.assertEqual(vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])["cierre"], "SU OPINIÓN")
         g["cierre"] = "x" * 17
         self.assertIn("cierre", " | ".join(vox.validar_guion(g)))
 

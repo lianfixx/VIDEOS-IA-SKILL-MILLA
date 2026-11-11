@@ -12,12 +12,13 @@
     "proveedor": "elevenlabs",
     "voice_id": "0TMU0XAYky7JI2rdHId5",
     "nombre": "Laura D - Expressive & Friendly",
-    "modelo": "eleven_multilingual_v2"
+    "modelo": "eleven_multilingual_v2",
+    "velocidad": 1.15
   },
-  "tono": "Muy formal e institucional, de usted, frases cortas y sentenciosas. Explica; no opina sobre asuntos en curso, sin humor, sin promesas de resultado.",
+  "tono": "Corte suelto, de tú: crítico, con ironía y humor de sobremesa (un remate cada 2 o 3 escenas, nunca a costa del dato). Explica con fuente en pantalla; no opina sobre asuntos en curso ni promete resultados.",
   "cuadricula": false,
   "titular": "Gelasio",
   "estilo_imagen": "foto",
   "subtitulos": "Gelasio",
-  "cierre": "SU OPINIÓN"
+  "cierre": "OPINA"
 }

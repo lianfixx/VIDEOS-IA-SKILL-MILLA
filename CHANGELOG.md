@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.8.5: Castorena en corte suelto
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras recibir los dos cortes del primer video semanal: «hazlos todos sueltos», para no producir varias versiones.
+- Cambios: el espacio `castorena` pasa a un solo video por tema en corte suelto: `perfil.json` (tono de tú con ironía y remates, cierre «OPINA», voz a velocidad 1.15), `MARCA.md` y la skill; `sonido.py` ya no trata a Castorena como espacio sobrio (propone música `ironia`, efectos de chiste y remates); solo MILLA conserva esa restricción. La identidad visual no cambia.
+- Archivos: `espacios/castorena/{perfil.json,MARCA.md,aprendizajes.md}`, `skills/vox-studio/scripts/{sonido.py,test_vox.py}`, `skills/vox-studio/SKILL.md` y este registro.
+- Verificación: pruebas de vox-studio 45/45 → aprobado; guion del corte suelto existente sigue válido → aprobado. Ningún render nuevo → no ejecutado.
+- Pendiente: comentarios de Emi sobre el corte suelto ya entregado (voz, música, efectos, chistes).
+
 ## 2026-11-11 · Vox Studio 0.8.4: tildes del titular en Gelasio y primer video semanal de Castorena
 
 - Agente: Claude Code (sesión en la nube)

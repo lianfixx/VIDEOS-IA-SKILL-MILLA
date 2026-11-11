@@ -297,7 +297,7 @@ PISTAS_EFECTO = [
     ("suspenso", r"\?$|secreto|nadie sabe|lo peor|adivina"),
     ("ding", r"\d|dato|según|estudio|resulta que|la clave|solución|respuesta"),
 ]
-ANIMO_POR_ESPACIO = {"milla": "serio", "castorena": "serio", "pan": "tension", "personal": "energia"}
+ANIMO_POR_ESPACIO = {"milla": "serio", "castorena": "ironia", "pan": "tension", "personal": "energia"}
 
 
 def proponer(g: dict) -> dict:
@@ -307,9 +307,10 @@ def proponer(g: dict) -> dict:
     animo = max(votos, key=votos.get)
     if votos[animo] == 0:
         animo = ANIMO_POR_ESPACIO.get(g.get("perfil", ""), "tension")
-    sobrio = g.get("perfil") in {"castorena", "milla"}
+    # Solo MILLA se mantiene sobrio. Castorena, por decisión de Emi (11/11/2026), va en corte suelto.
+    sobrio = g.get("perfil") == "milla"
     if sobrio and animo in {"ironia", "energia"}:
-        animo = "serio"  # los espacios jurídicos no llevan música de chiste
+        animo = "serio"  # MILLA no lleva música de chiste
     escenas, usados = [], set()
     for i, s in enumerate(g.get("escenas", [])):
         n = str(s.get("narracion", "")).lower().strip()
