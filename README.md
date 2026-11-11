@@ -55,3 +55,7 @@ Recapitulación de material disponible, no certificación de que se recuperó ca
 ## Vox Studio (shorts estilo documental-collage)
 
 Segunda skill del repositorio, independiente de MILLA Video Studio: `skills/vox-studio/` produce shorts 9:16 con compositor propio, música y efectos generados por código, portada y auditoría. Cada marca de Emi tiene su espacio en `espacios/` (personal, MILLA, Castorena, PAN) y sus producciones privadas en `productions/<espacio>/`. Es candidata: ningún video suyo tiene aún aprobación estética. Empieza por `skills/vox-studio/SKILL.md` y `skills/vox-studio/CATALOGO.md`.
+
+## Pizarra Studio (videos dibujados a mano)
+
+Tercera skill del repositorio, con instrucciones propias: `skills/pizarra-studio/` produce videos estilo pizarrón, acuarela, cuaderno y minimal para los mismos espacios. Orquesta el motor público `santmun/video-pizarra`, que se instala aparte y fijado a un commit revisado (su código no se copia aquí porque no tiene licencia de redistribución). Exige entrevista completa y storyboard aprobado por Emi antes de producir. Empieza por `skills/pizarra-studio/SKILL.md`; para elegir entre estilos, `espacios/ESTILOS.md`.

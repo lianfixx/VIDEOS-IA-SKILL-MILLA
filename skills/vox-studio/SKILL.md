@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.8.1"
+  version: "0.8.2"
   release_date: "2026-11-10"
   language: "es-MX"
 ---
@@ -47,6 +47,10 @@ Solo para personas, lugares o hechos reales que no deben ilustrarse. `$V foto --
 ## Biblioteca: reciclar solo lo que encaja
 
 Al terminar un video, `$V catalogar $D` guarda sus recortes en `biblioteca/` con lo que muestran. Antes de generar una imagen, `$V biblioteca --buscar "..."`; se recicla (`$V reciclar ID --dir $D`) solo si, **al mirarla**, dice exactamente lo que la escena necesita. Ante la duda, imagen nueva. Lo que existe en código (ánimos, efectos, entradas, transiciones, estilos) está en [CATALOGO.md](CATALOGO.md); los números exactos de montaje, audio y auditoría, en [TECNICA.md](TECNICA.md).
+
+## Cuándo no es esta skill
+
+Si Emi pide un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal, se usa [Pizarra Studio](../pizarra-studio/SKILL.md), que tiene sus propias instrucciones. Para recomendar entre estilos: [espacios/ESTILOS.md](../../espacios/ESTILOS.md).
 
 ## Solo video
 

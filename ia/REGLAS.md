@@ -18,6 +18,8 @@ en GitHub, el workflow `registro-ia.yml` revisa cada push. Donde no hay freno au
 - Antes de `git commit`: `python3 -m unittest discover -s skills/milla-video-studio/scripts -p 'test_*.py'` debe pasar. Las pruebas de la skill no pasan.
 - Antes de `git commit`: `python3 -m unittest discover -s skills/vox-studio/scripts -p 'test_*.py'` debe pasar. Las pruebas de Vox Studio no pasan.
 - Antes de `git commit`: `python3 ia/check_skill.py skills/vox-studio .claude/skills/vox-studio .agents/skills/vox-studio` debe pasar. El SKILL.md de Vox Studio o sus puentes dejarían de ser válidos.
+- Antes de `git commit`: `python3 -m unittest discover -s skills/pizarra-studio/scripts -p 'test_*.py'` debe pasar. Las pruebas de Pizarra Studio no pasan.
+- Antes de `git commit`: `python3 ia/check_skill.py skills/pizarra-studio .claude/skills/pizarra-studio .agents/skills/pizarra-studio` debe pasar. El SKILL.md de Pizarra Studio o sus puentes dejarían de ser válidos.
 - Antes de `git push`: `python3 skills/milla-video-studio/scripts/milla.py secret-scan .` debe pasar. El escaneo de secretos encontró hallazgos.
 - Prohibido: commit con secretos (claves, tokens) ni datos personales (CURP, tarjetas).
 - Antes de `git commit`: `python3 ia/check_skill.py skills/milla-video-studio .claude/skills/milla-video-studio .agents/skills/milla-video-studio` debe pasar. El SKILL.md o sus puentes dejarían de ser válidos.

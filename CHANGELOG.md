@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.1.0 (candidata): videos dibujados a mano con las mismas reglas
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: analizar el video «Contraté a Claude como animador» y el material de Drive; cuando pida estilo pizarra, producirlo de esa forma, en un apartado propio, con los mismos espacios, la misma llave, entrevista completa siempre, todo documentado en GitHub y utilizable por cualquier IA; «tienes mi permiso para todo».
+- Cambios: (1) Nueva skill `skills/pizarra-studio/` con `scripts/pizarra.py`: instala el motor público `santmun/video-pizarra` fijado al commit `dc6adc4` (no se copia su código: el repositorio no tiene licencia), crea producciones por espacio con la marca traducida al motor, controla la entrevista de 17 preguntas y las dos aprobaciones de Emi, narra con la voz del espacio y entrega tiempos por escena, compone música por código con rejilla de beats exacta, genera cuadros de prueba con guía de TikTok, rinde, mezcla (voz al frente, efectos con picos limitados), lleva a −14 LUFS midiendo y audita. Reutiliza voz, saldos, niveles, espacios y aprendizajes de Vox Studio. (2) `espacios/ESTILOS.md` (qué estilo proponer) y `espacios/APRENDIZAJES-PIZARRA.md`. (3) Vox Studio 0.8.2 remite a Pizarra Studio cuando el pedido es de pizarra. (4) Reglas comunes, con permiso expreso de Emi en este encargo: `ia/politica.json` añade dos controles previos al commit (pruebas y `check_skill` de Pizarra Studio); `ia/REGLAS.md` regenerado. (5) Entorno en la nube: se propone añadir la instalación del motor al script de configuración.
+- Archivos: `skills/pizarra-studio/**`, puentes en `.claude/skills/` y `.agents/skills/`, `espacios/{ESTILOS.md,APRENDIZAJES-PIZARRA.md,README.md}`, `skills/vox-studio/SKILL.md`, `tools/empaquetar_vox.py`, `ia/politica.json`, `ia/REGLAS.md`, `README.md`, `docs/VALIDACION.md` y este registro.
+- Verificación: pruebas de pizarra-studio 12/12 → aprobado; pruebas de vox-studio 43/43 y `ia/test_guard.py` → aprobado; prueba técnica real en pizarrón con la marca del espacio personal (voz de 212 caracteres, música por código, efectos): 22.8 s, 1080×1920, −14.39 LUFS, pico −2.31 dBTP, sin avisos → aprobado técnicamente; cuadros del motor de estilos con la marca de Castorena → aprobado. Fuente del análisis: transcripción y descripción del video de YouTube y texto del PDF de Drive (un manual de 19 páginas de la misma skill); la imagen del video no se vio.
+- Pendiente: respuestas de Emi sobre estilo y personaje por espacio; primer video real con entrevista y storyboard aprobados; probar acuarela, acuarela viva, cuaderno, modo historia y formato horizontal; fusionar a `main`.
+
 ## 2026-11-10 · Vox Studio 0.8.1: paquete para claude.ai
 
 - Agente: Claude Code (sesión en la nube)
