@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Corrección de un aprendizaje de pizarra
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: seguimiento propio de la entrega anterior.
+- Cambios: al último aprendizaje de `espacios/APRENDIZAJES-PIZARRA.md` le faltaba el nombre del comando `sincronia` (la terminal se lo comió al guardarlo); se completa la frase.
+- Archivos: `espacios/APRENDIZAJES-PIZARRA.md` y este registro.
+- Verificación: lectura de la línea corregida → aprobado.
+- Pendiente: nada.
+
 ## 2026-11-11 · Pizarra Studio 0.4.0: comando `sincronia`, master que cuida el pico y mejoras de Vox aplicadas
 
 - Agente: Claude Code (sesión en la nube)
