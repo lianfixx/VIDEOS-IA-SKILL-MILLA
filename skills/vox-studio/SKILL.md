@@ -2,14 +2,14 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.9.0"
+  version: "0.9.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
 
 # Vox Studio
 
-Compositor propio, **candidato**: rinde y está probado técnicamente, pero ningún video suyo tiene todavía aprobación estética de Emi. No sustituye a [MILLA Video Studio](../milla-video-studio/SKILL.md); para contenido jurídico de MILLA siguen valiendo sus reglas de investigación, derechos y revisión.
+Compositor propio. Primer video aprobado por Emi el 11/11/2026 (Castorena, pagos digitales, versión con planos: «ESTÁ PERFECTO»); es la referencia de ese espacio. En personal, MILLA y PAN sigue siendo **candidato**: ningún video suyo tiene aprobación. No sustituye a [MILLA Video Studio](../milla-video-studio/SKILL.md); para contenido jurídico de MILLA siguen valiendo sus reglas de investigación, derechos y revisión.
 
 ## Espacios separados
 

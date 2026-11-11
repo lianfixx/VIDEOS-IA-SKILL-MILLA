@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.9.1: primer video aprobado (Castorena)
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras ver el corte con planos: «ESTÁ PERFECTO».
+- Cambios: se registra la aprobación del video de pagos digitales como referencia del espacio Castorena (skill, `MARCA.md` y aprendizajes). El compositor sigue como candidato en personal, MILLA y PAN.
+- Archivos: `skills/vox-studio/SKILL.md`, `espacios/castorena/{MARCA.md,aprendizajes.md}` y este registro.
+- Verificación: pruebas de vox-studio 48/48 → aprobado; `check_skill` → aprobado. Visto bueno de Emi sobre el MP4 → aprobado (no detalló voz, música ni efectos por separado). Publicación en redes → no ejecutado: no se pidió.
+- Pendiente: referencias de X que Emi mencionó; aviso de la escena 08 bajo la descripción de TikTok; probar los planos en Anton.
+
 ## 2026-11-11 · Vox Studio 0.9.0: planos dentro de la escena (guion visual)
 
 - Agente: Claude Code (sesión en la nube)

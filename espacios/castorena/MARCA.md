@@ -1,6 +1,6 @@
 # Marca · Castorena Abogados
 
-**Estado: despacho confirmado por Emi el 10/11/2026** (castorena.com.mx es su despacho). El estilo visual sigue siendo candidato hasta que apruebe un primer video. El sitio público presenta práctica fiscal, administrativa y de amparo; la práctica laboral-burocrática que Emi lleva no aparece ahí.
+**Estado: despacho confirmado por Emi el 10/11/2026** (castorena.com.mx es su despacho). Estilo de video aprobado por Emi el 11/11/2026 con el video de pagos digitales (corte suelto con planos); es la referencia del espacio. El sitio público presenta práctica fiscal, administrativa y de amparo; la práctica laboral-burocrática que Emi lleva no aparece ahí.
 
 ## Fuente verificada
 
