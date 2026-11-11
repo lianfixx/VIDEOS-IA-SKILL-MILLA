@@ -44,7 +44,7 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 
 **Transiciones.** `viaje` (cámara), `barrido` (dos paneles inclinados cruzan en 16 frames y la cámara cambia tapada) y `rasgado` (panel con borde dentado baja en 16 frames). Lo automático evita repetir la anterior y la que el guion fije para la siguiente.
 
-**Entradas.** `sello`, `desliza-izq`, `desliza-der`, `cae`, `desdobla`, `mordidas`. Nunca por opacidad. Resorte general: amortiguación 18, rigidez 170, masa 0.8.
+**Entradas.** `sello`, `desliza-izq`, `desliza-der`, `cae`, `desdobla`, `mordidas`; los recortes, además, `sube`. Nunca por opacidad. Resortes por clase de objeto: titular (amortiguación 26, rigidez 230, masa 0.8: cae firme), recorte (13, 150, 1: se pasa un poco y asienta), rótulo (200, 300, 0.6: seco). Un recorte entra de lado, desde abajo sin rebote hacia arriba, o como sello desde 1.25×, para no tapar el titular mientras llega.
 
 **Movimiento continuo.** Nada vibra: el recorte flota con `sin(f/24) × 5 px` y gira ±0.7°; el grano del papel cambia cada 15 frames a 13 % de opacidad. Las escenas de más de 150 frames reciben un pulso de escala del 7 % a la mitad.
 
@@ -63,7 +63,7 @@ El archivo sale con más calidad de la que TikTok conserva a propósito: la plat
 | Transiciones | papel, deslizar, golpe, pop, rasgar a ganancia 0.3 | `Vox.tsx` |
 | Master | ganancia fija hasta −14 LUFS y limitador de picos | `masterizar` |
 
-La música se genera con una semilla derivada del título y la narración: decide tonalidad (±3 semitonos), tempo (±6 %), progresión (5 por modo) y patrón del arpegio; el arreglo baja en escenas alternas y sube al final. Los efectos se afinan a esa tonalidad.
+La música se genera con una semilla derivada del título y la narración: decide tonalidad (±3 semitonos), tempo (±6 %, y después `ajustar_bpm` busca, en pasos de 0.5 y dentro de ±8 %, el que deja los cambios de escena más cerca de un pulso), progresión (5 por modo) y patrón del arpegio; el arreglo baja en escenas alternas y sube al final. Los efectos se afinan a esa tonalidad.
 
 ## 5. Imágenes
 
@@ -76,9 +76,12 @@ La música se genera con una semilla derivada del título y la narración: decid
 
 | Informe | Qué mide | Avisa cuando |
 |---|---|---|
-| `out/auditoria-audio.json` | voz, música respecto a la voz, cada efecto respecto a la voz, sonoridad y pico finales, ganancia del master, silencios | música a menos de 12 o más de 26 LU; efecto por encima de la voz o 16 dB por debajo; final fuera de −15 a −13 LUFS; pico sobre −1.5 dBTP; master de más de 4 dB; silencio de más de 1.2 s |
+| `out/auditoria-audio.json` | voz, música respecto a la voz, cada efecto respecto a la voz, sonoridad y pico finales, ganancia del master, rango dinámico, silencios | música a menos de 12 o más de 26 LU; efecto por encima de la voz o 16 dB por debajo; final fuera de −15 a −13 LUFS; pico sobre −1.5 dBTP; master de más de 4 dB; rango dinámico menor de 1.5 LU (audio plano); silencio de más de 1.2 s |
 | `out/auditoria-video.json` | códec, tamaño, fps, formato de pixel, audio, duración; tinta en las zonas que tapa TikTok y en la zona útil, a tres cuartos de cada escena | formato distinto del esperado; más de 0.4 % de una zona tapada con contenido; menos de 6 % de tinta en la zona útil; primer cuadro casi vacío |
 | `out/hoja.png`, `out/hoja-tiktok.png`, `out/portada.png` | para revisar con los ojos | — |
+| `out/hoja-transiciones.png`, `out/hoja-telefono.png` (comando `revisar`) | cada corte en −6, −3, 0, +3, +6 y +12 cuadros; el video a 150 px de ancho | — |
+| `out/revision.json` | segundos revisados, hallazgos con su arreglo, pendientes y quién revisó, atado a la huella del render | `cierre` se niega si falta, si es de otro render o si no está firmado |
+| `out/manifiesto.json` | huellas de guion, voz, música e imágenes, versión de la skill y ajustes de render | — |
 
 «Tinta» es todo pixel a más de 90 unidades RGB del color del papel; el grano y la viñeta no llegan a ese umbral.
 

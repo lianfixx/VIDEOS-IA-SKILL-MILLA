@@ -25,3 +25,6 @@ Se lee antes de cada guion y se amplía después de cada video (`vox.py aprender
 - 2026-11-10 · Emi: el audio del demo está bien, «pero por video compruébalo». Regla: en cada video se le pide que escuche voz, música y efectos; los niveles automáticos no cuentan como aprobación.
 - 2026-11-10 · Auditoría de imagen (nueva): la nota, el sello y un recorte caían bajo los botones de TikTok. Regla: de y=760 hacia abajo el contenido termina en x=900; `render` lo mide y avisa.
 - 2026-11-10 · Emi aprobó que las pruebas de Vox Studio corran solas antes de cada commit.
+- 2026-11-11 · Referencias de X analizadas (ver `docs/REFERENCIAS-EXTERNAS.md`). Regla: cada escena dice para qué existe y una lleva la opinión de Emi; él elige el gancho entre 2 o 3; cifra sin fuente no pasa; el render se revisa en sus transiciones y a tamaño teléfono, con informe, antes de cerrar.
+- 2026-11-11 · Revisión de transiciones (nueva): un recorte caía sobre el titular al entrar y la línea de fuente no se leía en teléfono; las hojas a intervalos fijos no lo mostraban. Regla: los recortes nunca cruzan el titular; la fuente va en letra firme.
+- 2026-11-11 · Se probó «el contenedor llega antes que su texto» en el dato: llegaba vacío y se veía peor. Regla: no adoptar una técnica de un artículo sin mirarla en un render.
