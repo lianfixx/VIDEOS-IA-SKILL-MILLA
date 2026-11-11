@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Entorno, box y tarea programada de Editor Studio
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: «instala todo», actualizar el box, programar el radar semanal y recibir los crudos por Drive.
+- Cambios: fuera del repositorio, con su aprobación en cada cambio de entorno. Entorno `videos-ia-skill-milla`: se permiten `drive.google.com` y `drive.usercontent.google.com` (para bajar los crudos) y su guion de arranque instala OpenCV 4.11 (el detector de rostros de Editor Studio). Drive: carpeta «Editor Studio» con una subcarpeta por espacio (`crudos` y `entregas`) y otra de referencias. Tarea programada «Radar semanal de tendencias de video»: domingos 21:23, hora de México, en una sesión nueva. Errata de la entrada anterior: el box sí terminó de actualizarse (de la imagen v13 a la v19).
+- Archivos: este registro.
+- Verificación: descarga de un archivo de Drive desde este entorno → aprobado. Box en v19 según su estado → aprobado. El guion de arranque nuevo no se ha ejecutado en una sesión fresca → no comprobado. La tarea programada no ha corrido → no comprobado (primera corrida: domingo 15/11/2026).
+- Pendiente: llave de AssemblyAI de Emi; fusionar esta rama a `main` antes del domingo para que el radar encuentre su código.
+
 ## 2026-11-11 · Editor Studio 0.1.0 (candidata): skill para editar los videos que Emi graba, cerebro de video y radar semanal
 
 - Agente: Claude Code (sesión en la nube)
