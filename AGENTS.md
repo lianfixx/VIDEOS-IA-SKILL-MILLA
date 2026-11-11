@@ -8,6 +8,17 @@ Fuentes canónicas: skill y references. MANUAL_COMPLETO.md es derivado; regenera
 
 Los cambios de método deben registrar motivo/evidencia, pruebas y versión. Actualizaciones de preferencias explícitas prevalecen; experimentos deben quedar como candidatos. Mantener el perfil MILLA separado de otros perfiles.
 
+## Qué skill usar (hay cuatro en este repositorio)
+
+| Emi pide | Skill |
+|---|---|
+| Editar un video que **ya grabó** (a cámara, entrevista, evento, vlog), cortarlo, subtitularlo, o preparar la escaleta antes de grabar | `skills/editor-studio/SKILL.md` |
+| Un video explicativo **desde un guion**, estilo documental-collage | `skills/vox-studio/SKILL.md` |
+| Un video **dibujado a mano** (pizarra, acuarela, cuaderno, minimal) | `skills/pizarra-studio/SKILL.md` |
+| Un video jurídico de MILLA ABOGADOS con su estándar | `skills/milla-video-studio/SKILL.md` |
+
+El mapa de cómo se conectan sin mezclarse está en `cerebro/CEREBRO.md`. Sin terminal (chat de ChatGPT, Gemini, Muse, DeepSeek u otra IA) no se corta ni se rinde video: se hace la entrevista, la escaleta y el plan, y se entrega el traspaso de `skills/editor-studio/plantilla/TRASPASO.md` para producirlo en Claude Code o Codex.
+
 ## Trabajo entre IA (obligatorio para cualquier IA o persona)
 
 Este repositorio sigue el protocolo común de `ia/PROTOCOLO.md`; las reglas concretas están en `ia/REGLAS.md`.

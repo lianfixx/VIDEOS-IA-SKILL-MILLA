@@ -89,6 +89,22 @@ El MP4 se sube a `Editor Studio/<espacio>/entregas` con el conector de Drive y s
 
 Quince defectos, cada uno con su prueba de regresión en `test_editor.py` (clases `Auditoria` y `Cierre`) o `test_radar.py`: ids de pieza sin validar, cifras alteradas en subtítulos, `cierre` que no comprobaba que el archivo correspondiera a lo aprobado, tope del radar mal calculado, milisegundos leídos como segundos, sticker mal colocado, texto con zona «pantalla», silencios que se tragaban una palabra dicha en voz baja, pie de foto bajo los subtítulos, fuente Inter fuera del proyecto, censura que perdía su palabra, y varios errores que salían como traza. Quedó sin comprobar por esa revisión: un Dolby Vision real de iPhone, macOS, el ancho de Gelasio en mayúsculas y los motores de transcripción en vivo.
 
+## Segunda auditoría independiente (11/11/2026): lo que encontró y ya está corregido
+
+Tres revisores (flujo bajo estrés, imagen y sonido, guías y conexiones). Cada defecto tiene su prueba en `test_editor.py` (clases `Auditoria2` y `Compuertas2`).
+
+- **Cortar agotaba la memoria** con un clip vertical de unos minutos (13 GB con 6 min). Ahora corta tramo por tramo y los une: memoria constante.
+- **Voz nueva sobre imagen vieja** si se volvía a cortar después de armar: `render` y `validar` ahora lo detectan, igual que un mapa de rostro o un recorte de otro corte.
+- **Voz adelantada** unos 270 ms cuando el audio del crudo arranca después que la imagen: `ingerir` conserva ese desfase. Si imagen y sonido duran distinto, trabaja hasta donde hay los dos.
+- **Sin silencios con ruido de fondo**: ver Oficio.
+- **Censura sobre otra palabra** si cambiaba la transcripción: los cortes quedan atados a su transcripción y la censura entra en la aprobación.
+- **Imagen**: el panel cortaba su texto; un título largo se salía del cuadro; el azul de PAN no se leía; un zoom regresaba de golpe; la foto a pantalla parpadeaba; los renglones del panel aparecían, se apagaban y volvían; el cierre y el sello de Castorena no eran sobrios; los subtítulos cambiaban de tamaño.
+- **Sonido**: los efectos se nivelaban por pico y sonaban hasta 7 dB más fuertes que la voz; cuatro efectos de ruido salían casi mudos por un filtro mal puesto.
+- **Reglas que solo cumplía la prosa**: topes de nivel y de sonido por espacio, música preguntada, permiso de quien sale a cuadro, tipo de video.
+- **Otras IA**: el paquete llevaba enlaces rotos y no había plantilla de traspaso; las guías de entrada no nombraban la skill.
+
+Queda sin comprobar: un Dolby Vision real de iPhone, macOS, un video de más de 6 minutos de punta a punta, el sticker en un video a cámara (con la cara en plano medio apenas cabe) y, sobre todo, un video real de Emi.
+
 ## Si algo falla
 
 - **«la palabra … no está en el video cortado»**: mira cómo quedó escrita en `palabras_limpio.json`, o ancla por segundo.

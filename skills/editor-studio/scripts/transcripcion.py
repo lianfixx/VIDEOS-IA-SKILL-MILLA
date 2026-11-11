@@ -19,16 +19,23 @@ MAX_AUDIO = 60 * 1024 * 1024
 
 def _salida(motor: str, idioma: str, palabras: list[dict], aproximado: bool = False, extra: dict | None = None) -> dict:
     limpias = []
+    try:
+        palabras = sorted(palabras, key=lambda p: (float(p["t0"]), float(p["t1"])))      # siempre en orden de tiempo
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ErrorEditor(f"{motor}: hay palabras sin tiempos legibles") from exc
     for p in palabras:
-        txt = str(p.get("txt", "")).strip()
-        if not txt or p["t1"] <= p["t0"]:
+        txt = str(p.get("txt") or "").strip()
+        if not txt or float(p["t1"]) <= float(p["t0"]):
             continue
         limpias.append({"i": len(limpias), "t0": round(float(p["t0"]), 3), "t1": round(float(p["t1"]), 3), "txt": txt,
                         "conf": p.get("conf"), "hablante": p.get("hablante")})
     for a, b in zip(limpias, limpias[1:]):     # dos palabras nunca se enciman
         if b["t0"] < a["t1"]:
-            medio = round((a["t1"] + b["t0"]) / 2, 3)
-            a["t1"], b["t0"] = max(a["t0"] + 0.01, medio), max(medio, a["t0"] + 0.01)
+            medio = round(min(max((a["t1"] + b["t0"]) / 2, a["t0"] + 0.01), b["t1"] - 0.01), 3)
+            a["t1"], b["t0"] = medio, medio
+    limpias = [p for p in limpias if p["t1"] > p["t0"]]          # una palabra tragada por otra no se conserva
+    for k, p in enumerate(limpias):
+        p["i"] = k
     if not limpias:
         raise ErrorEditor(f"{motor} no devolvió ninguna palabra: revisa que el video tenga voz")
     return {"motor": motor, "idioma": idioma, "aproximado": aproximado, "fecha": time.strftime("%Y-%m-%d %H:%M:%S"),

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import html
 import json
+import math
 import re
 from pathlib import Path
 
@@ -54,9 +55,13 @@ IDS_RESERVADOS = {"root", "fondo", "camwrap", "cam", "base", "detras", "insertos
 TEXTO_EN_ZONA = ("titulo", "rotulo", "fuente", "sello", "dato", "cierre")
 ORIGENES_INSERTO = ("propio", "codigo-pizarra", "codigo-vox", "generado")
 QUIETO = {1: 9.0, 2: 5.0, 3: 3.5}      # segundos sin nada nuevo en pantalla antes de avisar
-ANCHO_LETRA = {"Anton": 0.47, "Gelasio": 0.62, "Inter": 0.6}    # em promedio por carácter, medido al alza
-PANEL_CAM = {"9:16": (90, 830, 990, 1440), "16:9": (1010, 90, 1830, 990), "1:1": (560, 90, 1010, 990)}
-PANEL_CAJA = {"9:16": (90, 250, 990, 790), "16:9": (90, 90, 960, 990), "1:1": (70, 90, 520, 990)}
+ANCHO_LETRA = {"Anton": 0.47, "Gelasio": 0.62, "Inter": 0.6}
+ANCHO_MAYUS = {"Anton": 0.50, "Gelasio": 0.80, "Inter": 0.68}     # en mayúsculas cada letra ocupa más
+ORDEN_DENSIDAD = ["ninguna", "minima", "media", "alta"]
+MAX_ITEM = 32                # letras por renglón de un panel
+LETRA_MINIMA = 34            # px en 1080 de ancho: menos que esto no se lee en un teléfono    # em promedio por carácter, medido al alza
+PANEL_CAM = {"9:16": (90, 830, 990, 1440), "16:9": (1010, 90, 1830, 990), "1:1": (70, 540, 1010, 1010)}
+PANEL_CAJA = {"9:16": (90, 250, 990, 790), "16:9": (90, 90, 960, 990), "1:1": (70, 70, 1010, 520)}
 
 
 # ---------- tiempos ----------
@@ -105,6 +110,10 @@ def resolver(plan: dict, palabras: list[dict], duracion: float, aproximado: bool
                 t1 = t0 + float(p.get("dura", {"zoom": 1.6, "sello": 1.4, "barrido": 0.5, "particulas": 1.2}.get(p.get("tipo"), 2.4)))
             except (TypeError, ValueError) as exc:
                 raise ErrorEditor(f"{q['id']}: `dura` debe ser un número de segundos") from exc
+        if not (math.isfinite(t0) and math.isfinite(t1)):
+            raise ErrorEditor(f"{q['id']}: su tiempo no es un número válido")
+        if t1 <= t0:
+            raise ErrorEditor(f"{q['id']}: termina antes de empezar (revisa `hasta` o `dura`)")
         q["t0"], q["t1"] = round(max(0.0, t0), 3), round(min(duracion, t1), 3)
         out.append(q)
     return out
@@ -114,7 +123,41 @@ def nivel_en(plan: dict, t: float) -> int:
     for tr in plan.get("tramos", []) or []:
         if tr["de"] <= t < tr["a"]:
             return int(tr["nivel"])
-    return int(plan.get("nivel", 0))
+    return int(plan.get("nivel") or 0)
+
+
+def revisar_forma(plan: dict) -> list[str]:
+    """Tipos de los campos del plan: un dato mal escrito debe decirse aquí, no tronar a medio render."""
+    err = []
+    if not isinstance(plan.get("piezas", []), list):
+        err.append("`piezas` debe ser una lista")
+    for k, tr in enumerate(plan.get("tramos") or []):
+        ok = (isinstance(tr, dict) and all(isinstance(tr.get(c), (int, float)) and not isinstance(tr.get(c), bool) for c in ("de", "a"))
+              and tr.get("nivel") in (1, 2, 3) and tr["de"] < tr["a"])
+        if not ok:
+            err.append(f"tramo {k + 1}: lleva `de` y `a` en segundos (de < a) y `nivel` 1, 2 o 3")
+    sub = plan.get("subtitulos") or {}
+    if not isinstance(sub, dict):
+        return err + ["`subtitulos` debe ser un objeto"]
+    for campo in ("max_palabras", "max_caracteres", "tamano"):
+        if campo in sub and (not isinstance(sub[campo], (int, float)) or isinstance(sub[campo], bool) or sub[campo] <= 0):
+            err.append(f"subtitulos.{campo} debe ser un número mayor que cero")
+    for k, v in enumerate(sub.get("ocultar") or []):
+        if not (isinstance(v, (list, tuple)) and len(v) == 2 and all(isinstance(x, (int, float)) for x in v) and v[0] < v[1]):
+            err.append(f"subtitulos.ocultar[{k}] debe ser [inicio, fin] en segundos")
+    for k, p in enumerate(plan.get("piezas") or []):
+        if isinstance(p, dict):
+            for campo in ("texto", "sub", "pie", "titulo", "etiqueta", "fuente", "porque"):
+                if campo in p and not isinstance(p[campo], str):
+                    err.append(f"pieza {p.get('id', k + 1)}: `{campo}` debe ser texto")
+            if "items" in p and not (isinstance(p["items"], list) and all(isinstance(x, str) for x in p["items"])):
+                err.append(f"pieza {p.get('id', k + 1)}: `items` debe ser una lista de textos")
+    for k, e in enumerate(((plan.get("sonido") or {}).get("efectos")) or []):
+        if not isinstance(e, dict):
+            err.append(f"efecto {k + 1}: debe ser un objeto")
+        elif "db" in e and (not isinstance(e["db"], (int, float)) or isinstance(e["db"], bool)):
+            err.append(f"efecto {k + 1}: `db` debe ser un número (cuántos dB bajo la voz)")
+    return err
 
 
 # ---------- geometría ----------
@@ -131,11 +174,43 @@ def rostro_en(rostro: dict | None, t0: float, t1: float):
     return (min(c["x0"] for c in cajas), min(c["y0"] for c in cajas), max(c["x1"] for c in cajas), max(c["y1"] for c in cajas))
 
 
-def tamano_texto(texto: str, fuente: str, ancho: int, base: int, minimo: int, lineas: int = 1) -> int:
+def luminancia(hexa: str) -> float:
+    h = hexa.lstrip("#")
+    if len(h) != 6:
+        return 0.5
+    canales = []
+    for k in (0, 2, 4):
+        c = int(h[k:k + 2], 16) / 255
+        canales.append(c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4)
+    return 0.2126 * canales[0] + 0.7152 * canales[1] + 0.0722 * canales[2]
+
+
+def contraste(a: str, b: str) -> float:
+    la, lb = luminancia(a), luminancia(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+def mejor_sobre(fondo: str, candidatos: list[str]) -> str:
+    """De los colores de la marca, el que más contrasta con ese fondo."""
+    return max(candidatos, key=lambda c: contraste(c, fondo))
+
+
+def tamano_texto(texto: str, fuente: str, ancho: int, base: int, minimo: int, lineas: int = 1, mayusculas: bool = False) -> int:
     """Tamaño de letra para que el texto quepa en `ancho`, sin medir en el navegador."""
     largo = max(len(x) for x in _lineas(texto, lineas)) or 1
-    factor = ANCHO_LETRA.get(fuente, 0.6)
+    factor = (ANCHO_MAYUS if mayusculas else ANCHO_LETRA).get(fuente, 0.68 if mayusculas else 0.6)
     return int(max(minimo, min(base, ancho / (largo * factor))))
+
+
+def tam_titulo(texto: str, fuente: str, caja, W: int, mayus: bool = True) -> tuple[int, int]:
+    """(tamaño, líneas) de un título en su caja: una línea si cabe a buen tamaño; si no, dos.
+    Va en mayúsculas salvo en los espacios de movimiento sobrio, que lo llevan en altas y bajas."""
+    ancho, alto = int((caja[2] - caja[0]) * 0.9), caja[3] - caja[1]
+    uno = min(tamano_texto(texto, fuente, ancho, int(W * 0.115), 1, 1, mayus), int((alto - 40) / 1.25))
+    if uno >= 60 or alto < 200:
+        return uno, 1
+    dos = min(tamano_texto(texto, fuente, ancho, int(W * 0.115), 1, 2, mayus), int((alto - 40) / 2.5))
+    return (dos, 2) if dos > uno else (uno, 1)
 
 
 def _lineas(texto: str, maximo: int) -> list[str]:
@@ -257,14 +332,29 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
         return [f"formato desconocido: {formato}"], [], []
     if plan.get("espacio") != perfil["espacio"]:
         err.append(f"el plan dice espacio «{plan.get('espacio')}» y la producción es de «{perfil['espacio']}»")
+    forma = revisar_forma(plan)
+    if forma:
+        return err + forma, avi, []
     nivel = plan.get("nivel")
-    if nivel not in (1, 2, 3):
-        err.append("falta `nivel` (1, 2 o 3): se le explican los tres a Emi y elige")
+    if nivel not in (1, 2, 3) or isinstance(nivel, bool):
+        err.append("falta `nivel` (1, 2 o 3, como número): se le explican los tres a Emi y elige")
+        nivel = None
+    ed = perfil["edicion"]
+    # el tope del espacio se cumple, no solo se sugiere
+    tope_nivel = int(ed.get("nivel_tope", 3))
+    mas_alto = max([nivel or 0] + [tr["nivel"] for tr in plan.get("tramos") or []])
+    if mas_alto > tope_nivel and len(str(plan.get("sobre_tope_pedido_por_emi", "")).strip()) < 8:
+        err.append(f"el espacio «{perfil['espacio']}» no pasa de nivel {tope_nivel} y el plan usa nivel {mas_alto}: "
+                   "solo si Emi lo pidió, con sus palabras en `sobre_tope_pedido_por_emi`")
     # lo que Emi respondió
     resp = brief.get("respuestas_emi") or {}
-    for clave in ("para_que", "a_quien", "postura", "donde_se_publica", "nivel_elegido", "musica"):
+    for clave in ("para_que", "a_quien", "postura", "tipo_de_video", "donde_se_publica", "nivel_elegido", "musica", "quienes_salen"):
         if not str(resp.get(clave, "")).strip():
             err.append(f"brief.json: falta la respuesta de Emi a «{clave}»; sin entrevista no se edita")
+    quienes = str(resp.get("quienes_salen", "")).strip().lower()
+    solo_emi = quienes in ("emi", "yo", "solo emi", "solo yo", "emiliano", "emi solo")
+    if quienes and not solo_emi and len(str(resp.get("permiso_de_quienes_salen", "")).strip()) < 3:
+        err.append("brief.json: sale a cuadro alguien más que Emi y falta `permiso_de_quienes_salen` (quién dio permiso y cómo consta)")
     if resp.get("nivel_elegido") and nivel and str(resp["nivel_elegido"]).strip()[:1] != str(nivel) and not plan.get("tramos"):
         err.append(f"Emi eligió nivel {resp['nivel_elegido']} y el plan dice {nivel}")
     if not str(plan.get("nivel_razon", "")).strip():
@@ -328,6 +418,15 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
         minimo = PIEZAS[tipo][0]
         if tipo == "foto" and p.get("modo") == "tarjeta":
             minimo = 2
+        if tipo == "barrido" and not any(abs((p["t0"] + p["t1"]) / 2 - e) <= 3 / fps for e in empalmes):
+            err.append(f"{ident} (barrido): un barrido tapa un corte; su centro debe caer en un empalme "
+                       f"({', '.join(f'{e:.2f}' for e in empalmes[:8]) or 'no hay ninguno'}). A media frase solo estorba")
+        if tipo == "detras" and rostro_en(rostro, p["t0"], p["t1"]):
+            c = rostro_en(rostro, p["t0"], p["t1"])
+            ancho_texto = min(FORMATOS[formato][0] * 0.84, len(str(p.get("texto", ""))) * ANCHO_MAYUS.get(ed.get("fuente_titular", "Anton"), 0.6) * FORMATOS[formato][0] * 0.34)
+            if ancho_texto and (c[2] - c[0]) / ancho_texto > 0.6:
+                avi.append(f"{ident} (detras): la cabeza taparía más de la mitad de «{p.get('texto')}»; con este encuadre no se leerá. "
+                           "Mira la muestra, usa una palabra más larga o un `titulo`")
         nv = nivel_en(plan, p["t0"])
         if nv and minimo > nv:
             err.append(f"{ident}: «{tipo}» es de nivel {minimo} y ese tramo es nivel {nv}. Súbelo con `tramos` o quita la pieza")
@@ -391,6 +490,9 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
                 err.append(f"{ident} (panel): lleva `items` (hasta 4) o `imagen`")
             if len(p.get("items") or []) > 4:
                 err.append(f"{ident} (panel): más de 4 renglones no se leen")
+            for it in p.get("items") or []:
+                if len(it.replace("*", "")) > MAX_ITEM:
+                    err.append(f"{ident} (panel): «{it}» pasa de {MAX_ITEM} letras; un renglón de panel es una idea corta")
             if p.get("imagen") and p["imagen"] not in archivos:
                 err.append(f"{ident} (panel): no existe assets/{p['imagen']}")
             for q in piezas:
@@ -402,6 +504,14 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
                     err.append(f"{ident} (panel): «{q['id']}» ({q['tipo']}) sigue en pantalla mientras la cámara es tarjeta; "
                                "el panel reacomoda todo: termina esa pieza antes o empieza el panel después")
         # zona y rostro
+        if tipo == "foto" and p.get("modo") == "tarjeta":
+            cara = rostro_en(rostro, p["t0"], p["t1"])
+            libres = zonas_libres(formato, cara, caja_sub)
+            caja = next((libres[z] for z in ("torso", "arriba", "medio") if z in libres and libres[z][3] - libres[z][1] >= 260), None)
+            if caja is None:
+                err.append(f"{ident} (foto en tarjeta): no cabe sin tapar la cara con este encuadre; usa `modo: pantalla`")
+            else:
+                p["caja"] = list(caja)
         if tipo not in SIN_CARA:
             if tipo == "sticker":
                 continue                                # su caja ya se resolvió por esquina
@@ -424,11 +534,14 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
                     avi.append(f"{ident} ({tipo}): pasó de «{p['zona']}» a «{zona}» para no tapar la cara ni encimarse")
                 p["zona"], p["caja"] = zona, list(caja)
                 ocupadas.append((zona, p["t0"], p["t1"]))
+                if tipo == "titulo" and tam_titulo(str(p.get("texto", "")), ed.get("fuente_titular", "Anton"), caja, FORMATOS[formato][0],
+                                                   ed.get("movimiento") != "sobrio")[0] < 46:
+                    err.append(f"{ident} (titulo): «{p.get('texto')}» no cabe legible en la zona «{zona}» con este encuadre; acórtalo")
     # reglas de conjunto
     if not any(p.get("tipo") == "cierre" for p in piezas):
         avi.append("no hay pieza `cierre`: el último cuadro debería invitar a algo")
     if sum(1 for p in piezas if p.get("tipo") == "detras") > 2:
-        avi.append("más de dos textos detrás de la persona: el recurso se gasta")
+        err.append("más de dos textos detrás de la persona en un video: el recurso se gasta")
     if sum(1 for p in piezas if p.get("tipo") == "particulas") > max(1, int(duracion // 25)):
         avi.append("demasiadas partículas: como mucho una cada 25 s")
     if generados and not brief.get("gasto_autorizado"):
@@ -448,6 +561,18 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
         err.append("sonido.musica.decision debe ser «ninguna» o «archivo» (la pista se le pregunta a Emi en cada video)")
     if mus.get("decision") == "archivo" and (mus.get("archivo") not in archivos or not str(mus.get("origen", "")).strip()):
         err.append("sonido.musica: falta el archivo en assets/ o su `origen` (de dónde salió y con qué derecho se usa)")
+    if mus.get("decision") == "archivo" and str(mus.get("archivo", "")).lower().rsplit(".", 1)[-1] not in ("mp3", "wav", "m4a", "aac", "flac", "ogg"):
+        err.append("sonido.musica.archivo debe ser un archivo de audio (mp3, wav, m4a, aac, flac u ogg)")
+    if mus.get("preguntado_a_emi") is not True:
+        err.append("sonido.musica.preguntado_a_emi debe ser true: la música se le pregunta a Emi en cada video, con una sugerencia")
+    del_espacio = (ed.get("sonido") or {}).get("densidad", "media")
+    pedida = son.get("densidad", "minima")
+    if (pedida in ORDEN_DENSIDAD and del_espacio in ORDEN_DENSIDAD and ORDEN_DENSIDAD.index(pedida) > ORDEN_DENSIDAD.index(del_espacio)
+            and len(str(son.get("densidad_pedida_por_emi", "")).strip()) < 8):
+        err.append(f"sonido.densidad «{pedida}» pasa de la del espacio «{perfil['espacio']}» («{del_espacio}»): "
+                   "solo si Emi lo pidió, con sus palabras en `sonido.densidad_pedida_por_emi`")
+    if del_espacio == "ninguna" and (son.get("efectos") or []) and len(str(son.get("densidad_pedida_por_emi", "")).strip()) < 8:
+        err.append(f"el espacio «{perfil['espacio']}» no lleva efectos de sonido y el plan trae {len(son['efectos'])}")
     efectos = son.get("efectos") or []
     tope_efectos = {"ninguna": 0, "minima": duracion / 10, "media": duracion / 4, "alta": duracion / 2}.get(son.get("densidad", "minima"))
     if tope_efectos is None:
@@ -505,27 +630,26 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
         alto = (caja[3] - caja[1]) if caja else H
         zc = f"z-{p.get('zona', '')}"
         if tipo == "titulo":
-            ancho = caja[2] - caja[0]
-            lineas = _lineas(p["texto"], 2 if alto >= 250 else 1)
-            tam = min(tamano_texto(p["texto"], titular, int(ancho * 0.92), int(W * 0.115), 54, len(lineas)), int((alto - 40) / (len(lineas) * 1.25)))
+            tam, n_lineas = tam_titulo(p["texto"], titular, caja, W, ed.get("movimiento") != "sobrio")
+            lineas = _lineas(p["texto"], n_lineas)
             cuerpo = "<br>".join(_t(x) for x in _partir_marcado(p["texto"], lineas))
             frente_html.append(f'<div id="{ident}" class="pz titulo {zc}" style="{_px(caja)}"><div class="in" style="font-size:{tam}px">{cuerpo}</div></div>')
         elif tipo == "rotulo":
-            tam = tamano_texto(p["texto"], titular, int((caja[2] - caja[0]) * 0.8), int(W * 0.06), 40)
+            tam = tamano_texto(p["texto"], titular, int((caja[2] - caja[0]) * 0.8), int(W * 0.06), 40, 1, titular == "Anton")
             subt = f'<div class="sub">{_t(p["sub"])}</div>' if p.get("sub") else ""
             frente_html.append(f'<div id="{ident}" class="pz rotulo {zc}" style="{_px(caja)}"><div class="in"><div class="barra"></div>'
                                f'<div class="tx" style="font-size:{tam}px">{_t(p["texto"])}</div>{subt}</div></div>')
         elif tipo == "fuente":
             frente_html.append(f'<div id="{ident}" class="pz fuente {zc}" style="{_px(caja)}"><div class="in">Fuente: {_t(p["texto"])}</div></div>')
         elif tipo == "sello":
-            tam = min(tamano_texto(p["texto"], titular, int(W * 0.5), int(W * 0.085), 46), int((alto - 50) / 1.4))
+            tam = min(tamano_texto(p["texto"], titular, int(W * 0.5), int(W * 0.085), 46, 1, True), int((alto - 50) / 1.4))
             frente_html.append(f'<div id="{ident}" class="pz sello {zc}" style="{_px(caja)}"><div class="in" style="font-size:{tam}px">{_t(p["texto"])}</div></div>')
         elif tipo == "dato":
             tam = min(tamano_texto(str(p["cifra"]), titular, int(W * 0.34), int(W * 0.16), 70), int(alto * 0.66))
             frente_html.append(f'<div id="{ident}" class="pz dato {zc}" style="{_px(caja)}"><div class="in"><div class="cifra" style="font-size:{tam}px">{_t(str(p["cifra"]))}</div>'
                                f'<div class="eti">{_t(p.get("etiqueta", ""))}</div><div class="fu">Fuente: {_t(p["fuente"])}</div></div></div>')
         elif tipo == "cierre":
-            tam = min(tamano_texto(p["texto"], titular, int(W * 0.6), int(W * 0.11), 60), int(alto * 0.56))
+            tam = min(tamano_texto(p["texto"], titular, int(W * 0.6), int(W * 0.11), 60, 1, True), int(alto * 0.56))
             frente_html.append(f'<div id="{ident}" class="pz cierre {zc}" style="{_px(caja)}"><div class="in" style="font-size:{tam}px"><span>{_t(p["texto"])}</span>'
                                f'<svg class="flecha" viewBox="0 0 60 90"><path d="M30 4v70M8 54l22 24 22-24" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>')
         elif tipo == "foto":
@@ -534,7 +658,8 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
             cls = "foto pantalla" if modo == "pantalla" else "foto tarjeta"
             abajo = (H - caja_sub_html[1] + 16) if modo == "pantalla" else 0
             pie = f'<div class="pie" style="bottom:{abajo}px">{_t(p["pie"])}</div>' if p.get("pie") else ""
-            insertos_html.append(f'<div id="{ident}" class="pz {cls}"><div class="in"><img src="assets/{html.escape(p["archivo"])}" alt="">{pie}</div></div>')
+            lugar = f' style="{_px(tuple(p["caja"]))}"' if modo == "tarjeta" and p.get("caja") else ""
+            insertos_html.append(f'<div id="{ident}" class="pz {cls}"{lugar}><div class="in"><img src="assets/{html.escape(p["archivo"])}" alt="">{pie}</div></div>')
         elif tipo == "inserto":
             insertos_html.append(f'<div id="{ident}" class="pz inserto"><div class="in"><video id="{ident}v" class="clip" src="assets/{html.escape(p["archivo"])}" '
                                  f'data-start="{p["t0"]}" data-duration="{round(p["t1"] - p["t0"], 3)}" data-track-index="{10 + len(insertos_html)}" muted playsinline></video></div></div>')
@@ -542,7 +667,7 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
             frente_html.append(f'<div id="{ident}" class="pz sticker" style="{_px(tuple(p["caja"]))}"><div class="in"><video id="{ident}v" class="clip" src="assets/{html.escape(p["archivo"])}" '
                                f'data-start="{p["t0"]}" data-duration="{round(p["t1"] - p["t0"], 3)}" data-track-index="{30 + len(frente_html)}" muted playsinline></video></div></div>')
         elif tipo == "detras":
-            tam = tamano_texto(p["texto"], titular, int(W * 0.84), int(W * 0.34), 120)
+            tam = tamano_texto(p["texto"], titular, int(W * 0.84), int(W * 0.34), 120, 1, True)
             # arranca dentro de la zona segura y la cabeza tapa entre un tercio y la mitad de la palabra
             y = max(SEGURA[formato][1], int((cara[1] if cara else H * 0.2) - tam * 0.45))
             detras_html.append(f'<div id="{ident}" class="pz detras" style="top:{y}px"><div class="in" style="font-size:{tam}px">{_t(p["texto"].upper())}</div></div>')
@@ -560,6 +685,7 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
             puntos = "".join(f'<i id="{ident}k{n}"></i>' for n in range(18))
             frente_html.append(f'<div id="{ident}" class="pz particulas" style="left:{int(W / 2)}px;top:{origen_y}px">{puntos}</div>')
             d["n"] = 18
+            d["caida"] = max(30, int(caja_sub_html[1] - origen_y - 40))        # nunca llegan a la franja de subtítulos
         elif tipo == "panel":
             cam, caja_p = PANEL_CAM[formato], PANEL_CAJA[formato]
             ancho_c, alto_c = cam[2] - cam[0], cam[3] - cam[1]
@@ -568,23 +694,41 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
             y = min(cam[1], max(cam[3] - H * s, (cam[1] + cam[3]) / 2 - foco[1] * s))
             d.update({"cam": {"s": round(s, 4), "x": round(x, 1), "y": round(y, 1),
                               "recorte": f"inset({cam[1]}px {W - cam[2]}px {H - cam[3]}px {cam[0]}px round 36px)"}})
+            ancho_p, alto_p = caja_p[2] - caja_p[0], caja_p[3] - caja_p[1]
+            n_items = len(p.get("items") or [])
+            alto_cab = 0
+            estilo_cab = ""
+            if p.get("titulo"):
+                t_cab = min(tamano_texto(p["titulo"], titular, ancho_p - 90, int(min(W, H) * 0.074), 40, 1, True), int(alto_p * 0.17))
+                alto_cab = int(t_cab * 1.25)
+                estilo_cab = f' style="font-size:{t_cab}px"'
+            t_item = LETRA_MINIMA
+            if n_items:
+                # la letra más grande con la que cabecera y renglones caben; un renglón largo puede ocupar dos líneas
+                libre, ancho_txt = alto_p - 68 - alto_cab - 20 * n_items, ancho_p - 80
+                for f in range(int(min(W, H) * 0.052), LETRA_MINIMA - 1, -2):
+                    lineas = sum(max(1, math.ceil(len(it.replace("*", "")) * ANCHO_LETRA.get(texto, 0.6) * f / (ancho_txt - 1.9 * f))) for it in p["items"])
+                    if lineas * f * 1.14 <= libre:
+                        t_item = f
+                        break
             if p.get("imagen"):
                 cuerpo = f'<img src="assets/{html.escape(p["imagen"])}" alt="">'
             else:
                 cuerpo = "".join(f'<div class="item" id="{ident}i{n}"><span class="n">{n + 1}</span><span>{_t(it)}</span></div>' for n, it in enumerate(p.get("items", [])))
                 d["items"] = len(p.get("items", []))
-            cab = f'<div class="cab">{_t(p["titulo"])}</div>' if p.get("titulo") else ""
-            frente_html.append(f'<div id="{ident}" class="pz panel" style="{_px(caja_p)}"><div class="in">{cab}{cuerpo}</div></div>')
+            cab = f'<div class="cab"{estilo_cab}>{_t(p["titulo"])}</div>' if p.get("titulo") else ""
+            frente_html.append(f'<div id="{ident}" class="pz panel" style="{_px(caja_p)}"><div class="in" style="font-size:{t_item}px">{cab}{cuerpo}</div></div>')
         datos_piezas.append(d)
     # subtítulos
     zona_sub = sub.get("zona", "pecho") if sub.get("zona") in ZONAS_SUB else "pecho"
     caja_sub = zonas[zona_sub]
     f_sub = sub.get("fuente", perfil.get("subtitulos", titular))
-    base_sub = int(sub.get("tamano", W * (0.085 if sub.get("mayusculas") else 0.062)))
+    base_sub = int(sub.get("tamano", min(W, H) * (0.085 if sub.get("mayusculas") else 0.062)))
+    # un solo tamaño para todo el video: que cambie de grupo a grupo se ve descuidado
+    tam = min([base_sub] + [tamano_texto(" ".join(w["txt"] for w in g["palabras"]), f_sub, int((caja_sub[2] - caja_sub[0]) * 0.96), base_sub, 46,
+                                         1, bool(sub.get("mayusculas"))) for g in grupos])
     subs_html, datos_grupos = [], []
     for k, g in enumerate(grupos):
-        linea = " ".join(w["txt"] for w in g["palabras"])
-        tam = tamano_texto(linea, f_sub, caja_sub[2] - caja_sub[0], base_sub, 40)
         spans = " ".join(f'<span class="w" id="g{k}w{n}">{html.escape(w["txt"])}</span>' for n, w in enumerate(g["palabras"]))
         subs_html.append(f'<div class="grupo" id="g{k}" style="font-size:{tam}px">{spans}</div>')
         datos_grupos.append({"t0": g["t0"], "t1": g["t1"], "enc": g.get("encadenado", False),
@@ -594,13 +738,18 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
         for n, a, w in (("Anton", "anton.woff2", 400), ("Gelasio", "gelasio-700.woff2", 700),
                         ("Inter", "inter-400.woff2", 400), ("Inter", "inter-700.woff2", 700)) if n in (titular, f_sub, texto))
     recorte = "".join(recortes_html)
+    # sobre oscuro manda el acento de la marca; solo si no se lee (contraste menor de 4.5) entra el color de apoyo
+    resalte = col["acento"] if contraste(col["acento"], "#151515") >= 4.5 else mejor_sobre("#151515", [col["acento"], col["apoyo"]])
+    sobre_acento = mejor_sobre(col["acento"], [col["tinta"], col["papel"]])
+    sobre_papel = mejor_sobre(col["papel"], [col["acento"], col["tinta"]]) if contraste(col["acento"], col["papel"]) >= 3 else col["tinta"]
     css = f""":root{{--papel:{col['papel']};--tinta:{col['tinta']};--acento:{col['acento']};--apoyo:{col['apoyo']};
+--resalte:{resalte};--sobre-acento:{sobre_acento};--sobre-papel:{sobre_papel};
 --titular:'{titular}';--texto:'{texto}';--subs:'{f_sub}';--W:{W}px;--H:{H}px}}
 {fuentes_css}"""
     datos = {"duracion": duracion, "formato": formato, "W": W, "H": H, "foco": [round(foco[0], 1), round(foco[1], 1)],
              "movimiento": ed.get("movimiento", "suave"), "piezas": datos_piezas, "grupos": datos_grupos,
              "subs": {"modo": sub.get("modo", "karaoke"), "estilo": sub.get("estilo", "contorno") if sub.get("estilo") in SUB_ESTILOS else "contorno",
-                      "color": col["papel"] if sub.get("estilo") == "caja" else "#ffffff"},
+                      "color": col["papel"] if sub.get("estilo") == "caja" else "#ffffff", "activo": resalte},
              "detras": [p["id"] for p in piezas if p["tipo"] == "detras"]}
     pagina = f"""<!doctype html>
 <html lang="es">
@@ -614,7 +763,7 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
 <link rel="stylesheet" href="editor.css">
 </head>
 <body>
-<div id="root" data-composition-id="main" data-start="0" data-duration="{duracion}" data-width="{W}" data-height="{H}">
+<div id="root" class="mov-{html.escape(str(ed.get('movimiento', 'suave')))}" data-composition-id="main" data-start="0" data-duration="{duracion}" data-width="{W}" data-height="{H}">
   <div id="fondo"></div>
   <div id="camwrap"><div id="cam">
     <video id="base" class="clip" src="assets/base.mp4" data-start="0" data-duration="{duracion}" data-track-index="0" muted playsinline></video>

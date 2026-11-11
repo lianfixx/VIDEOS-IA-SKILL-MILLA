@@ -156,14 +156,6 @@ class Corte(unittest.TestCase):
         with self.assertRaises(ErrorEditor):
             COR.exigir_aprobacion(p)
 
-    def test_filtro_funde_el_audio_en_cada_empalme(self):
-        f = COR.filtro_de_corte([(0.0, 2.0), (4.0, 6.0)])
-        self.assertIn("concat=n=2:v=1:a=1", f)
-        self.assertEqual(f.count("afade=t=out"), 1)
-        self.assertEqual(f.count("afade=t=in"), 1)
-        with self.assertRaises(ErrorEditor):
-            COR.filtro_de_corte([])
-
     @unittest.skipUnless(HAY_FFMPEG, "sin FFmpeg")
     def test_aplicar_deja_la_duracion_exacta(self):
         fuente = self.tmp / "f.mp4"
@@ -236,8 +228,9 @@ class Transcripcion(unittest.TestCase):
 PERFIL = {"espacio": "personal", "colores": {"papel": "#F4ECD6", "tinta": "#20180F", "acento": "#FF5A1F", "apoyo": "#FFD23F"}, "titular": "Anton",
           "subtitulos": "Anton", "edicion": {"estado": "candidato", "fuente_titular": "Anton", "fuente_texto": "Inter", "movimiento": "suave",
                                              "subtitulos": {"modo": "karaoke", "estilo": "contorno", "mayusculas": True, "zona": "pecho", "max_palabras": 3},
-                                             "marca_en_pantalla": None}}
-BRIEF = {"respuestas_emi": {"para_que": "x", "a_quien": "x", "postura": "x", "donde_se_publica": "x", "nivel_elegido": "2", "musica": "ninguna"}}
+                                             "marca_en_pantalla": None, "nivel_tope": 3, "sonido": {"densidad": "media"}}}
+BRIEF = {"respuestas_emi": {"para_que": "x", "a_quien": "x", "postura": "x", "tipo_de_video": "opinion", "donde_se_publica": "x",
+                            "nivel_elegido": "2", "musica": "ninguna", "quienes_salen": "Emi"}}
 PALABRAS = pal((0.5, 0.9, "Hoy"), (1.0, 1.4, "tres"), (1.5, 2.0, "cosas."), (3.0, 3.4, "Ocho"), (3.5, 3.9, "de"), (4.0, 4.5, "diez"), (6.0, 6.5, "opinas"))
 ROSTRO = {"cajas": [{"t": 0.0, "x0": 300, "y0": 420, "x1": 780, "y1": 900}]}
 
@@ -245,7 +238,7 @@ ROSTRO = {"cajas": [{"t": 0.0, "x0": 300, "y0": 420, "x1": 780, "y1": 900}]}
 def plan(**extra):
     p = {"espacio": "personal", "formato": "9:16", "nivel": 2, "nivel_razon": "prueba de las reglas",
          "subtitulos": {"modo": "karaoke", "razon": "reel rápido del espacio personal"}, "piezas": [],
-         "sonido": {"densidad": "minima", "efectos": [], "musica": {"decision": "ninguna"}}}
+         "sonido": {"densidad": "minima", "efectos": [], "musica": {"decision": "ninguna", "preguntado_a_emi": True}}}
     p.update(extra)
     return p
 
@@ -355,9 +348,9 @@ class Montaje(unittest.TestCase):
         self.assertTrue(any("aproximada" in e for e in validar(plan(), aproximado=True)[0]))
 
     def test_musica_y_efectos(self):
-        s = lambda **k: plan(sonido={"densidad": "minima", "efectos": [], "musica": {"decision": "ninguna"}, **k})  # noqa: E731
-        self.assertTrue(any("musica.decision" in e for e in validar(s(musica={"decision": ""}))[0]))
-        self.assertTrue(any("origen" in e for e in validar(s(musica={"decision": "archivo", "archivo": "m.mp3"}), archivos={"m.mp3"})[0]))
+        s = lambda **k: plan(sonido={"densidad": "minima", "efectos": [], "musica": {"decision": "ninguna", "preguntado_a_emi": True}, **k})  # noqa: E731
+        self.assertTrue(any("musica.decision" in e for e in validar(s(musica={"decision": "", "preguntado_a_emi": True}))[0]))
+        self.assertTrue(any("origen" in e for e in validar(s(musica={"decision": "archivo", "archivo": "m.mp3", "preguntado_a_emi": True}), archivos={"m.mp3"})[0]))
         self.assertTrue(any("no existe" in e for e in validar(s(efectos=[{"t": 1, "sonido": "trompeta"}]))[0]))
         self.assertTrue(any("la pieza" in e for e in validar(s(efectos=[{"en": "fantasma", "sonido": "pop"}]))[0]))
 
@@ -602,7 +595,7 @@ class Auditoria(unittest.TestCase):
         self.assertTrue(any("modo debe ser" in e for e in validar(plan(piezas=[{"tipo": "zoom", "modo": "golpe", "ancla": {"t": 3.0}, "porque": "prueba de modos"}]))[0]))
 
     def test_efecto_sin_pieza_ni_tiempo_y_anclas_ilegibles_no_truenan(self):
-        p = plan(sonido={"densidad": "minima", "efectos": [{"sonido": "pop"}], "musica": {"decision": "ninguna"}})
+        p = plan(sonido={"densidad": "minima", "efectos": [{"sonido": "pop"}], "musica": {"decision": "ninguna", "preguntado_a_emi": True}})
         self.assertTrue(any("lleva `en`" in e for e in validar(p)[0]))
         err, _, _ = validar(plan(piezas=[{"tipo": "titulo", "texto": "Hola", "ancla": {"palabra": "tres", "n": "dos"}, "porque": "prueba de anclas"}]))
         self.assertTrue(any("número ilegible" in e for e in err))
@@ -727,6 +720,208 @@ class Cierre(unittest.TestCase):
         despues = json.loads((self.d / "cortes.json").read_text())
         self.assertIsNone(despues["aprobacion"])                                   # cualquier cambio invalida la aprobación
         self.assertTrue(any(c["tipo"] == "manual" for c in despues["cortes"]))
+
+
+class Auditoria2(unittest.TestCase):
+    """Regresiones de la segunda auditoría (11/11/2026): estrés del flujo, imagen y sonido, y reglas que solo cumplía la prosa."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    @unittest.skipUnless(HAY_FFMPEG, "sin FFmpeg")
+    def test_muchos_cortes_no_desfasan_y_no_dejan_basura(self):
+        fuente = self.tmp / "f.mp4"
+        comun.correr(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "testsrc2=s=180x320:r=30:d=40", "-f", "lavfi", "-i", "sine=f=220:d=40",
+                      "-c:v", "libx264", "-g", "30", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest", str(fuente)], capture_output=True)
+        quedan = [(k * 2.0, k * 2.0 + 1.2) for k in range(20)]                # 19 empalmes
+        COR.aplicar(fuente, self.tmp / "o.mp4", quedan, 30)
+        self.assertAlmostEqual(comun.duracion(self.tmp / "o.mp4"), 24.0, delta=0.1)
+        v, a = ED.duracion_de(self.tmp / "o.mp4", "v"), ED.duracion_de(self.tmp / "o.mp4", "a")
+        self.assertLess(abs(v - a), 0.08)                                    # imagen y sonido terminan juntos
+        self.assertFalse((self.tmp / "o.tramos").exists())
+
+    def test_con_ruido_de_fondo_fuerte_se_apoya_en_la_transcripcion_y_avisa(self):
+        n, hz = int(8 * 16000), 16000
+        rng = np.random.default_rng(3)
+        x = rng.normal(0, 0.02, n)                                           # fondo a unos -34 dB: solo 14 dB bajo la voz... se sube abajo
+        x = rng.normal(0, 0.035, n)
+        t = np.arange(n) / hz
+        for a, b in ((0.3, 2.5), (5.0, 7.5)):
+            m = (t >= a) & (t < b)
+            x[m] += 0.1 * np.sin(2 * np.pi * 180 * t[m])
+        w = self.tmp / "r.wav"
+        with wave.open(str(w), "wb") as f:
+            f.setnchannels(1); f.setsampwidth(2); f.setframerate(hz)
+            f.writeframes((np.clip(x, -1, 1) * 32767).astype("<i2").tobytes())
+        p = COR.plan(w, pal((0.3, 2.5, "hola."), (5.0, 7.5, "adiós")), "natural", 30)
+        self.assertTrue(any("ruido o música de fondo" in a for a in p["avisos"]))
+        self.assertTrue([c for c in p["cortes"] if 2.5 < c["t0"] < 5.0], "debía proponer la pausa de 2.5 s que marca la transcripción")
+
+    def test_audio_en_silencio_avisa(self):
+        w = wav_con_voz(self.tmp / "s.wav", [], 3.0)
+        self.assertTrue(any("silencio" in a for a in COR.plan(w, [], "natural", 30)["avisos"]))
+
+    def test_repeticion_con_frases_en_medio_queda_dudosa(self):
+        palabras = pal((0.0, 0.4, "La"), (0.4, 0.8, "ley"), (0.8, 1.2, "dice"), (1.2, 1.6, "sí."),
+                       (2.5, 2.9, "Pero"), (2.9, 3.3, "nadie"), (3.3, 3.7, "la"), (3.7, 4.1, "respeta."),
+                       (5.0, 5.4, "La"), (5.4, 5.8, "ley"), (5.8, 6.2, "dice"), (6.2, 6.6, "sí."))
+        t = COR.proponer_tomas(palabras, 30)
+        self.assertEqual(t[0].get("estado"), "dudoso")
+        self.assertIn("frases de en medio", t[0]["motivo"])
+
+    def test_cambiar_la_censura_invalida_la_aprobacion(self):
+        p = {"fps": 30, "cortes": [], "censura": [{"i": 3, "accion": "tapar"}]}
+        antes = COR.huella_plan(p)
+        p["censura"][0]["accion"] = "dejar"
+        self.assertNotEqual(antes, COR.huella_plan(p))
+
+    def test_transcripcion_desordenada_o_con_una_palabra_dentro_de_otra(self):
+        t = TRA._salida("x", "es", [{"t0": 5.0, "t1": 5.4, "txt": "b"}, {"t0": 1.0, "t1": 3.0, "txt": "a"}, {"t0": 1.8, "t1": 2.2, "txt": "dentro"}])
+        self.assertTrue(all(w["t1"] > w["t0"] for w in t["palabras"]))
+        self.assertEqual([w["t0"] for w in t["palabras"]], sorted(w["t0"] for w in t["palabras"]))
+        self.assertEqual([w["i"] for w in t["palabras"]], list(range(len(t["palabras"]))))
+
+    def test_el_tope_del_espacio_se_cumple(self):
+        castorena = {**PERFIL, "espacio": "castorena", "edicion": {**PERFIL["edicion"], "nivel_tope": 2, "sonido": {"densidad": "ninguna"}, "movimiento": "sobrio"}}
+        br = {"respuestas_emi": {**BRIEF["respuestas_emi"], "nivel_elegido": "3"}}
+        err, _, _ = validar(plan(espacio="castorena", nivel=3), brief=br, perfil=castorena)
+        self.assertTrue(any("no pasa de nivel 2" in e for e in err))
+        err, _, _ = validar(plan(espacio="castorena", nivel=3, sobre_tope_pedido_por_emi="Emi: en este sí quiero nivel 3"), brief=br, perfil=castorena)
+        self.assertFalse(any("no pasa de nivel" in e for e in err))
+        con_efecto = plan(espacio="castorena", sonido={"densidad": "ninguna", "efectos": [{"t": 1.0, "sonido": "pop"}], "musica": {"decision": "ninguna", "preguntado_a_emi": True}})
+        self.assertTrue(any("no lleva efectos" in e for e in validar(con_efecto, perfil=castorena)[0]))
+        mas = plan(sonido={"densidad": "alta", "efectos": [], "musica": {"decision": "ninguna", "preguntado_a_emi": True}})
+        self.assertTrue(any("pasa de la del espacio" in e for e in validar(mas)[0]))
+
+    def test_lo_que_solo_cumplia_la_prosa(self):
+        sin_preguntar = plan(sonido={"densidad": "minima", "efectos": [], "musica": {"decision": "ninguna", "preguntado_a_emi": False}})
+        self.assertTrue(any("preguntado_a_emi" in e for e in validar(sin_preguntar)[0]))
+        br = {"respuestas_emi": {**BRIEF["respuestas_emi"], "quienes_salen": "Emi y dos compañeros del comité"}}
+        self.assertTrue(any("permiso_de_quienes_salen" in e for e in validar(plan(), brief=br)[0]))
+        br["respuestas_emi"]["permiso_de_quienes_salen"] = "sí, los dos lo dijeron por WhatsApp el 11/11"
+        self.assertFalse(any("permiso" in e for e in validar(plan(), brief=br)[0]))
+        sin_tipo = {"respuestas_emi": {**BRIEF["respuestas_emi"], "tipo_de_video": ""}}
+        self.assertTrue(any("tipo_de_video" in e for e in validar(plan(), brief=sin_tipo)[0]))
+
+    def test_plan_mal_formado_se_dice_claro_y_no_truena(self):
+        casos = [dict(tramos=[{"de": 1}]), dict(tramos=[{"de": 3, "a": 1, "nivel": 2}]), dict(nivel="2"),
+                 dict(subtitulos={"modo": "frase", "razon": "prueba de forma del plan", "ocultar": [[1]]}),
+                 dict(subtitulos={"modo": "frase", "razon": "prueba de forma del plan", "max_palabras": "tres"}),
+                 dict(piezas=[{"tipo": "rotulo", "texto": None, "ancla": {"t": 1}, "porque": "prueba de forma"}]),
+                 dict(piezas=[{"tipo": "titulo", "texto": "Hola", "ancla": {"t": "nan"}, "porque": "prueba de forma"}]),
+                 dict(piezas=[{"tipo": "titulo", "texto": "Hola", "ancla": {"t": 4}, "hasta": {"t": 2}, "porque": "prueba de forma"}]),
+                 dict(sonido={"densidad": "minima", "efectos": [{"t": 1, "sonido": "pop", "db": "fuerte"}], "musica": {"decision": "ninguna", "preguntado_a_emi": True}}),
+                 dict(sonido={"densidad": "minima", "efectos": [], "musica": {"decision": "archivo", "archivo": "base.mp4", "origen": "mío", "preguntado_a_emi": True}})]
+        for extra in casos:
+            err, _, _ = validar(plan(**extra), archivos={"base.mp4"})
+            self.assertTrue(err, extra)
+
+    def test_barrido_solo_sobre_un_corte(self):
+        b = {"tipo": "barrido", "ancla": {"t": 3.0}, "dura": 0.5, "porque": "cambia de sección"}
+        self.assertTrue(any("empalme" in e for e in validar(plan(piezas=[b]))[0]))
+        self.assertEqual(validar(plan(piezas=[b]), empalmes=[3.25])[0], [])
+
+    def test_panel_con_renglon_largo_y_tres_detras(self):
+        largo = {"tipo": "panel", "items": ["x" * 40], "ancla": {"t": 2.0}, "dura": 3, "porque": "resume la lista"}
+        self.assertTrue(any("pasa de 32 letras" in e for e in validar(plan(piezas=[largo]))[0]))
+        br = {"respuestas_emi": {**BRIEF["respuestas_emi"], "nivel_elegido": "3"}}
+        tres = [{"id": f"d{k}", "tipo": "detras", "texto": "PALABRA", "ancla": {"t": 1.0 + 2 * k}, "dura": 1, "porque": "prueba de límite"} for k in range(3)]
+        err, _, _ = validar(plan(nivel=3, piezas=tres), brief=br, archivos={f"recorte-d{k}.webm" for k in range(3)})
+        self.assertTrue(any("más de dos textos detrás" in e for e in err))
+
+    def test_foto_en_tarjeta_no_tapa_la_cara(self):
+        f = {"id": "f1", "tipo": "foto", "modo": "tarjeta", "archivo": "a.png", "origen_descripcion": "captura propia", "ancla": {"t": 2.0}, "porque": "enseña el documento"}
+        enorme = {"cajas": [{"t": 0.0, "x0": 100, "y0": 250, "x1": 980, "y1": 1150}]}
+        self.assertTrue(any("no cabe sin tapar la cara" in e for e in validar(plan(piezas=[f]), archivos={"a.png"}, rostro=enorme)[0]))
+        err, _, piezas = validar(plan(piezas=[f]), archivos={"a.png"}, rostro={"cajas": [{"t": 0.0, "x0": 300, "y0": 300, "x1": 780, "y1": 760}]})
+        self.assertEqual(err, [])
+        self.assertGreaterEqual(piezas[0]["caja"][1], 760)
+
+    def test_colores_que_si_se_leen(self):
+        pan = {"papel": "#F3EFE6", "tinta": "#253775", "acento": "#0043A1", "apoyo": "#EDBF4D"}
+        self.assertEqual(MON.mejor_sobre("#151515", [pan["acento"], pan["apoyo"]]), pan["apoyo"])     # el azul sobre oscuro no se lee
+        pagina, _ = MON.armar_html(plan(), [], PERFIL, [], 8.0, ROSTRO)
+        self.assertIn("--resalte:#FF5A1F", pagina)                           # el naranja de Emi sí se lee: se queda
+        self.assertGreater(MON.contraste("#FFFFFF", "#000000"), 20)
+        perfil_pan = {**PERFIL, "espacio": "pan", "colores": pan}
+        _, _, piezas = validar(plan(espacio="pan"), perfil=perfil_pan)
+        pagina, datos = MON.armar_html(plan(espacio="pan"), piezas, perfil_pan, MON.grupos_de_subtitulos(PALABRAS, {"modo": "karaoke", "mayusculas": True}), 8.0, ROSTRO)
+        self.assertEqual(datos["subs"]["activo"], pan["apoyo"])
+        self.assertIn("--resalte:#EDBF4D", pagina)
+
+    def test_titulo_largo_en_serif_parte_en_dos_o_se_rechaza(self):
+        caja = (90, 240, 960, 520)
+        tam, lineas = MON.tam_titulo("¿POR QUÉ NADIE LEE LA LETRA CHIQUITA HOY?", "Gelasio", caja, 1080)
+        self.assertEqual(lineas, 2)
+        ancho = max(len(x) for x in MON._lineas("¿POR QUÉ NADIE LEE LA LETRA CHIQUITA HOY?", 2)) * 0.80 * tam
+        self.assertLessEqual(ancho, (caja[2] - caja[0]))
+        castorena = {**PERFIL, "edicion": {**PERFIL["edicion"], "fuente_titular": "Gelasio"}}
+        cerrado = {"cajas": [{"t": 0.0, "x0": 200, "y0": 250, "x1": 900, "y1": 1080}]}
+        err, _, _ = validar(plan(piezas=[{"tipo": "titulo", "texto": "¿POR QUÉ NADIE LEE LA LETRA CHIQUITA HOY?", "ancla": {"t": 1}, "porque": "prueba de ancho"}]), perfil=castorena, rostro=cerrado)
+        self.assertTrue(any("no cabe legible" in e for e in err))
+
+    def test_los_subtitulos_tienen_un_solo_tamano(self):
+        import re
+        palabras = pal((0, 0.4, "Sí"), (0.5, 0.9, "claro"), (2.0, 2.6, "extraordinariamente"), (2.7, 3.3, "complicadísimo"))
+        grupos = MON.grupos_de_subtitulos(palabras, {"modo": "frase", "max_palabras": 2, "max_caracteres": 40})
+        pagina, _ = MON.armar_html(plan(), [], PERFIL, grupos, 8.0, ROSTRO)
+        tamanos = set(re.findall(r'class="grupo" id="g\d+" style="font-size:(\d+)px"', pagina))
+        self.assertEqual(len(tamanos), 1)
+
+    def test_panel_calcula_la_letra_para_que_quepa(self):
+        import re
+        pz = {"id": "pan1", "tipo": "panel", "titulo": "Antes de firmar", "items": ["Lee la letra chiquita completa", "Pregunta cuánto cuesta salirte", "Nunca firmes con prisa", "Pide copia sellada"], "ancla": {"t": 2.0}, "dura": 4, "porque": "resume la lista"}
+        _, _, piezas = validar(plan(piezas=[pz]))
+        pagina, _ = MON.armar_html(plan(piezas=[pz]), piezas, PERFIL, [], 8.0, ROSTRO)
+        letra = int(re.search(r'class="pz panel"[^>]*><div class="in" style="font-size:(\d+)px"', pagina).group(1))
+        alto = MON.PANEL_CAJA["9:16"][3] - MON.PANEL_CAJA["9:16"][1]
+        self.assertGreaterEqual(letra, MON.LETRA_MINIMA)
+        self.assertLessEqual(4 * letra * 1.14 + 4 * 20 + 68 + alto * 0.17 * 1.25, alto + 1)          # cabecera y cuatro renglones caben
+        self.assertGreaterEqual(letra, 40)                                   # y no queda diminuta
+
+    def test_el_movimiento_no_deja_saltos(self):
+        js = (comun.PLANTILLA / "editor.js").read_text(encoding="utf-8")
+        self.assertNotIn("immediateRender", js)                              # el estado inicial se fija al hacerse visible
+        self.assertNotIn('tl.set("#cam", { scale: 1, x: 0, y: 0 }, t1)', js)   # el zoom nunca regresa de golpe
+        css = (comun.PLANTILLA / "editor.css").read_text(encoding="utf-8")
+        self.assertIn(".mov-sobrio .cierre .flecha{display:none}", css)
+
+    @unittest.skipUnless(HAY_FFMPEG, "sin FFmpeg")
+    def test_los_efectos_se_nivelan_por_como_suenan(self):
+        AUD.sintetizar(self.tmp / "fx")
+        niveles = {n: AUD.sonoridad_corta(self.tmp / "fx" / f"{n}.wav") for n in AUD.EFECTOS}
+        self.assertTrue(all(v > -45 for v in niveles.values()), niveles)     # ninguno sale mudo (filtro mal puesto)
+        comun.correr(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "anoisesrc=c=pink:a=0.3:d=4", "-ar", "48000", "-ac", "2", str(self.tmp / "voz.wav")], capture_output=True)
+        info = AUD.mezclar(self.tmp / "voz.wav", self.tmp / "m.wav", [{"t": 1.0, "sonido": "ding", "db": 8}], self.tmp / "fx", 4.0)
+        self.assertAlmostEqual(niveles["ding"] + info["efectos"][0]["ganancia_db"], AUD.VOZ_LUFS - 8, delta=0.2)
+
+
+class Compuertas2(Cierre):
+    """Más comprobaciones de que lo rendido corresponde a lo aprobado (hereda la producción armada de `Cierre`)."""
+
+    def test_recortar_despues_de_cortar_se_detecta_antes_de_rendir(self):
+        self.huella_aplicada = COR.huella_plan(self.cortes)
+        self.cortes["cortes"][0]["t0"] = 7.5
+        self.escribir()
+        err, _, _, _ = ED.validar_produccion(self.d)
+        self.assertTrue(any("cambiaron después de `cortar`" in e for e in err))
+
+    def test_mapa_de_rostro_de_otro_corte(self):
+        (self.d / "limpio.mp4").write_bytes(b"corte nuevo")
+        (self.d / "rostro.json").write_text(json.dumps({"cajas": ROSTRO["cajas"], "limpio": "otro"}))
+        err, _, _, _ = ED.validar_produccion(self.d)
+        self.assertTrue(any("mapa de rostro es de otro corte" in e for e in err))
+
+    def test_visto_bueno_final_solo_de_emi_y_para_este_archivo(self):
+        self.assertEqual(ED.main(["aprobar", str(self.d), "final", "--por", "Claude", "--nota", "se ve bien"]), 1)
+        self.assertEqual(ED.main(["aprobar", str(self.d), "final", "--por", "Emi", "--nota", "va, así publícalo"]), 0)
+        self.assertIn("TERMINADO", ED.cierre(self.d))
+        visto = json.loads((self.d / "brief.json").read_text())["visto_y_escuchado_por_emi"]
+        visto["final_sha"] = "otro"
+        b = json.loads((self.d / "brief.json").read_text()); b["visto_y_escuchado_por_emi"] = visto
+        (self.d / "brief.json").write_text(json.dumps(b))
+        self.assertIn("FALTA que Emi", ED.cierre(self.d))
 
 
 if __name__ == "__main__":

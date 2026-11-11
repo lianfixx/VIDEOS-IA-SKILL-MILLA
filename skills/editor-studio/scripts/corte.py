@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import difflib
 import re
+import shutil
 import time
 import unicodedata
 import wave
@@ -141,13 +142,38 @@ def _palabra_en(palabras: list[dict], t: float) -> dict | None:
     return None
 
 
+def umbral_de_silencio(db, palabras: list[dict] | None) -> tuple[float, float, float]:
+    """(umbral, nivel de voz, piso de ruido). Con ruido o música de fondo el umbral sube con el piso:
+    16 dB bajo la voz quedaría por debajo del ruido y nunca habría silencio."""
+    voz = nivel_de_voz(db, palabras)
+    piso = float(np.percentile(db, 10))
+    return max(voz - BAJO_LA_VOZ, min(voz - 6.0, piso + 6.0)), voz, piso
+
+
+def huecos_de_texto(palabras: list[dict], minimo: float, total: float) -> list[tuple[float, float]]:
+    """Pausas según la transcripción: sirven cuando el fondo no deja medir el silencio en el audio."""
+    out, previo = [], 0.0
+    for p in sorted(palabras, key=lambda p: p["t0"]):
+        if p["t0"] - previo >= minimo:
+            out.append((round(previo, 3), round(p["t0"], 3)))
+        previo = max(previo, p["t1"])
+    if total - previo >= minimo:
+        out.append((round(previo, 3), round(total, 3)))
+    return out
+
+
 def proponer_silencios(db, palabras: list[dict], ritmo: str, fps: int, total: float) -> list[dict]:
     if ritmo not in RITMOS:
         raise ErrorEditor(f"ritmo desconocido: {ritmo}. Opciones: {', '.join(RITMOS)}")
     r = RITMOS[ritmo]
-    umbral = nivel_de_voz(db, palabras) - BAJO_LA_VOZ
+    umbral, voz, piso = umbral_de_silencio(db, palabras)
+    medidos = silencios(db, umbral, r["silencio"])
+    if palabras and voz - piso < 12.0:
+        # fondo fuerte: se suman las pausas que marca la transcripción y que el audio no dejó ver
+        medidos = sorted(set(medidos) | {h for h in huecos_de_texto(palabras, r["silencio"], total)
+                                         if not any(a < h[1] and h[0] < b for a, b in medidos)})
     cortes = []
-    for a, b in silencios(db, umbral, r["silencio"]):
+    for a, b in medidos:
         antes = max((p for p in palabras if p["t1"] <= a + 0.05), key=lambda p: p["t1"], default=None)
         aire_izq = r["aire"] * (1.5 if antes and fin_de_frase(antes["txt"]) else 1.0)
         t0, t1 = a + aire_izq, b - r["aire"]
@@ -242,11 +268,16 @@ def proponer_tomas(palabras: list[dict], fps: int) -> list[dict]:
                 t0 = _al_cuadro(max(antes + 0.02, fr[i][0]["t0"] - 0.05), fps, arriba=True)      # sin comerse la cola de la palabra anterior
                 t1 = _al_cuadro(fr[j][0]["t0"] - 0.08, fps)
                 if t1 - t0 >= MIN_CUADROS / fps:
-                    cortes.append({"t0": t0, "t1": t1, "tipo": "toma",
-                                   "texto": " ".join(p["txt"] for p in fr[i])[:120],
-                                   "motivo": ("arranque en falso" if en_falso and not repetida else "toma repetida")
-                                   + f"; gana la de {formato_tiempo(fr[j][0]['t0'])}: «"
-                                   + " ".join(p["txt"] for p in fr[j])[:80] + "»"})
+                    corte = {"t0": t0, "t1": t1, "tipo": "toma",
+                             "texto": " ".join(p["txt"] for p in fr[i])[:120],
+                             "motivo": ("arranque en falso" if en_falso and not repetida else "toma repetida")
+                             + f"; gana la de {formato_tiempo(fr[j][0]['t0'])}: «"
+                             + " ".join(p["txt"] for p in fr[j])[:80] + "»"}
+                    if j > i + 1:       # entre las dos hay frases distintas: puede ser una repetición a propósito
+                        medio = " / ".join(" ".join(p["txt"] for p in fr[k])[:50] for k in range(i + 1, j))
+                        corte["estado"] = "dudoso"
+                        corte["motivo"] += f". OJO: se irían también {j - i - 1} frases de en medio («{medio}»); puede ser énfasis y no una toma repetida"
+                    cortes.append(corte)
                     quitadas.update(range(i, j))
                 break
     return cortes
@@ -301,7 +332,16 @@ def plan(wav: Path, palabras: list[dict], ritmo: str, fps: int, muletillas: str 
     muestras, hz = leer_wav(wav)
     db = energia_db(muestras, hz)
     total = len(muestras) / hz
-    voz = nivel_de_voz(db, palabras)
+    umbral, voz, piso = umbral_de_silencio(db, palabras)
+    avisos = []
+    if voz < -60:
+        avisos.append("el audio está prácticamente en silencio: revisa que el video traiga voz")
+    elif voz - piso < 12.0:
+        avisos.append(f"hay ruido o música de fondo fuerte (solo {voz - piso:.0f} dB bajo la voz): los silencios se apoyan en las pausas "
+                      "de la transcripción; escucha la vista previa con más cuidado")
+    fuera = [p for p in palabras if p["t0"] >= total]
+    if fuera:
+        avisos.append(f"{len(fuera)} palabras de la transcripción caen después del final del audio: ¿es la transcripción de este video?")
     cortes = proponer_silencios(db, palabras, ritmo, fps, total)
     if palabras and muletillas != "ninguna":
         m = proponer_muletillas(palabras, fps)
@@ -312,7 +352,8 @@ def plan(wav: Path, palabras: list[dict], ritmo: str, fps: int, muletillas: str 
         cortes += m
         cortes += proponer_tomas(palabras, fps)
     return {"version": 1, "fps": fps, "ritmo": ritmo, "duracion_crudo_s": round(total, 3),
-            "voz_db": round(voz, 1), "umbral_db": round(voz - BAJO_LA_VOZ, 1), "muletillas": muletillas,
+            "voz_db": round(voz, 1), "piso_db": round(piso, 1), "umbral_db": round(umbral, 1), "muletillas": muletillas,
+            "avisos": avisos,
             "cortes": unir(cortes, fps, palabras), "censura": proponer_censura(palabras), "aprobacion": None,
             "creado": time.strftime("%Y-%m-%d %H:%M:%S")}
 
@@ -337,7 +378,8 @@ def tramos_que_quedan(p: dict, incluir_propuestos: bool = False) -> list[tuple[f
 
 def huella_plan(p: dict) -> str:
     """Cambia si cambia cualquier corte vigente: la aprobación vale solo para este plan."""
-    return huella(*(f"{c['t0']:.5f}-{c['t1']:.5f}-{c['estado']}" for c in p["cortes"]), str(p["fps"]))[:16]
+    return huella(*(f"{c['t0']:.5f}-{c['t1']:.5f}-{c['estado']}" for c in p["cortes"]),
+                  *(f"censura-{x.get('i')}-{x.get('accion')}" for x in p.get("censura") or []), str(p["fps"]))[:16]
 
 
 def exigir_aprobacion(p: dict) -> None:
@@ -387,41 +429,50 @@ def tiempo_limpio(t: float, quedan: list[tuple[float, float]]) -> float | None:
     return None
 
 
-def filtro_de_corte(quedan: list[tuple[float, float]], con_audio: bool = True, extra_video: str = "") -> str:
-    """Grafo de FFmpeg: recorta cada tramo, funde el audio 6 ms en cada empalme y concatena."""
-    if not quedan:
-        raise ErrorEditor("no queda nada después de cortar")
-    partes, n = [], len(quedan)
-    for k, (a, b) in enumerate(quedan):
-        partes.append(f"[0:v]trim=start={a}:end={b},setpts=PTS-STARTPTS{extra_video}[v{k}]")
-        if con_audio:
-            d = b - a
-            f_in = f"afade=t=in:st=0:d={FUNDIDO}," if k else ""
-            f_out = f",afade=t=out:st={max(0.0, d - FUNDIDO):.4f}:d={FUNDIDO}" if k < n - 1 else ""
-            partes.append(f"[0:a]atrim=start={a}:end={b},asetpts=PTS-STARTPTS,{f_in}aresample=48000{f_out}[a{k}]")
-    orden = "".join(f"[v{k}]" + (f"[a{k}]" if con_audio else "") for k in range(n))
-    partes.append(f"{orden}concat=n={n}:v=1:a={1 if con_audio else 0}[v]" + ("[a]" if con_audio else ""))
-    return ";\n".join(partes)
-
-
 def aplicar(entrada: Path, salida: Path, quedan: list[tuple[float, float]], fps: int, previa: bool = False,
             con_audio: bool = True) -> None:
+    """Corta tramo por tramo y los une. Memoria constante: sirve igual para 30 segundos que para 30 minutos.
+
+    (Un solo grafo con una rama por tramo guarda en memoria los cuadros de todas las ramas: con un clip
+    vertical de unos minutos agotaba la memoria.) El audio de cada tramo va sin comprimir hasta la unión,
+    para que no se acumule desfase, con 6 ms de fundido en cada empalme.
+    """
+    if not quedan:
+        raise ErrorEditor("no queda nada después de cortar")
     salida.parent.mkdir(parents=True, exist_ok=True)
-    guion = salida.with_suffix(".filtro.txt")
-    guion.write_text(filtro_de_corte(quedan, con_audio, ",scale=-2:640" if previa else ""), encoding="utf-8")
+    tmp = salida.parent / (salida.stem + ".tramos")
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
     calidad = ["-preset", "ultrafast", "-crf", "30"] if previa else ["-preset", "medium", "-crf", "16"]
-    cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(entrada), "-filter_complex_script", str(guion), "-map", "[v]"]
-    if con_audio:
-        cmd += ["-map", "[a]", "-c:a", "aac", "-b:a", "192k", "-ar", "48000"]
-    cmd += ["-r", str(fps), "-g", str(fps), "-c:v", "libx264", *calidad, "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(salida)]
-    correr(cmd, capture_output=True)
-    guion.unlink(missing_ok=True)
+    try:
+        lista, n = [], len(quedan)
+        for k, (a, b) in enumerate(quedan):
+            d, f = b - a, tmp / f"{k:04d}.mkv"
+            cmd = ["ffmpeg", "-y", "-v", "error", "-ss", f"{a:.6f}", "-i", str(entrada), "-t", f"{d:.6f}",
+                   "-vf", ("scale=-2:640," if previa else "") + f"fps={fps}", "-r", str(fps), "-g", str(fps),
+                   "-c:v", "libx264", *calidad, "-pix_fmt", "yuv420p"]
+            if con_audio:
+                fundidos = [x for x in ((f"afade=t=in:st=0:d={FUNDIDO}" if k else ""),
+                                        (f"afade=t=out:st={max(0.0, d - FUNDIDO):.4f}:d={FUNDIDO}" if k < n - 1 else "")) if x]
+                cmd += ["-af", ",".join(["aresample=48000"] + fundidos), "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2"]
+            else:
+                cmd += ["-an"]
+            correr(cmd + [str(f)], capture_output=True)
+            lista.append(f"file '{f.name}'")
+        (tmp / "lista.txt").write_text("\n".join(lista) + "\n", encoding="utf-8")
+        cmd = ["ffmpeg", "-y", "-v", "error", "-f", "concat", "-safe", "0", "-i", str(tmp / "lista.txt"), "-c:v", "copy"]
+        cmd += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000"] if con_audio else ["-an"]
+        correr(cmd + ["-movflags", "+faststart", str(salida)], capture_output=True)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 def verificar(wav_limpio: Path, quedan: list[tuple[float, float]], palabras_limpias: list[dict], umbral_db: float,
-              esperado_s: float, real_s: float, fps: int) -> list[str]:
+              esperado_s: float, real_s: float, fps: int, video_s: float | None = None, audio_s: float | None = None) -> list[str]:
     """Avisos sobre el video ya cortado: duración, empalmes en plena voz y palabras partidas."""
     avisos = []
+    if video_s is not None and audio_s is not None and abs(video_s - audio_s) > 2.5 / fps:
+        avisos.append(f"la imagen dura {video_s:.2f} s y el sonido {audio_s:.2f} s: quedaron desfasados")
     if abs(esperado_s - real_s) > 2.5 / fps:
         avisos.append(f"la duración salió {real_s:.2f} s y se esperaban {esperado_s:.2f} s: voz e imagen pueden estar desfasadas")
     muestras, hz = leer_wav(wav_limpio)
