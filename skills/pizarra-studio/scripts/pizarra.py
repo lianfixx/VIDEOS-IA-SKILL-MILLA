@@ -158,6 +158,15 @@ def faltantes(brief: dict) -> dict:
     return {"preguntas": sin, "aprobaciones": {k: v for k, v in APROBACIONES.items() if ap.get(k) is not True}}
 
 
+def preferencias() -> dict:
+    """Lo que Emi ya decidió para todos sus videos estilo pizarra; no se le vuelve a preguntar."""
+    f = vox.dir_espacios() / "PREFERENCIAS-PIZARRA.json"
+    if not f.is_file():
+        return {}
+    r = json.loads(f.read_text(encoding="utf-8")).get("respuestas") or {}
+    return {k: v for k, v in r.items() if k in PREGUNTAS and str(v).strip()}
+
+
 def leer_brief(d: Path) -> dict:
     f = d / "brief.json"
     if not f.is_file():
@@ -457,7 +466,9 @@ def main(argv=None) -> int:
                 (d / "index.html").write_text(html.replace('<script src="scenes.js">', '<script src="marca.js"></script>\n<script src="scenes.js">'), encoding="utf-8")
             else:  # el de estilos usa módulos: import marca from './marca.js'
                 (d / "marca.js").write_text(f"export default {cfg};\n", encoding="utf-8")
-            (d / "brief.json").write_text(json.dumps({**BRIEF_BASE, "espacio": a.perfil, "modo": a.modo, "estilo": a.estilo or "pizarron"}, ensure_ascii=False, indent=1))
+            respuestas = {**BRIEF_BASE["respuestas"], **preferencias()}
+            (d / "brief.json").write_text(json.dumps({**BRIEF_BASE, "espacio": a.perfil, "modo": a.modo, "estilo": a.estilo or "pizarron",
+                                                      "respuestas": respuestas}, ensure_ascii=False, indent=1))
             (d / "estados" / "saldo-inicio.json").write_text(json.dumps(vox.saldo()))
             print(f"Producción creada en {d} (modo {a.modo}). Sigue: `entrevista {d}`.\n")
             print("Antes de escribir nada, aplica lo aprendido:\n" + vox.leer_aprendizajes(a.perfil))

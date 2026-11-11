@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.1.0"
+  version: "0.1.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -33,7 +33,7 @@ Funciona con cualquier IA que tenga terminal: todo son comandos de `pizarra.py`,
 
 ## 1. Entrevista: todas las preguntas, siempre
 
-No se produce nada sin entrevista completa. `$P entrevista DIR` lista lo que falta en `brief.json`. Son 17 respuestas:
+No se produce nada sin entrevista completa. `$P entrevista DIR` lista lo que falta en `brief.json`. Son 17 respuestas; las que Emi ya dejó fijas en `espacios/PREFERENCIAS-PIZARRA.json` (hoy: **sin personaje** y **voz del espacio**) llegan respondidas y no se vuelven a preguntar. El **estilo** y la **música** se preguntan en cada video.
 
 tema e idea única · **postura de Emi** · público · objetivo · fuentes · formato · duración · tono · estilo · personaje · voz · música · efectos · gancho · cierre · marca en pantalla · referencias.
 
@@ -78,13 +78,12 @@ Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed
 
 ## 5. Que se vea hecho por una persona
 
-- Un foco por escena: un texto grande, un elemento y el personaje. La voz carga el resto.
-- El personaje **hace algo** con un objeto en cada escena y cambia de cara 2 a 4 veces; nunca está de adorno.
+- Un foco por escena: un texto grande y un elemento dibujado. La voz carga el resto.
+- **Sin personaje** por decisión de Emi: la vida la dan la mano que escribe (plumón, gis, lápiz, pincel), los objetos que se dibujan y actúan (algo cae, se tacha, se sella, se compara) y la cámara. Si un video necesitara personaje, se le pregunta; nunca la mascota de fábrica del motor, que es la de Claude.
 - Fondo, herramienta y composición distintos de una escena a otra; ninguna transición repetida seguida; transiciones de 0.4 a 0.8 s y motivadas por algo de la escena.
 - Texto con la voz de Emi, como habla: frases cortas, concretas, con su opinión. Nada de «en este video te explico», ni listas de adjetivos, ni moralejas.
 - Un dato abstracto se vuelve una comparación concreta que se ve (dos pilas, antes y después).
 - Humor del espacio: en `personal` cabe el sarcasmo; en `pan`, la crítica con datos; en `milla` y `castorena`, sobriedad.
-- Personaje: nunca la mascota de fábrica del motor (es la de Claude) salvo que Emi la pida; se usa lo que él eligió para ese espacio.
 - Nombres de terceros, clientes o asuntos en curso no salen en pantalla sin permiso expreso.
 
 ## 6. Que funcione en TikTok

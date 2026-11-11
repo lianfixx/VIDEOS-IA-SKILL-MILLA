@@ -19,11 +19,11 @@ Guía común para recomendar; la decisión es de Emi. Cada skill conserva sus pr
 | Cuaderno | listas, pasos, estudio, tutoriales | piezas institucionales |
 | Minimal | marcas premium, despachos, consultoría | temas que piden juego |
 
-## Punto de partida por espacio (candidato, sin aprobar)
+## Sugerencia por espacio (Emi decide el estilo en cada video)
 
 | Espacio | Primera propuesta | Alternativa | Por qué |
 |---|---|---|---|
-| personal | pizarrón | acuarela viva | es donde cabe el personaje con humor y sarcasmo |
+| personal | pizarrón | acuarela viva | es donde cabe el humor y el sarcasmo |
 | milla | cuaderno | minimal | explica pasos y derechos con claridad, sin chiste |
 | castorena | minimal | — | coincide con su identidad: marfil, tinta, dorado, serif |
 | pan | pizarrón | vox | crítica con datos; el dato se dibuja y se compara |
@@ -37,3 +37,5 @@ Cuando el tema necesita fotos o documentos reales, cuando el dato es la estrella
 ## Registro de lo aprendido
 
 Cada vez que Emi apruebe o rechace un estilo para un espacio, se anota aquí con fecha y se ajusta la tabla.
+
+- 2026-11-11 · Emi: el estilo de pizarra se decide en cada video (no hay uno fijo por espacio); sin personaje; voz del espacio; la música se le pregunta en cada video.

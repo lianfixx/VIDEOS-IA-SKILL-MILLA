@@ -27,6 +27,15 @@ class Entrevista(unittest.TestCase):
         self.assertEqual(set(f["preguntas"]), set(pizarra.PREGUNTAS))
         self.assertEqual(len(pizarra.PREGUNTAS), 17)
 
+    def test_preferencias_permanentes_no_se_vuelven_a_preguntar(self):
+        pref = pizarra.preferencias()
+        self.assertIn("sin personaje", pref["personaje"])
+        self.assertIn("voz del espacio", pref["voz"])
+        self.assertNotIn("estilo", pref)   # Emi quiere decidirlos en cada video
+        self.assertNotIn("musica", pref)
+        b = {**pizarra.BRIEF_BASE, "respuestas": {**pizarra.BRIEF_BASE["respuestas"], **pref}}
+        self.assertEqual(len(pizarra.faltantes(b)["preguntas"]), 15)
+
     def test_postura_de_relleno_no_cuenta(self):
         b = brief_completo(); b["respuestas"]["opinion_emi"] = "ok"
         self.assertIn("opinion_emi", pizarra.faltantes(b)["preguntas"])

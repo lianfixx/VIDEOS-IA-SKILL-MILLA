@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Pizarra Studio 0.1.1: preferencias permanentes de Emi y entorno
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, respuestas a las preguntas de arranque: estilo «decidir en cada video», personaje «sin personaje», voz «la del espacio», música «preguntarme en cada video».
+- Cambios: `espacios/PREFERENCIAS-PIZARRA.json` guarda sus respuestas permanentes y `proyecto` las escribe en el brief para no repetirlas; el estilo y la música se preguntan siempre. La skill cambia la regla del personaje (la vida la dan la mano, los objetos y la cámara). `espacios/ESTILOS.md` pasa de «punto de partida» a «sugerencia». Entorno `videos-ia-skill-milla`: el script de configuración instala el motor de pizarra con `pizarra.py instalar` (aprobado por Emi en la tarjeta).
+- Archivos: `espacios/{PREFERENCIAS-PIZARRA.json,ESTILOS.md,APRENDIZAJES-PIZARRA.md}`, `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}` y este registro.
+- Verificación: pruebas de pizarra-studio 13/13 → aprobado; `pizarra.py instalar` ejecutado desde la carpeta donde arranca el script del entorno → aprobado; el script completo en un arranque nuevo → no ejecutado.
+- Pendiente: primer video real; fusionar a `main`.
+
 ## 2026-11-11 · Pizarra Studio 0.1.0 (candidata): videos dibujados a mano con las mismas reglas
 
 - Agente: Claude Code (sesión en la nube)
