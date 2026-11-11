@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Paquete de Vox Studio para la app: auditoría y enlaces corregidos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: auditar a fondo antes de darle el texto para que otra IA suba la skill a la app de Claude.
+- Cambios: el empaquetador corrige los dos enlaces de `espacios/ESTILOS.md` que en el paquete apuntaban fuera, y ahora se niega a entregar un paquete con cualquier enlace roto.
+- Archivos: `tools/empaquetar_vox.py` y este registro.
+- Verificación: paquete regenerado y descomprimido en limpio: nombre y descripción dentro de los límites de la app (10 y 457 caracteres), 0 enlaces rotos (antes 2), sin claves, correos ni archivos de medios, 411 KB sin comprimir; `vox.py espacios` y `validar` del ejemplo funcionan desde el paquete → aprobado. Subida a la app → no ejecutado (requiere la sesión de Emi).
+- Pendiente: subir `dist/vox-studio.zip` a la app; fusionar este arreglo a `main`.
+
 ## 2026-11-11 · Vox Studio 0.12.0: Flow Music como complemento opcional de la música
 
 - Agente: Claude Code (sesión en la nube)
