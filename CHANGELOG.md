@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Espacio pan: voz nueva (Diego, candidata) y auditoría de sincronía de ¡ACCIÓNate!
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: «cambia la voz y audita que esté todo perfecto sincronizado».
+- Cambios: `espacios/pan/perfil.json` pasa de Daniel Virgen (hyped) a Diego - Cálida y Conversacional (`4rOzDieCbHQQyo9tzqZv`, mexicano, joven) con `speed` 1.07, `stability` 0.45 y `style` 0.2; la eligió quien produce entre las voces mexicanas de la cuenta porque Emi pidió una natural y conversacional. Queda como candidata hasta que Emi la escuche. La producción privada ¡ACCIÓNate! se volvió a narrar y a sincronizar con `sync.py` (cada golpe visual atado a su palabra).
+- Archivos: `espacios/pan/{perfil.json,aprendizajes.md}`, `espacios/APRENDIZAJES-PIZARRA.md` y este registro.
+- Verificación: voz en el MP4 desfasada 3 ms de la toma → aprobado; subtítulos entre 30 ms después y 90 ms antes que la voz en 16 inicios de frase → aprobado; 24 golpes visuales comprobados en cuadros del MP4 antes y después de su palabra → aprobado; `render` → sin avisos (−14.31 LUFS, pico −1.52 dBTP, 47.53 s); QR leído en tres cuadros → aprobado; pruebas de vox-studio y pizarra-studio → aprobado. Cómo suena la voz → no verificable por una IA.
+- Pendiente: que Emi escuche a Diego y diga si se queda como voz del espacio; el espacio personal sigue con Daniel Virgen.
+
 ## 2026-11-11 · Vox Studio 0.9.1 y Pizarra Studio 0.3.1: ritmo de la voz ajustable por espacio
 
 - Agente: Claude Code (sesión en la nube)
