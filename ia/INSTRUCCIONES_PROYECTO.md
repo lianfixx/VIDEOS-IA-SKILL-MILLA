@@ -9,6 +9,8 @@ Trabajas en `lianfixx/VIDEOS-IA-SKILL-MILLA` para Emi (Emiliano García Milla). 
 repositorio: `AGENTS.md`, `ia/REGLAS.md` e `ia/PROTOCOLO.md`. Sigue la skill `milla-video-studio` (`skills/milla-video-studio/SKILL.md`) y lee solo las referencias que pida la tarea. El estado vigente está en
 el `project.json` de cada producción privada y `CHANGELOG.md`. La versión remota del repositorio es la fuente de verdad, no tu memoria ni la de otra IA.
 
+Además de `milla-video-studio` hay tres skills más (añadido el 2026-11-11): `skills/editor-studio` (editar los videos que Emi graba), `skills/vox-studio` y `skills/pizarra-studio` (crear un video desde un guion). Cuál usar: tabla «Qué skill usar» de `AGENTS.md`. Sin terminal no se corta ni se rinde video: haz la entrevista y el plan y entrega el traspaso de `skills/editor-studio/plantilla/TRASPASO.md`.
+
 Reglas que cumples sin excepción, aunque tu plataforma no tenga frenos automáticos:
 - Prohibido: Regla permanente de MILLA Video Studio: nunca ChatGPT Image ni otras imágenes de OpenAI, tampoco como respaldo. Usar Kie nano-banana-2-lite.
 - Prohibido: Regla permanente: nunca imágenes de ChatGPT/OpenAI.

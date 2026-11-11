@@ -8,6 +8,7 @@
     energico: { entra: 0.32, sale: 0.22, ease: "power4.out", rebote: "back.out(1.7)" },
     sobrio: { entra: 0.6, sale: 0.35, ease: "power2.out", rebote: "power2.out" }
   };
+  var SOBRIO = P.movimiento === "sobrio";
   var M = PERFIL[P.movimiento] || PERFIL.suave;
   var W = P.W, H = P.H;
 
@@ -15,9 +16,11 @@
     tl.set(sel, { visibility: "visible" }, a);
     tl.set(sel, { visibility: "hidden" }, b);
   }
-  function desde(sel, de, a, t, dur, ease) {
-    var hasta = Object.assign({}, a, { duration: dur || M.entra, ease: ease || M.ease, immediateRender: false });
-    tl.fromTo(sel, de, hasta, t);
+  // el estado inicial se fija en `antes` (cuando la pieza se hace visible), no al arrancar la transición:
+  // así nada se ve completo, se apaga y vuelve a entrar
+  function desde(sel, de, a, t, dur, ease, antes) {
+    tl.set(sel, de, antes === undefined ? t : Math.min(antes, t));
+    tl.to(sel, Object.assign({}, a, { duration: dur || M.entra, ease: ease || M.ease }), t);
   }
   function salir(sel, a, t1, dur) {
     var d = dur || M.sale;
@@ -39,14 +42,14 @@
     switch (p.tipo) {
       case "titulo":
         ver(s, t0, t1);
-        desde(i, { opacity: 0, y: 46, scale: 0.96 }, { opacity: 1, y: 0, scale: 1 }, t0, M.entra, M.rebote);
-        salir(i, { opacity: 0, y: -24 }, t1);
+        desde(i, { opacity: 0, y: SOBRIO ? 16 : 46, scale: SOBRIO ? 1 : 0.96 }, { opacity: 1, y: 0, scale: 1 }, t0, M.entra, M.rebote);
+        salir(i, { opacity: 0, y: SOBRIO ? 0 : -24 }, t1);
         break;
       case "rotulo":
         ver(s, t0, t1);
-        desde(i, { opacity: 0, x: -70 }, { opacity: 1, x: 0 }, t0);
-        desde(s + " .barra", { scaleY: 0 }, { scaleY: 1 }, t0 + 0.08, 0.35, "power3.out");
-        salir(i, { opacity: 0, x: -40 }, t1);
+        desde(i, { opacity: 0, x: SOBRIO ? -24 : -70 }, { opacity: 1, x: 0 }, t0);
+        desde(s + " .barra", { scaleY: 0 }, { scaleY: 1 }, t0 + 0.08, 0.35, "power3.out", t0);
+        salir(i, { opacity: 0, x: SOBRIO ? 0 : -40 }, t1);
         break;
       case "fuente":
         ver(s, t0, t1);
@@ -55,31 +58,39 @@
         break;
       case "sello":
         ver(s, t0, t1);
-        desde(i, { opacity: 0, scale: 1.9, rotation: 16 }, { opacity: 1, scale: 1, rotation: 6 }, t0, 0.3, "back.out(1.6)");
-        salir(i, { opacity: 0, scale: 0.9 }, t1, 0.2);
+        if (SOBRIO) {
+          desde(i, { opacity: 0 }, { opacity: 1 }, t0, 0.4, "power2.out");
+        } else {
+          desde(i, { opacity: 0, scale: 1.9, rotation: 16 }, { opacity: 1, scale: 1, rotation: 6 }, t0, 0.3, "back.out(1.6)");
+        }
+        salir(i, { opacity: 0, scale: SOBRIO ? 1 : 0.9 }, t1, 0.2);
         break;
       case "dato":
         ver(s, t0, t1);
-        desde(i, { opacity: 0, y: 60 }, { opacity: 1, y: 0 }, t0, M.entra, M.rebote);
-        desde(s + " .eti", { opacity: 0 }, { opacity: 1 }, t0 + 0.2, 0.3);
-        desde(s + " .fu", { opacity: 0 }, { opacity: 0.8 }, t0 + 0.35, 0.3);
-        salir(i, { opacity: 0, y: -20 }, t1);
+        desde(i, { opacity: 0, y: SOBRIO ? 20 : 60 }, { opacity: 1, y: 0 }, t0, M.entra, M.rebote);
+        desde(s + " .eti", { opacity: 0 }, { opacity: 1 }, t0 + 0.2, 0.3, null, t0);
+        desde(s + " .fu", { opacity: 0 }, { opacity: 0.85 }, t0 + 0.35, 0.3, null, t0);
+        salir(i, { opacity: 0, y: SOBRIO ? 0 : -20 }, t1);
         break;
       case "cierre":
         ver(s, t0, t1);
-        desde(i, { opacity: 0, scale: 0.7, rotation: -4 }, { opacity: 1, scale: 1, rotation: -2 }, t0, 0.4, "back.out(1.5)");
-        // la flecha baja y sube dos veces: empuja la mirada a los comentarios
-        tl.to(s + " .flecha", { y: 16, duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 3 }, t0 + 0.45);
+        if (SOBRIO) {
+          desde(i, { opacity: 0, y: 14 }, { opacity: 1, y: 0 }, t0, 0.6, "power2.out");
+        } else {
+          desde(i, { opacity: 0, scale: 0.7, rotation: -4 }, { opacity: 1, scale: 1, rotation: -2 }, t0, 0.4, "back.out(1.5)");
+          // la flecha baja y sube dos veces: empuja la mirada a los comentarios
+          tl.to(s + " .flecha", { y: 16, duration: 0.35, ease: "sine.inOut", yoyo: true, repeat: 3 }, t0 + 0.45);
+        }
         break;
       case "foto":
         ver(s, t0, t1);
         if (p.modo === "tarjeta") {
-          desde(i, { opacity: 0, y: 80, rotation: -3, scale: 0.94 }, { opacity: 1, y: 0, rotation: -1.2, scale: 1 }, t0, M.entra, M.rebote);
+          desde(i, { opacity: 0, y: 80, rotation: SOBRIO ? 0 : -3, scale: 0.94 }, { opacity: 1, y: 0, rotation: SOBRIO ? 0 : -1.2, scale: 1 }, t0, M.entra, M.rebote);
           salir(i, { opacity: 0, y: 50 }, t1);
         } else {
-          desde(i, { opacity: 0 }, { opacity: 1 }, t0, 0.12, "none");
-          desde(s + " img", { scale: 1.0 }, { scale: 1.07 }, t0, dur, "none");
-          salir(i, { opacity: 0 }, t1, 0.12);
+          // corte seco de entrada y de salida, con un empuje lento mientras dura
+          tl.set(s + " img", { scale: 1 }, t0);
+          tl.to(s + " img", { scale: 1.07, duration: dur, ease: "none" }, t0);
         }
         break;
       case "inserto":
@@ -102,30 +113,34 @@
         desde(i, { scaleX: 0 }, { scaleX: 1 }, t0, dur, "none");
         break;
       case "barrido":
+        // cubre un corte: entra, tapa el empalme a la mitad y sale. Los subtítulos se apagan mientras pasa.
         ver(s, t0, t1);
         desde(i, { xPercent: -101 }, { xPercent: 0 }, t0, dur * 0.5, "power3.in");
         tl.to(i, { xPercent: 101, duration: dur * 0.5, ease: "power3.out" }, t0 + dur * 0.5);
+        tl.set("#subs", { opacity: 0 }, t0);
+        tl.set("#subs", { opacity: 1 }, t1);
         break;
       case "particulas":
         ver(s, t0, t1);
         var azar = semilla(p.id);
         for (var k = 0; k < p.n; k++) {
-          // salen hacia los lados y caen: nunca suben hacia la cara
+          // salen hacia los lados y caen poco: nunca suben a la cara ni bajan a los subtítulos
           var lado = azar() < 0.5 ? 1 : -1;
           var dist = W * (0.16 + 0.3 * azar());
           var q = s + "k" + k;
           desde(q, { x: 0, y: 0, opacity: 1, scale: 0.4, rotation: 0 },
-            { x: lado * dist, y: H * (0.04 + 0.16 * azar()), opacity: 0, scale: 1, rotation: 360 * (azar() - 0.5) },
-            t0 + 0.04 * azar(), Math.min(dur, 0.9 + 0.3 * azar()), "power2.out");
+            { x: lado * dist, y: p.caida * (0.2 + 0.8 * azar()), opacity: 0, scale: 1, rotation: 360 * (azar() - 0.5) },
+            t0 + 0.04 * azar(), Math.min(dur, 0.9 + 0.3 * azar()), "power2.out", t0);
         }
         break;
       case "zoom":
-        // acercamiento suave hacia la cara: entra con resorte corto, deriva lenta y regresa sin golpe
+        // acercamiento suave hacia la cara: entra con desaceleración, deriva apenas y regresa sin golpe
         var z = p.z, ox = foco[0] * (1 - z), oy = foco[1] * (1 - z);
         var entra = Math.min(0.5, dur * 0.35), sale = Math.min(0.45, dur * 0.3);
         if (p.modo === "push") {
-          tl.to("#cam", { scale: z, x: ox, y: oy, duration: dur, ease: "sine.inOut" }, t0);
-          tl.set("#cam", { scale: 1, x: 0, y: 0 }, t1);
+          // empuje continuo; el regreso también es una transición, nunca un salto
+          tl.to("#cam", { scale: z, x: ox, y: oy, duration: Math.max(0.1, dur - sale), ease: "sine.inOut" }, t0);
+          tl.to("#cam", { scale: 1, x: 0, y: 0, duration: sale, ease: "power2.inOut" }, t1 - sale);
         } else {
           tl.to("#cam", { scale: z, x: ox, y: oy, duration: entra, ease: "power3.out" }, t0);
           var z2 = z + 0.012;
@@ -135,22 +150,25 @@
         break;
       case "panel":
         var c = p.cam, mv = 0.6;
-        tl.to("#camwrap", { clipPath: c.recorte, duration: mv, ease: "power3.inOut" }, t0);
+        // la cámara se encoge primero y el panel aparece cuando ya hay sitio; al salir, la cámara
+        // crece antes de que se abra el recorte, para que nunca asome el fondo
         tl.to("#cam", { scale: c.s, x: c.x, y: c.y, duration: mv, ease: "power3.inOut" }, t0);
-        ver(s, t0 + 0.15, t1);
-        desde(i, { opacity: 0, y: -50 }, { opacity: 1, y: 0 }, t0 + 0.2, 0.45, M.rebote);
+        tl.to("#camwrap", { clipPath: c.recorte, duration: mv, ease: "power3.inOut" }, t0);
+        ver(s, t0 + mv * 0.8, t1 - mv * 0.9);
+        desde(i, { opacity: 0, y: -40 }, { opacity: 1, y: 0 }, t0 + mv * 0.8, 0.4, M.rebote);
+        var cuerpo = Math.max(0.6, dur - mv * 2 - 0.8);
         for (var n = 0; n < (p.items || 0); n++) {
-          desde(s + "i" + n, { opacity: 0, x: -40 }, { opacity: 1, x: 0 }, t0 + 0.5 + n * Math.min(0.9, (dur - 1.4) / Math.max(1, p.items)), 0.35);
+          desde(s + "i" + n, { opacity: 0, x: -40 }, { opacity: 1, x: 0 },
+            t0 + mv + 0.25 + n * Math.min(0.9, cuerpo / Math.max(1, p.items)), 0.35, null, t0);
         }
-        salir(i, { opacity: 0, y: -30 }, t1 - mv * 0.5);
-        tl.to("#camwrap", { clipPath: "inset(0px 0px 0px 0px round 0px)", duration: mv, ease: "power3.inOut" }, t1 - mv);
-        tl.to("#cam", { scale: 1, x: 0, y: 0, duration: mv, ease: "power3.inOut" }, t1 - mv);
+        salir(i, { opacity: 0, y: -30 }, t1 - mv * 0.9, 0.25);
+        tl.to("#cam", { scale: 1, x: 0, y: 0, duration: mv * 0.75, ease: "power3.inOut" }, t1 - mv);
+        tl.to("#camwrap", { clipPath: "inset(0px 0px 0px 0px round 0px)", duration: mv, ease: "power2.in" }, t1 - mv);
         break;
     }
   });
 
   // ----- subtítulos: un grupo a la vez; entrada solo después de una pausa real -----
-  var activo = getComputedStyle(document.documentElement).getPropertyValue("--acento").trim() || "#ffcc00";
   var previoEncadenado = false;
   P.grupos.forEach(function (g, k) {
     var s = "#g" + k;
@@ -162,8 +180,10 @@
     if (P.subs.modo === "karaoke") {
       g.w.forEach(function (w, n) {
         var q = s + "w" + n;
-        tl.set(q, { color: activo, scale: 1.08 }, w[0]);
-        tl.set(q, { color: P.subs.color, scale: 1 }, Math.max(w[1], w[0] + 0.08));
+        // la palabra queda encendida hasta que empieza la siguiente: sin parpadeo en los huecos
+        var apaga = n + 1 < g.w.length ? Math.max(g.w[n + 1][0], w[0] + 0.08) : Math.max(w[1], w[0] + 0.08);
+        tl.set(q, { color: P.subs.activo, scale: SOBRIO ? 1 : 1.08 }, w[0]);
+        tl.set(q, { color: P.subs.color, scale: 1 }, apaga);
       });
     }
   });

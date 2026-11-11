@@ -22,7 +22,7 @@ Los subtítulos y los cortes van en los tres.
 1. Se parte del nivel del espacio (`edicion.json → nivel_partida`): personal 2, milla 2, castorena 1, pan 2.
 2. Si el tipo de video se sostiene con menos (clip de podcast, entrevista), se baja.
 3. Si el tipo admitiría más (anuncio, lanzamiento), **no** se sube todo el video: se propone el nivel 3 solo en el gancho o en el cierre con `tramos`.
-4. No se pasa del tope del espacio (`nivel_tope`: milla y castorena 2) salvo que Emi lo pida.
+4. No se pasa del tope del espacio (`nivel_tope`: milla y castorena 2) salvo que Emi lo pida. El validador lo cumple: para pasar, sus palabras van en `plan.json → sobre_tope_pedido_por_emi`. Lo mismo con la densidad de sonido del espacio (`sonido.densidad_pedida_por_emi`).
 5. Un video de más de dos minutos no va entero en nivel 3.
 
 Regla de fondo: **el nivel más bajo que cumpla el propósito**. La sugerencia se dice con su porqué y Emi decide.

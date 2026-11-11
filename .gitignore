@@ -16,3 +16,4 @@ verification/
 *.key
 .DS_Store
 dist/
+*.webm

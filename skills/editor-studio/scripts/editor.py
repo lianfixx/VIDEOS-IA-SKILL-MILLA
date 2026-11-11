@@ -13,7 +13,7 @@ Uso (desde la raíz del repositorio):  E="python3 skills/editor-studio/scripts/e
   $E comparar-motores DIR                compara dos transcripciones del mismo audio
   $E cortes DIR [--ritmo natural] [--previa]      propone cortes: tabla y vista previa
   $E decidir DIR c003=descartado ...     decide cortes uno por uno (o --propuestos aprobado)
-  $E aprobar DIR cortes|muestra --por Emi --nota "lo que dijo"
+  $E aprobar DIR cortes|muestra|gasto|final --por Emi --nota "lo que dijo"
   $E cortar DIR                          aplica los cortes aprobados y verifica
   $E rostro DIR                          dónde está la cara, para no taparla y para los zooms
   $E niveles DIR                         los tres niveles para ESTE video y cuál se sugiere
@@ -177,7 +177,13 @@ def ingerir(d: Path, archivo: Path, formato: str = "9:16", encuadre: str = "", f
         escala = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}"
     filtros = ([HDR_A_SDR] if info["hdr"] else []) + [escala, f"fps={fps}", "format=yuv420p"]
     trabajo = d / "trabajo.mp4"
-    correr(["ffmpeg", "-y", "-v", "error", "-i", str(crudo), "-vf", ",".join(filtros), "-c:v", "libx264", "-preset", "medium",
+    # imagen y sonido pueden durar distinto en el crudo: se trabaja hasta donde hay los dos
+    dv, da = duracion_de(crudo, "v"), duracion_de(crudo, "a")
+    tope = ["-t", f"{min(dv, da):.3f}"] if dv and da and abs(dv - da) > 0.1 else []
+    # aresample con first_pts=0 conserva el desfase con que arranca el audio (celulares y grabadoras externas);
+    # sin él, toda la producción queda con la voz adelantada
+    correr(["ffmpeg", "-y", "-v", "error", "-i", str(crudo), *tope, "-vf", ",".join(filtros),
+            "-af", "aresample=async=1:first_pts=0", "-c:v", "libx264", "-preset", "medium",
             "-crf", "15", "-g", str(fps), "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
             "-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-movflags", "+faststart", str(trabajo)],
            capture_output=True)
@@ -185,9 +191,22 @@ def ingerir(d: Path, archivo: Path, formato: str = "9:16", encuadre: str = "", f
            capture_output=True)
     medios = {"original": {"nombre": crudo.name, "sha": sha_archivo(crudo), **info}, "formato": formato, "fps": fps,
               "encuadre": encuadre or "igual", "hdr_convertido": info["hdr"], "duracion_s": round(duracion(trabajo), 3),
+              "recortado_por_duracion": bool(tope), "imagen_s": dv, "sonido_s": da,
               "fecha": time.strftime("%Y-%m-%d %H:%M:%S")}
     escribir_json(d / "medios.json", medios)
     return medios
+
+
+def duracion_de(ruta: Path, flujo: str) -> float | None:
+    """Duración de la imagen («v») o del sonido («a») de un archivo, por separado."""
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", f"{flujo}:0", "-show_entries", "stream=duration:format=duration",
+                        "-of", "json", str(ruta)], capture_output=True, text=True)
+    try:
+        datos = json.loads(r.stdout)
+        valor = (datos.get("streams") or [{}])[0].get("duration")
+        return round(float(valor), 3) if valor not in (None, "N/A") else None
+    except (ValueError, IndexError, TypeError):
+        return None
 
 
 # ---------- rostro ----------
@@ -234,6 +253,8 @@ def mapa_de_rostro(d: Path, manual: str = "", video: str = "limpio.mp4") -> dict
             raise ErrorEditor("no se encontró ningún rostro: mira un cuadro y da la caja con --caja x0,y0,x1,y1")
         datos = {"origen": "detector", "cajas": [{k: (round(v, 1) if k != "t" else v) for k, v in c.items()} for c in cajas]}
     datos["formato"] = medios["formato"]
+    if (d / video).exists():
+        datos["limpio"] = sha_archivo(d / video)          # para saber si el mapa es de este corte
     escribir_json(d / "rostro.json", datos)
     return datos
 
@@ -308,6 +329,18 @@ def validar_produccion(d: Path) -> tuple[list[str], list[str], list[dict], dict]
     pendientes = [c for c in t["aplicado"].get("censura", []) if c.get("accion") == "avisar"]
     if pendientes:
         avi.append("modismos fuertes sin decidir (¿se quedan o se tapan?): " + ", ".join(f"«{c['texto']}» {formato_tiempo(c['t0'])}" for c in pendientes))
+    if (d / "cortes.json").exists() and t["aplicado"].get("huella") != COR.huella_plan(leer_json(d / "cortes.json")):
+        err.append("los cortes cambiaron después de `cortar`: repite `aprobar`, `cortar`, `rostro` y `armar`")
+    if t["rostro"] and t["rostro"].get("limpio") and (d / "limpio.mp4").exists() and t["rostro"]["limpio"] != sha_archivo(d / "limpio.mp4"):
+        err.append("el mapa de rostro es de otro corte: corre `rostro` otra vez")
+    for p in piezas:
+        if p.get("tipo") == "detras" and (d / "assets" / f"recorte-{p['id']}.webm").exists():
+            meta = d / "assets" / f"recorte-{p['id']}.json"
+            m = leer_json(meta) if meta.exists() else {}
+            base = d / "assets" / "base.mp4"
+            if (abs(m.get("t0", -9) - p["t0"]) > 0.02 or abs(m.get("t1", -9) - p["t1"]) > 0.02
+                    or (base.exists() and m.get("base") != sha_archivo(base))):
+                err.append(f"{p['id']} (detras): su recorte es de otro tramo o de otro corte; repite `recorte`")
     t["piezas"], t["censura"] = piezas, censura
     return err, avi, piezas, t
 
@@ -359,7 +392,8 @@ def armar(d: Path) -> dict:
     pagina, datos = MON.armar_html(t["plan"], piezas, t["perfil"], grupos, t["duracion"], t["rostro"])
     (d / "index.html").write_text(pagina, encoding="utf-8")
     escribir_json(d / "hyperframes.json", {"name": d.name})
-    escribir_json(d / "out" / "armado.json", {"huella_plan": huella_de_plan(t["plan"]), "piezas": piezas, "grupos": len(grupos),
+    escribir_json(d / "out" / "armado.json", {"huella_plan": huella_de_plan(t["plan"]), "cortes": t["aplicado"].get("huella"),
+                                             "limpio": sha_archivo(d / "limpio.mp4"), "piezas": piezas, "grupos": len(grupos),
                                              "duracion_s": t["duracion"], "avisos": avi, "fecha": time.strftime("%Y-%m-%d %H:%M:%S")})
     try:
         r = subprocess.run(["npx", "--no-install", "hyperframes", "lint"], cwd=d, capture_output=True, text=True)
@@ -386,6 +420,7 @@ def recortar_persona(d: Path) -> list[str]:
         correr(["npx", "--no-install", "hyperframes", "remove-background", str(tramo.resolve()), "--output", str(salida.resolve()), "--quality", "balanced"],
                cwd=d, capture_output=True)
         tramo.unlink(missing_ok=True)
+        escribir_json(salida.with_suffix(".json"), {"t0": p["t0"], "t1": p["t1"], "base": sha_archivo(d / "assets" / "base.mp4")})
         hechos.append(salida.name)
     return hechos
 
@@ -461,6 +496,8 @@ def render(d: Path, borrador: bool = False) -> dict:
     armado = leer_json(d / "out" / "armado.json") if (d / "out" / "armado.json").exists() else {}
     if armado.get("huella_plan") != huella_de_plan(t["plan"]) or not (d / "index.html").exists():
         raise ErrorEditor("el plan cambió después de armar: corre `armar` otra vez")
+    if armado.get("cortes") != t["aplicado"].get("huella") or armado.get("limpio") != sha_archivo(d / "limpio.mp4"):
+        raise ErrorEditor("se volvió a cortar después de armar: la imagen armada ya no corresponde a la voz. Corre `rostro` y `armar` otra vez")
     if not borrador and t["perfil"]["edicion"].get("estado") != "aprobado":
         ap = (t["brief"].get("aprobaciones") or {}).get("muestra") or {}
         if not ap.get("por"):
@@ -630,7 +667,11 @@ def cierre(d: Path) -> str:
         raise ErrorEditor("falta la hoja de publicación: `nota DIR` y llénala")
     ahora = saldo()
     escribir_json(d / "out" / "saldo-final.json", ahora)
-    estado = "visto y escuchado por Emi" if t["brief"].get("visto_y_escuchado_por_emi") else "FALTA que Emi lo vea y lo escuche"
+    visto = t["brief"].get("visto_y_escuchado_por_emi")
+    if isinstance(visto, dict) and visto.get("final_sha") != sha_archivo(final):
+        visto = None                                   # su visto bueno era de otro render
+    estado = ("visto y escuchado por Emi: TERMINADO" if visto
+              else "listo para enseñárselo. FALTA que Emi lo vea y lo escuche (`aprobar DIR final --por Emi --nota ...`); hasta entonces no está terminado")
     return f"Entrega: {final}\nEstado: {estado}\n\n" + tabla_saldo(t["brief"].get("saldo_inicial"), ahora)
 
 
@@ -701,7 +742,7 @@ def main(argv=None) -> int:
     s = con_dir("decidir"); s.add_argument("decisiones", nargs="*"); s.add_argument("--propuestos", choices=["aprobado", "descartado"])
     s.add_argument("--quitar", default="", help="corte manual: 12.4~18.9 con su motivo en --motivo"); s.add_argument("--motivo", default="")
     s.add_argument("--censura", default="", help="índice=tapar|dejar, por ejemplo 2=dejar")
-    s = con_dir("aprobar"); s.add_argument("que", choices=["cortes", "muestra", "gasto"]); s.add_argument("--por", required=True)
+    s = con_dir("aprobar"); s.add_argument("que", choices=["cortes", "muestra", "gasto", "final"]); s.add_argument("--por", required=True)
     s.add_argument("--nota", required=True); s.add_argument("--creditos", type=float)
     con_dir("cortar")
     s = con_dir("rostro"); s.add_argument("--caja", default="")
@@ -796,11 +837,14 @@ def despachar(a) -> int:
         palabras = [] if pal.get("aproximado") else pal["palabras"]
         p = COR.plan(d / "audio.wav", palabras, ritmo, medios["fps"], mul)
         if pal.get("aproximado"):
-            p["aviso"] = "transcripción aproximada: solo se proponen silencios; muletillas y tomas se marcan a mano con `decidir --quitar`"
+            p["avisos"].append("transcripción aproximada: solo se proponen silencios; muletillas y tomas se marcan a mano con `decidir --quitar`")
+        p["palabras_sha"] = sha_archivo(d / "palabras.json")       # los cortes valen para ESTA transcripción
         COR.guardar(p, d / "cortes.json")
         (d / "out").mkdir(exist_ok=True)
         (d / "out" / "cortes.md").write_text(COR.tabla(p) + "\n", encoding="utf-8")
         print(COR.tabla(p))
+        for x in p["avisos"]:
+            print(f"⚠ {x}")
         if a.previa:
             COR.aplicar(d / "trabajo.mp4", d / "out" / "previa-cortes.mp4", COR.tramos_que_quedan(p, incluir_propuestos=True), medios["fps"], previa=True)
             print(f"\nvista previa ligera: {d / 'out' / 'previa-cortes.mp4'}")
@@ -862,6 +906,13 @@ def despachar(a) -> int:
             b = leer_json(d / "brief.json")
             if a.que == "muestra":
                 b.setdefault("aprobaciones", {})["muestra"] = sello
+            elif a.que == "final":
+                final = d / "out" / "FINAL.mp4"
+                if not final.exists():
+                    raise ErrorEditor("no hay out/FINAL.mp4 que Emi haya podido ver")
+                if de_prueba:
+                    raise ErrorEditor("una producción de prueba no recibe visto bueno final")
+                b["visto_y_escuchado_por_emi"] = {**sello, "final_sha": sha_archivo(final)}
             else:
                 if a.creditos is None:
                     raise ErrorEditor("aprobar gasto lleva --creditos (el tope que Emi autorizó para este video)")
@@ -871,12 +922,15 @@ def despachar(a) -> int:
     if c == "cortar":
         medios, p, pal = leer_json(d / "medios.json"), leer_json(d / "cortes.json"), leer_json(d / "palabras.json")
         COR.exigir_aprobacion(p)
+        if p.get("palabras_sha") and p["palabras_sha"] != sha_archivo(d / "palabras.json"):
+            raise ErrorEditor("la transcripción cambió después de proponer los cortes: repite `cortes`, enséñaselos a Emi y vuelve a aprobar")
         quedan = COR.tramos_que_quedan(p)
         COR.aplicar(d / "trabajo.mp4", d / "limpio.mp4", quedan, medios["fps"])
         correr(["ffmpeg", "-y", "-v", "error", "-i", str(d / "limpio.mp4"), "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le", str(d / "limpio.wav")], capture_output=True)
         limpias = COR.remapear(pal["palabras"], quedan)
         esperado, real = sum(b - a_ for a_, b in quedan), duracion(d / "limpio.mp4")
-        avisos = COR.verificar(d / "limpio.wav", quedan, limpias, p["umbral_db"], esperado, real, medios["fps"])
+        avisos = COR.verificar(d / "limpio.wav", quedan, limpias, p["umbral_db"], esperado, real, medios["fps"],
+                               duracion_de(d / "limpio.mp4", "v"), duracion_de(d / "limpio.mp4", "a"))
         censura = []
         for x in p.get("censura", []):
             w = next((w for w in limpias if w.get("i_crudo") == x["i"]), None)       # la misma palabra, ya en el video cortado
@@ -884,6 +938,8 @@ def despachar(a) -> int:
                 if x.get("accion") == "tapar":
                     avisos.append(f"la palabra «{x['texto']}» ({formato_tiempo(x['t0'])} del crudo) quedó dentro de un corte: ya no hay nada que tapar")
                 continue
+            if COR.normal(w["txt"]) != COR.normal(x["texto"]):
+                raise ErrorEditor(f"la palabra a tapar («{x['texto']}») ya no coincide con la transcripción («{w['txt']}»): repite `cortes`")
             censura.append({"i": w["i_crudo"], "t0": w["t0"], "t1": w["t1"], "texto": x["texto"], "accion": x["accion"]})
         escribir_json(d / "palabras_limpio.json", {**{k: v for k, v in pal.items() if k != "palabras"}, "palabras": limpias})
         escribir_json(d / "cortes-aplicados.json", {"quedan": quedan, "empalmes": COR.empalmes(quedan), "duracion_s": round(real, 3),

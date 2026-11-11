@@ -12,23 +12,27 @@ from pathlib import Path
 from comun import ErrorEditor, correr, duracion, medir_sonoridad
 
 VOZ_LUFS = -16.0
-EFECTO_BAJO_VOZ = 8.0       # dB que un efecto queda bajo la voz, salvo que el plan diga otra cosa (6 a 14)
+EFECTO_BAJO_VOZ = 8.0       # unidades de sonoridad que un efecto queda bajo la voz, salvo que el plan diga otra cosa (6 a 14)
 MUSICA_BAJO_VOZ = 18.0      # LU que la música queda bajo la voz
 LUFS_FINAL = (-15.0, -13.0)
 PICO_MAX = -1.5
 
 # Efectos hechos con osciladores y ruido filtrado. Uno por idea: repetido pierde la gracia.
+# Cada tono lleva ataque corto y un armónico, para que no suene a pitido de prueba; el golpe lleva
+# un chasquido de medios para que se oiga en la bocina de un teléfono, que no reproduce 64 Hz.
 EFECTOS = {
-    "pop": "sine=f=880:d=0.09,afade=t=out:st=0.02:d=0.07",
-    "clic": "sine=f=1900:d=0.03,afade=t=out:st=0.005:d=0.025",
-    "deslizar": "anoisesrc=d=0.4:c=pink:a=0.6,bandpass=f=1400:w=1200,afade=t=in:d=0.22,afade=t=out:st=0.24:d=0.16",
-    "golpe": "sine=f=64:d=0.26,afade=t=out:st=0.03:d=0.23",
-    "subida": "anoisesrc=d=0.9:c=white:a=0.5,highpass=f=600,bandpass=f=2600:w=2200,afade=t=in:d=0.85:curve=exp,afade=t=out:st=0.86:d=0.04",
-    "ding": "sine=f=1318:d=0.5,afade=t=out:st=0.02:d=0.48",
-    "papel": "anoisesrc=d=0.28:c=white:a=0.5,highpass=f=2500,afade=t=in:d=0.05,afade=t=out:st=0.1:d=0.18",
-    "teclas": "anoisesrc=d=0.5:c=white:a=0.6,highpass=f=3000,tremolo=f=13:d=0.95,afade=t=out:st=0.4:d=0.1",
+    "pop": "aevalsrc='0.8*sin(2*PI*620*t)+0.25*sin(2*PI*1240*t)':d=0.11:s=48000,afade=t=in:d=0.003,afade=t=out:st=0.02:d=0.09",
+    "clic": "aevalsrc='0.7*sin(2*PI*1500*t)+0.3*sin(2*PI*3000*t)':d=0.035:s=48000,afade=t=in:d=0.002,afade=t=out:st=0.006:d=0.028",
+    "deslizar": "anoisesrc=d=0.4:c=pink:a=0.6,bandpass=f=1400:width_type=h:w=1200,afade=t=in:d=0.22,afade=t=out:st=0.24:d=0.16",
+    "golpe": "aevalsrc='0.9*sin(2*PI*110*t)*exp(-9*t)+0.35*sin(2*PI*220*t)*exp(-14*t)+0.25*(random(0)*2-1)*exp(-70*t)':d=0.3:s=48000,"
+             "lowpass=f=4000,afade=t=in:d=0.002,afade=t=out:st=0.2:d=0.1",
+    "subida": "anoisesrc=d=0.9:c=white:a=0.5,highpass=f=600,bandpass=f=2600:width_type=h:w=2200,afade=t=in:d=0.85:curve=exp,afade=t=out:st=0.86:d=0.04",
+    "ding": "aevalsrc='(0.7*sin(2*PI*880*t)+0.25*sin(2*PI*1760*t)+0.1*sin(2*PI*2640*t))*exp(-6*t)':d=0.6:s=48000,afade=t=in:d=0.003,afade=t=out:st=0.4:d=0.2",
+    "papel": "anoisesrc=d=0.28:c=pink:a=0.6,bandpass=f=3000:width_type=h:w=2500,afade=t=in:d=0.05,afade=t=out:st=0.1:d=0.18",
+    "teclas": "anoisesrc=d=0.5:c=pink:a=0.7,bandpass=f=2800:width_type=h:w=2200,tremolo=f=13:d=0.95,afade=t=out:st=0.4:d=0.1",
     "bip": "sine=f=1000:d=6.0",          # largo de sobra: se recorta a lo que dure la palabra
 }
+BIP_BAJO_VOZ = 12.0
 # Cuándo conviene cada uno (lo usa `sonido` para proponer; decide quien edita)
 PARA_PIEZA = {"titulo": "deslizar", "rotulo": "clic", "sello": "golpe", "dato": "ding", "cierre": "pop",
               "foto": "papel", "panel": "deslizar", "barrido": "deslizar", "detras": "golpe", "inserto": "deslizar",
@@ -62,6 +66,20 @@ def proponer(piezas: list[dict], densidad: str) -> list[dict]:
     return out
 
 
+def sonoridad_corta(ruta: Path) -> float:
+    """Sonoridad momentánea máxima (LUFS, ventana de 400 ms): lo fuerte que SE OYE un efecto corto.
+
+    Nivelar por pico engaña: un tono puro con el mismo pico que la voz suena mucho más fuerte que ella.
+    """
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(ruta), "-af", "apad=pad_dur=0.5,ebur128", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    valores = [float(x) for x in re.findall(r"\bM:\s*(-?[\d.]+)", r.stderr)]
+    valores = [v for v in valores if v > -70]
+    if not valores:
+        raise ErrorEditor(f"no se pudo medir {ruta.name}")
+    return max(valores)
+
+
 def _pico_db(ruta: Path) -> float:
     r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(ruta), "-af", "volumedetect", "-f", "null", "-"],
                        capture_output=True, text=True)
@@ -86,7 +104,6 @@ def mezclar(voz: Path, salida: Path, efectos: list[dict], dir_efectos: Path, tot
     if medida < -60:
         raise ErrorEditor("la pista de voz está en silencio")
     ganancia_voz = VOZ_LUFS - medida
-    pico_voz = _pico_db(voz) + ganancia_voz
     entradas, grafo, mezcla = ["-i", str(voz)], [], []
     filtro_voz = f"[0:a]aresample=48000,aformat=channel_layouts=stereo,volume={ganancia_voz:.2f}dB"
     for c in censura or []:
@@ -94,18 +111,19 @@ def mezclar(voz: Path, salida: Path, efectos: list[dict], dir_efectos: Path, tot
     grafo.append(filtro_voz + ",alimiter=limit=0.85:level=false[voz]")
     mezcla.append("[voz]")
     n, niveles = 1, []
-    for e in list(efectos) + [{"t": c["t0"], "sonido": "bip", "db": 10.0, "dura": c["t1"] - c["t0"]} for c in (censura or [])]:
+    for e in list(efectos) + [{"t": c["t0"], "sonido": "bip", "db": BIP_BAJO_VOZ, "dura": c["t1"] - c["t0"]} for c in (censura or [])]:
         archivo = dir_efectos / f"{e['sonido']}.wav"
         if not archivo.exists():
             raise ErrorEditor(f"falta el efecto {e['sonido']}: corre `sonido` primero")
         bajo = min(14.0, max(6.0, float(e.get("db", EFECTO_BAJO_VOZ))))
-        ganancia = (pico_voz - bajo) - _pico_db(archivo)          # el pico del efecto queda `bajo` dB bajo el de la voz
+        ganancia = (VOZ_LUFS - bajo) - sonoridad_corta(archivo)    # el efecto SUENA `bajo` unidades por debajo de la voz
         t = max(0.0, float(e["t"]) - ADELANTO.get(e["sonido"], 0.0))
-        recorte = f"atrim=0:{e['dura']:.3f},afade=t=out:st={max(0.0, e['dura'] - 0.01):.3f}:d=0.01," if e.get("dura") else ""
+        recorte = (f"atrim=0:{e['dura']:.3f},afade=t=in:d=0.008,afade=t=out:st={max(0.0, e['dura'] - 0.012):.3f}:d=0.012,"
+                   if e.get("dura") else "")
         entradas += ["-i", str(archivo)]
         grafo.append(f"[{n}:a]{recorte}volume={ganancia:.2f}dB,adelay={int(t * 1000)}|{int(t * 1000)}[e{n}]")
         mezcla.append(f"[e{n}]")
-        niveles.append({"sonido": e["sonido"], "t": round(t, 3), "bajo_la_voz_db": bajo})
+        niveles.append({"sonido": e["sonido"], "t": round(t, 3), "bajo_la_voz_db": bajo, "ganancia_db": round(ganancia, 1)})
         n += 1
     info_musica = None
     if musica:

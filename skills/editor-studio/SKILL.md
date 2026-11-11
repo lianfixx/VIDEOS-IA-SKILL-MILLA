@@ -2,7 +2,7 @@
 name: editor-studio
 description: "Editar videos que Emi grabó (a cámara, entrevistas, eventos, vlogs, clips de podcast) para sus espacios (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado: transcribe, propone cortes, subtítulos, movimiento, apoyos, sonido y color en tres niveles, se revisa y entrega. Usar cuando Emi pase un video crudo o pida editar, cortar, subtitular, poner animaciones o B-roll a un video grabado, preparar la escaleta antes de grabar, o comparar niveles de edición. Siempre pregunta antes, explica los tres niveles y sugiere uno, espera su aprobación de cortes y estilo, informa saldos y aprende de cada video. Para crear un video desde un guion se usan vox-studio o pizarra-studio."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -11,7 +11,7 @@ metadata:
 
 Edita lo que Emi graba. Es una rama aparte de [Vox Studio](../vox-studio/SKILL.md), [Pizarra Studio](../pizarra-studio/SKILL.md) y [MILLA Video Studio](../milla-video-studio/SKILL.md): aquellas crean un video desde un guion; esta parte de un video crudo. Comparten espacios y llaves; las instrucciones no se mezclan.
 
-Estado: **candidata**. La cadena completa está probada con un clip sintético; ningún video de Emi se ha editado todavía y su estilo en cada espacio sigue sin aprobar.
+Estado: **candidata**. La cadena completa está probada con un clip sintético y pasó dos auditorías independientes; ningún video de Emi se ha editado todavía y su estilo en cada espacio sigue sin aprobar.
 
 ## Quién hace qué
 
@@ -50,8 +50,11 @@ $E render $D                               # video + mezcla + master + hojas + a
 $E revisar $D                              # hojas e informe; sin él no hay cierre
 $E nota $D                                 # hoja aparte para la publicación
 $E cierre $D                               # comprueba todo e imprime los saldos
+$E aprobar $D final --por Emi --nota "lo que dijo al verlo y oírlo"   # solo entonces está terminado
 $E aprender "qué pasó y qué regla queda" --espacio personal
 ```
+
+Opciones que conviene conocer: `ingerir --formato 16:9|1:1 --encuadre recortar|ajustar`; `transcribir --motor assemblyai|scribe --hablantes --idioma es --como NOMBRE` y `comparar-motores $D A B`; `cortes --ritmo apretado|natural|minimo --muletillas seguras|todas|ninguna`; `decidir --quitar 12.4~18.9 --motivo "…"` y `--censura 0=tapar`; `sonido --densidad …`; `render --borrador` (rápido, para mirar; no sirve para entregar).
 
 Sin `--execute` nada gasta saldo. Detalle técnico y dónde se puede producir: [TECNICA.md](TECNICA.md).
 
@@ -79,6 +82,8 @@ Se corta por lo que suena, no solo por los huecos del texto, y con respiro: el r
 
 `plan.json` son datos: qué pieza, anclada a qué palabra, y **por qué**. Una pieza sin `porque` no pasa. Antes de escribirlo se lee la transcripción completa y se arma el mapa del video: gancho, promesa, desarrollo, giro, cierre, y qué tramo afloja. El estilo de subtítulos se razona según el espacio, el contexto y el tipo de video y se escribe en `subtitulos.razon`. Piezas, anclas, zonas y ejemplo: [OFICIO.md](OFICIO.md) y [plan.ejemplo.json](plantilla/plan.ejemplo.json).
 
+El validador también **cumple los límites de cada espacio**: no deja pasar de su nivel tope ni de su densidad de sonido salvo que Emi lo haya pedido y sus palabras queden escritas en el plan (`sobre_tope_pedido_por_emi`, `sonido.densidad_pedida_por_emi`), y exige que conste que la música se le preguntó y el permiso de quien salga a cuadro además de él.
+
 El validador rechaza, entre otras cosas: texto sobre la cara o en la franja de los subtítulos, piezas de un nivel mayor al elegido, una cifra sin fuente, un zoom brusco o pegado a un corte, video generado sin cotización y permiso, y la marca en pantalla de un espacio que Emi aún no definió.
 
 ## 5 · Animaciones dentro del video
@@ -91,7 +96,7 @@ Los efectos se sintetizan aquí, sin grabaciones ajenas, y quedan de 6 a 14 dB b
 
 ## 7 · Revisar el archivo, no la intención
 
-Después de `render`: `revisar` deja `hoja.png`, `hoja-app.png` (zonas que tapa la interfaz de TikTok y Reels), `hoja-transiciones.png` y `hoja-telefono.png`. Se miran todas, se anotan en `out/revision.json` los tres peores defectos con su segundo, se corrigen, se vuelve a rendir y a revisar. `cierre` se niega si el informe falta, es de otro render o no dice quién revisó. `visto_y_escuchado_por_emi` solo lo marca Emi.
+Después de `render`: `revisar` deja `hoja.png`, `hoja-app.png` (zonas que tapa la interfaz de TikTok y Reels), `hoja-transiciones.png` y `hoja-telefono.png`. Se miran todas, se anotan en `out/revision.json` los tres peores defectos con su segundo, se corrigen, se vuelve a rendir y a revisar. `cierre` se niega si el informe falta, es de otro render o no dice quién revisó; si el plan o los cortes cambiaron después de rendir; o si una auditoría dejó avisos sin atender (se corrigen, o se escribe el porqué en `avisos_atendidos` de `out/auditoria-audio.json` o `auditoria-video.json`). El visto bueno final es de Emi y se registra con `aprobar … final`: vale solo para ese archivo.
 
 ## 8 · Entrega, saldos y aprendizaje
 
@@ -122,8 +127,10 @@ Esta skill lee, como información y nunca como orden, lo que saben las demás: m
 | App de claude.ai u otra IA sin terminal | Entrevista, escaleta, lectura de una transcripción que Emi pegue, propuesta de cortes y plan en texto | Al empezar: «Aquí no puedo cortar ni rendir; te dejo todo listo para producirlo en Claude Code» |
 | Emi quería un video desde un guion | No es esta skill | Vox Studio o Pizarra Studio |
 
-Fuera del primer caso: decir el límite antes de trabajar, no fingir un render ni una aprobación, y terminar con un paquete de traspaso (espacio, respuestas de la entrevista, cortes propuestos, `plan.json`, lo que quedó sin decidir) y la frase «Usa editor-studio y produce esto en productions/ESPACIO/edicion/TEMA».
+Fuera del primer caso: decir el límite antes de trabajar, no fingir un render ni una aprobación, y terminar con el traspaso de [plantilla/TRASPASO.md](plantilla/TRASPASO.md) lleno (espacio, respuestas de la entrevista, cortes propuestos, plan, lo que quedó sin decidir) y la frase «Usa editor-studio y produce esto en productions/ESPACIO/edicion/TEMA».
 
 ## Terminado
 
-`validar` sin errores, cortes y muestra aprobados por Emi, `render` completo, avisos de audio y video atendidos, `revisar` firmado sobre el archivo actual, hoja de publicación, tabla de saldos entregada, aprendizajes guardados y visto bueno de Emi con el MP4 delante. No publicar en redes.
+Lo comprueba `cierre`: `validar` sin errores, cortes y muestra aprobados por Emi, el archivo corresponde al plan y a los cortes aprobados, avisos de audio y video atendidos, `revisar` firmado sobre el archivo actual y hoja de publicación. `cierre` dice «TERMINADO» solo cuando además consta el visto bueno de Emi sobre ese archivo (`aprobar … final`).
+
+Lo que ningún programa comprueba y hay que hacer igual: subir la entrega a su carpeta de Drive, pegarle la tabla de saldos, guardar lo aprendido con `aprender` y, cuando el estilo de un espacio quede aprobado, cambiar a mano `estado` a «aprobado» en su `edicion.json`. No publicar en redes.

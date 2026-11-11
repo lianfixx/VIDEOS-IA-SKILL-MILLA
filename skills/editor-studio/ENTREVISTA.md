@@ -33,7 +33,7 @@ Se le entrega la estructura (gancho, promesa, desarrollo, giro, cierre), consejo
 | 12 | `que_no_quiere` | ¿Algo que no quieras ver en esta edición? |
 | 13 | `cierre` | ¿Con qué cierra? Se le proponen dos o tres llamados que estén funcionando esa semana (ver `cerebro/tendencias/`) y el del perfil del espacio |
 
-Obligatorias para seguir: 1, 2, 3, 5, 7 y 8.
+Obligatorias para seguir (el validador se niega sin ellas): 1, 2, 3, 4, 5, 7, 8 y 10; y la 11 siempre que salga a cuadro alguien además de Emi. En el plan debe constar que la música se le preguntó (`sonido.musica.preguntado_a_emi: true`).
 
 ## Lo que se le pregunta después, con material delante
 
@@ -46,3 +46,20 @@ Obligatorias para seguir: 1, 2, 3, 5, 7 y 8.
 ## Lo que no se le pregunta
 
 Lo que se puede razonar con el perfil del espacio y el video delante: posición y tamaño de los subtítulos, dónde cabe un título sin tapar la cara, qué efecto de sonido va con cada pieza. Eso se propone ya resuelto, con su razón, y él corrige si quiere.
+
+## Palabras que usa esta skill, en claro
+
+| Palabra | Qué quiere decir |
+|---|---|
+| Crudo | El video tal como salió de la cámara, sin tocar |
+| Gancho | Lo primero que se ve y se oye: la razón para no deslizar |
+| Corte, empalme | Lo que se quita; el punto donde quedan unidas dos partes |
+| Muletilla | «eh», «este», «o sea»… |
+| Pieza | Cualquier cosa que se pone sobre el video: un título, un zoom, una foto |
+| Ancla | La palabra dicha a la que se amarra una pieza para que entre justo ahí |
+| Panel | La cámara se hace chica y deja sitio a una lista |
+| Inserto, B-roll | Imagen o animación que tapa a quien habla mientras se le sigue oyendo |
+| Compuerta | Un punto donde se detiene todo hasta que Emi dice que sí |
+| Muestra | Unos cuadros del video ya con el estilo, para aprobarlo antes de rendir |
+| Render | El archivo de video final |
+| LUFS | La medida del volumen que piden TikTok, Reels y YouTube (−14) |

@@ -17,7 +17,7 @@ Se produce en su propia skill, con sus reglas, como una escena suelta sin voz, y
 
 ## 3 · Texto detrás de la persona (nivel 3, sin costo)
 
-`detras` pone una palabra grande entre el fondo y quien habla. `$E recorte $D` recorta a la persona solo en esos tramos (entre 1 y 2 cuadros por segundo en este entorno: unos 25 s de trabajo por cada segundo de video, medido el 11/11/2026 con 1.5 s). Se lee mejor con la cabeza tapando entre un tercio y la mitad de la palabra: se revisa en la muestra y, si la tapa de más, se cambia la palabra o el segundo. Como mucho dos por video.
+`detras` pone una palabra grande entre el fondo y quien habla. `$E recorte $D` recorta a la persona solo en esos tramos (entre 1 y 2 cuadros por segundo en este entorno: unos 25 s de trabajo por cada segundo de video, medido el 11/11/2026 con 1.5 s). Se lee mejor con la cabeza tapando entre un tercio y la mitad de la palabra: se revisa en la muestra y, si la tapa de más, se cambia la palabra o el segundo. Como mucho dos por video (el validador rechaza el tercero). Si la cabeza taparía más de la mitad de la palabra, el validador avisa: en encuadre cerrado casi nunca se lee. El recorte queda atado a su tramo y a su corte: si cambian, hay que repetir `recorte`.
 
 ## 4 · Imagen ilustrada generada (nivel 3, con costo)
 

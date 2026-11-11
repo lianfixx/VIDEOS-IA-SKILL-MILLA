@@ -33,8 +33,24 @@ with tempfile.TemporaryDirectory() as tmp:
         t = md.read_text(encoding="utf-8")
         if md.parent == destino:
             t = t.replace("](../../cerebro/CEREBRO.md)", "](cerebro/CEREBRO.md)").replace("](../../espacios/", "](espacios/")
-        t = re.sub(r"\[([^\]]+)\]\(\.\./(?:\.\./skills/)?(?:vox-studio|pizarra-studio|milla-video-studio|editor-studio)/SKILL\.md\)", r"\1", t)
+            t = t.replace("python3 skills/editor-studio/scripts/editor.py", "python3 scripts/editor.py")
+        # cualquier enlace a otra skill (no viaja en el paquete) queda como texto
+        t = re.sub(r"\[([^\]]+)\]\((?:\.\./)+(?:skills/)?(?:vox-studio|pizarra-studio|milla-video-studio|editor-studio)/[^)]*\)", r"\1", t)
+        t = re.sub(r"\[([^\]]+)\]\(\.\./espacios/[^)]*\)", r"\1", t) if md.parent.name == "cerebro" else t
         md.write_text(t, encoding="utf-8")
+    (destino / "LEEME-PAQUETE.md").write_text(
+        "# Editor Studio empaquetada\n\nCopia de la skill para usarla fuera del repositorio `lianfixx/VIDEOS-IA-SKILL-MILLA`. "
+        "Aquí los comandos son `python3 scripts/editor.py …`. No viajan `CHANGELOG.md`, `docs/`, `ia/` ni las tendencias: "
+        "la versión vigente y la memoria completa están en el repositorio. Lo que se aprenda aquí (`aprender`) hay que llevarlo "
+        "al repositorio o se pierde al reemplazar el paquete. Sin terminal: entrevista, escaleta y plan, y el traspaso de "
+        "`plantilla/TRASPASO.md`.\n", encoding="utf-8")
+    rotos = []
+    for md in destino.rglob("*.md"):
+        for enlace in re.findall(r"\]\(([^)#\s]+)", md.read_text(encoding="utf-8")):
+            if not enlace.startswith(("http", "mailto")) and not (md.parent / enlace).exists():
+                rotos.append(f"{md.relative_to(destino)} → {enlace}")
+    if rotos:
+        sys.exit("El paquete tiene enlaces rotos:\n" + "\n".join(rotos))
     r = subprocess.run([sys.executable, str(RAIZ / "ia" / "check_skill.py"), str(destino)], capture_output=True, text=True)
     if r.returncode != 0:
         sys.exit("El paquete no es válido para claude.ai:\n" + r.stdout + r.stderr)

@@ -11,6 +11,9 @@ Lo que aquí se dice vale mientras Emi no diga otra cosa. Lo que él corrija se 
 | `minimo` | desde 1.20 s | 0.30 s | discursos, entrevistas, Castorena |
 
 - El silencio se mide en el audio: todo lo que quede 16 dB bajo la mediana de la voz, en ventanas de 10 ms. Un ruido de menos de 60 ms no parte un silencio.
+- Con ruido o música de fondo fuertes (menos de 12 dB bajo la voz) el audio ya no deja ver las pausas: el umbral sube con el piso de ruido, se suman las pausas que marca la transcripción y `cortes` lo avisa. Esa vista previa se escucha con más cuidado.
+- Una frase repetida con otras frases en medio puede ser énfasis y no una toma repetida: sale como `dudoso` y dice qué frases se irían.
+- Los cortes valen para la transcripción con la que se propusieron: si se vuelve a transcribir, se repite `cortes`. Si se vuelve a cortar, se repiten `rostro` y `armar`; `render` se niega a mezclar una voz nueva con una imagen vieja.
 - Cada corte cae en cuadro exacto y lleva 6 ms de fundido de audio. Nunca dentro de una palabra: la transcripción manda sobre la energía.
 - Dos cortes separados por menos de 0.25 s sin palabra en medio son uno solo: dejar una rebanada de ambiente suena a tropiezo.
 - El video arranca pegado a la voz y termina con medio segundo de cola.
@@ -75,6 +78,10 @@ El `id` de cada pieza lleva minúsculas, números y guiones, empieza por letra y
 
 Zonas de texto: `arriba` (sobre la cabeza, si hay sitio), `torso` (entre la cara y los subtítulos) y `medio` (solo si no hay cara ahí). El validador mide dónde está el rostro en ese tramo, ajusta la zona y avisa; si no cabe, es error: se mueve la pieza de segundo, se acorta, o se usa una foto o un panel.
 
+Reglas que el validador también cumple: un `barrido` solo va sobre un corte (su centro cae en un empalme) y apaga los subtítulos mientras pasa; un renglón de `panel` no pasa de 32 letras; una `foto` en tarjeta no tapa la cara; como mucho dos `detras` por video; un título que no cabe legible se rechaza en vez de encogerse. Los subtítulos llevan un solo tamaño en todo el video. En los espacios de movimiento `sobrio` los títulos van en altas y bajas, sin sombras duras, sin giros y sin flecha.
+
+Colores: sobre fondo oscuro se usa el acento de la marca solo si se lee (contraste de 4.5 o más); si no, entra su color de apoyo. Por eso en PAN la palabra activa y los resaltes van en dorado y no en azul.
+
 Zona segura en 9:16: x de 90 a 960, y de 230 a 1440. Lo demás lo tapa la interfaz de TikTok y Reels.
 
 ## Movimiento
@@ -86,7 +93,7 @@ Zona segura en 9:16: x de 90 a 960, y de 230 a 1440. Lo demás lo tapa la interf
 
 ## Sonido
 
-- Voz a −16 LUFS; efectos de 6 a 14 dB bajo su pico (8 por defecto); música 18 LU bajo la voz; entrega a −14 LUFS con pico máximo de −1.5 dBTP.
+- Voz a −16 LUFS; efectos de 6 a 14 unidades de sonoridad por debajo de la voz (8 por defecto), medidos por cómo suenan y no por su pico: un tono puro con el mismo pico que la voz se oye mucho más fuerte; música 18 LU bajo la voz; entrega a −14 LUFS con pico máximo de −1.5 dBTP.
 - Efectos disponibles: `pop`, `clic`, `deslizar`, `golpe`, `subida`, `ding`, `papel`, `teclas`. Se sintetizan aquí. Uno por idea; el mismo cuatro veces seguidas pierde la gracia. `deslizar` y `subida` arrancan antes de la pieza y terminan en el golpe.
 - Densidad por espacio: personal y pan `media`, milla `minima`, castorena `ninguna`.
 - Música: decisión de Emi en cada video. Si la quiere, la pista entra como archivo en `assets/` con `origen` (de dónde salió y con qué derecho se usa). Para componerla con código o traerla de Flow Music se usa lo que ya documenta Vox Studio; aquí no se duplica.

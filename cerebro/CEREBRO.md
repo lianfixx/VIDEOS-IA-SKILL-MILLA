@@ -34,6 +34,8 @@ Mapa de todo lo que produce contenido para los espacios de Emi: qué skill es du
 
 ## Puentes
 
+Estado al 11/11/2026: los tres archivos de `cerebro/puente/` existen y están vacíos (ningún programa escribe en ellos: los llena quien edita, a mano, al cerrar un video). Los dos de los otros repositorios se leyeron ese día; no se ha comprobado que sus skills lean los de aquí.
+
 | Archivo | Quién escribe | Quién lee | Qué lleva |
 |---|---|---|---|
 | `cerebro/puente/para-x.md` | Editor, Vox y Pizarra | X viral | clips y frases de un video que servirían como publicación; el enlace al archivo entregado |
@@ -58,7 +60,9 @@ Instagram y TikTok no publican su algoritmo, a diferencia de X. Nadie aquí debe
 
 Lo que más enseña son las métricas de los videos del propio Emi: cuando pase la captura de un video publicado, se anota con `aprender` en la skill que lo hizo y se compara contra lo que se había supuesto.
 
-Una tarea programada lo corre cada semana; su estado y la fecha de la última corrida están en `CHANGELOG.md`.
+La corre una tarea programada de Emi en Claude Code llamada **«Radar semanal de tendencias de video»** (domingos 21:23, hora de México; abre un pull request con el informe). Para verla, pausarla o cambiarle la hora: pedirle a Claude Code «lista mis tareas programadas» o entrar a claude.ai/code → tareas programadas. Primera corrida prevista: 15/11/2026; hasta que corra, no está comprobada.
+
+El radar escribe además los datos completos en `private/tendencias/` (fuera del repositorio). `espacios/<espacio>/radar.json` lo cambia Emi, o quien él indique.
 
 ## Para otra IA que llega aquí
 
