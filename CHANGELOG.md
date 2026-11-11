@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · ¡ACCIÓNate! (pan): segunda versión con acabado motion y dos aprendizajes
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, tras la primera entrega: «recuerda hacerlo estilo motion también, muy profesional».
+- Cambios: la producción privada `productions/pan/accionate-14nov` se rehízo con el mismo guion, voz y datos aprobados: títulos cinéticos, escenas en azul y marino, tarjetas, cámara, contador del apoyo y transiciones de barras y círculo; la primera versión se conserva junto a ella. Al repositorio solo entran dos aprendizajes.
+- Archivos: `espacios/APRENDIZAJES-PIZARRA.md`, `espacios/pan/aprendizajes.md` y este registro.
+- Verificación: `qa` → revisado; `render` → sin avisos (−14.38 LUFS, pico −2.24 dBTP, 38.73 s); `revisar` → 5 hallazgos corregidos; QR leído en cuatro cuadros del cierre → aprobado; `cierre` → sin gasto nuevo (voz reutilizada).
+- Pendiente: que Emi vea y escuche; el video no está aprobado.
+
 ## 2026-11-11 · Primer video real de Pizarra Studio (¡ACCIÓNate!, espacio pan): aprendizajes
 
 - Agente: Claude Code (sesión en la nube)
