@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · AssemblyAI: llave guardada, subida de audio rechazada
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi guardó su llave de AssemblyAI en el formulario seguro del entorno (11/11/2026) para compararla con ElevenLabs.
+- Cambios: `TECNICA.md` dice el estado real del motor `assemblyai`.
+- Archivos: `skills/editor-studio/TECNICA.md` y este registro.
+- Verificación: `doctor` y la consulta de transcripciones → responde (200). Subir el audio del clip de prueba → falló (401 «Invalid API key»). No se transcribió nada con AssemblyAI ni se generó costo.
+- Pendiente: que Emi ajuste el secreto de red para que la cabecera `Authorization` lleve solo la llave, sin «Bearer» (causa probable, sin confirmar), y repetir la comparación con `comparar-motores`.
+
 ## 2026-11-11 · Entorno, box y tarea programada de Editor Studio
 
 - Agente: Claude Code (sesión en la nube)

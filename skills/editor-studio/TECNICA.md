@@ -55,7 +55,7 @@ iPhone: graba en HEVC y, con HDR activado, en Dolby Vision. `ingerir` lo detecta
 | Motor | Estado | Notas |
 |---|---|---|
 | ElevenLabs Scribe (`scribe`) | Conectado y probado el 11/11/2026 con un clip en español | Tiempo por palabra; conserva «eh» y tomas repetidas; marca eventos de audio; `--hablantes` separa voces |
-| AssemblyAI (`assemblyai`) | Programado, **sin probar**: falta la llave de Emi | Es el que recomiendan las referencias para cortar. Pide muletillas con `disfluencies` |
+| AssemblyAI (`assemblyai`) | Programado, **sin probar de punta a punta**. Emi guardó su llave el 11/11/2026: consultar responde, pero subir el audio da «Invalid API key» | Es el que recomiendan las referencias para cortar. Pide muletillas con `disfluencies`. Causa probable del rechazo (sin confirmar): la llave quedó guardada con el prefijo «Bearer» y la subida de AssemblyAI la quiere sola; se corrige en los ajustes del entorno, en sus secretos de red |
 | Archivo (`--archivo`) | Probado con JSON, SRT y VTT | Para exportaciones de Whisper Mate u otra app. Con SRT o frases los tiempos son aproximados: sirven para subtítulos por frase, no para cortar muletillas |
 
 Para decidir entre dos motores con un crudo real: `transcribir --como scribe`, `transcribir --motor assemblyai --como assemblyai` y `comparar-motores DIR scribe assemblyai`. El número no decide: se escuchan los cortes.
