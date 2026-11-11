@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.11.0"
+  version: "0.12.0"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -42,7 +42,9 @@ Una escena con un solo recorte quieto no cuenta nada: Emi lo rechazó en el prim
 - `linea`: línea de tiempo de 2 a 4 `hitos` (`fecha`, `texto`); la línea baja hasta cada uno cuando la voz llega.
 - `barras`: de 2 a 4 barras que crecen hasta su `valor`; exige `origen` de las cifras.
 
-Cualquier plano puede llevar además un `apunte` (aclaración a mano con flecha, anclada a una palabra) y los de imagen, `etiquetas` que señalan una parte (`x`, `y` de 0 a 1). Así la explicación va a la par de lo que se ve, no después. Motion hecho con código primero: si un diagrama explica mejor que una foto, se dibuja.
+Cualquier plano puede llevar además un `apunte` (aclaración a mano con flecha, anclada a una palabra) y los de imagen, `etiquetas` que señalan una parte (`x`, `y` de 0 a 1). Y un plano de imagen puede llevar `junto`: una pieza de código (`dato`, `lista`, `calendario`, `barras`, `linea` o `flujo`) que entra a su lado con su palabra mientras la imagen se queda. Así la explicación va a la par de lo que se ve, no después.
+
+**El código se suma; no sustituye.** Emi lo dejó claro el 11/11/2026: el video aprobado «ya estaba perfecto», pidió agregar cosas con código, no reemplazar las imágenes con él. La receta aprobada lleva imagen en cada escena; las piezas de código van al lado de la imagen o como plano adicional. Nunca se quita una imagen para poner un diagrama, y un video aprobado solo se toca para sumarle. `validar` avisa de cualquier escena que quede solo con código.
 
 Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase y por qué ese plano y no otro. Lo que se puede dibujar con código (cita, lista, calendario, cifra) no gasta créditos. `remate_en` hace caer el sello con su palabra. `validar` avisa de cada escena larga que se queda con una sola imagen, del gancho sin segundo plano y del guion sin `bucle`; `armar` avisa de cualquier plano quieto más de 4.5 s en la voz real. Los cambios de plano se prueban con cuadros sueltos (`npx remotion still … --frame=N --browser-executable=/usr/local/bin/chrome-headless-shell`) antes del render completo.
 
@@ -62,13 +64,13 @@ La voz no lee: cuenta. Tres recursos, escritos en el guion:
 
 En el guion visual, cada plano se decide entre tres fuentes:
 
-- **Código** para lo que se explica: cita, lista, flujo, línea de tiempo, barras, calendario, cifras. No cuesta y es exacto.
+- **Código** para lo que se explica, sumado a la imagen: cita, lista, flujo, línea de tiempo, barras, calendario, cifras. No cuesta y es exacto, pero no ocupa el lugar de una imagen.
 - **Apify** para lo real: instituciones, edificios, lugares, documentos y hechos. Plano `imagen` con `foto_real: true` y `credito` a la vista. Un video que habla de instituciones reales sin ninguna foto real está incompleto.
 - **Kie** para objetos y situaciones que no existen como foto libre. Un solo sujeto por prompt, sin superficies; croma magenta si hay vidrio, pantallas o verde; revisar cada recorte.
 
 ## Estilo pizarra o motion
 
-`estilo: "pizarra"` en el guion hace el mismo video con la marca del espacio sobre cuadrícula blanca y pide que casi todo se dibuje con código. Narrativa, planos, voz, música, auditorías y saldos son los mismos; `validar` avisa si se llena de imágenes generadas.
+`estilo: "pizarra"` en el guion hace el mismo video con la marca del espacio sobre cuadrícula blanca. Imágenes, narrativa, planos, voz, música, auditorías y saldos son los mismos: solo cambia el fondo.
 
 ## Música, efectos y remates (siempre)
 

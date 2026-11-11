@@ -89,7 +89,9 @@ export function validateManifest(m) {
     }
     if (scene.diagram && scene.asset_ids.length && scene.body) fail(`${scene.id}: imagen + diagrama + body exceden las zonas seguras. Separar el body en otra escena o quitarlo.`);
     if (scene.beats != null) {
-      if (scene.diagram || scene.asset_ids.length) fail(`${scene.id}: los planos (beats) ocupan la zona de imágenes y diagrama; usar beats de tipo image en lugar de asset_ids y quitar diagram.`);
+      // Los planos se suman a las imágenes de la escena (van debajo, donde iría el diagrama); no las sustituyen.
+      if (scene.diagram) fail(`${scene.id}: los planos (beats) ocupan la zona del diagrama; usar uno u otro.`);
+      if (scene.asset_ids.length && scene.body) fail(`${scene.id}: imagen + planos + body exceden las zonas seguras. Separar el body en otra escena o quitarlo.`);
       validateBeats(scene, start, end, fps, (id) => {
         const asset = assets.get(id);
         if (!asset || asset.kind !== 'image') fail(`${scene.id}: ${id} debe ser una imagen registrada.`);

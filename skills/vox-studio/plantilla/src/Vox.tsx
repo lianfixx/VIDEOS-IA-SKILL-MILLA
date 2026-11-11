@@ -20,6 +20,7 @@ export type Plano = {
   pasos?: {texto: string; nota?: string; desde: number}[]; hitos?: {fecha: string; texto: string; desde: number}[];
   barras?: {etiqueta: string; valor: number; texto?: string; desde: number}[];
   etiquetas?: {texto: string; x: number; y: number; desde: number}[]; apunte?: {texto: string; desde: number};
+  junto?: Plano; // pieza de código que entra al lado de la imagen, sin sustituirla
 };
 export type Escena = {
   planos?: Plano[]; remateEn?: number | null;
@@ -326,13 +327,13 @@ const Calendario: React.FC<{p: Plano; c: Colores; t: number; alto: number; ancho
 };
 
 /** Cifra grande: cuenta hasta su valor y, si se pide, queda tachada. */
-const DatoGrande: React.FC<{p: Plano; c: Colores; t: number; alto: number}> = ({p, c, t, alto}) => {
+const DatoGrande: React.FC<{p: Plano; c: Colores; t: number; alto: number; texto?: number}> = ({p, c, t, alto, texto = 860}) => {
   const dato = p.dato ?? '';
   const m = /^(\D*)(\d+)(\D*)$/.exec(dato);
   const sube = interpolate(t, [3, 17], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const visto = m ? `${m[1]}${String(Math.round(Number(m[2]) * sube)).padStart(sube < 1 ? 1 : m[2].length, '0')}${m[3]}` : dato;
   const raya = interpolate(t, [20, 27], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  const tam = Math.min((alto - (p.etiqueta ? 110 : 20)) * 0.6, 860 / Math.max(2, dato.length));
+  const tam = Math.min((alto - (p.etiqueta ? 110 : 20)) * 0.6, texto / Math.max(2, dato.length));
   return (
     <div style={{position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: `translateY(${Math.sin(t / 24) * 5}px) rotate(-2deg)`}}>
       <div style={{position: 'relative', fontFamily: 'Anton', fontSize: tam, lineHeight: 1.08, color: c.papel, background: c.tinta, padding: '6px 46px 12px', boxShadow: `14px 14px 0 ${c.acento}`, border: `8px solid ${c.papel}`, outline: `6px solid ${c.tinta}`, fontVariantNumeric: 'tabular-nums'}}>
@@ -345,7 +346,7 @@ const DatoGrande: React.FC<{p: Plano; c: Colores; t: number; alto: number}> = ({
         )}
         <Cinta c={c} />
       </div>
-      {p.etiqueta && <div style={{marginTop: 26, fontFamily: 'Anton', fontSize: 50, lineHeight: 1, letterSpacing: 1, textTransform: 'uppercase', color: c.papel, background: c.acento, padding: '8px 24px 10px', transform: 'rotate(3deg)', boxShadow: `8px 8px 0 ${c.tinta}`}}>{p.etiqueta}</div>}
+      {p.etiqueta && <div style={{marginTop: 26, fontFamily: 'Anton', fontSize: Math.min(50, (texto * 1.5) / Math.max(8, p.etiqueta.length)), lineHeight: 1, letterSpacing: 1, textTransform: 'uppercase', color: c.papel, background: c.acento, padding: '8px 24px 10px', transform: 'rotate(3deg)', boxShadow: `8px 8px 0 ${c.tinta}`}}>{p.etiqueta}</div>}
     </div>
   );
 };
@@ -409,7 +410,7 @@ const Barras: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho:
   const barras = p.barras ?? [];
   const max = Math.max(...barras.map((x) => x.valor), 1e-9);
   const fila = Math.min(215, (alto - 70) / Math.max(1, barras.length));
-  const cifra = fila * 0.4;
+  const cifra = Math.min(fila * 0.4, ancho * 0.11);
   // Cifra tal como se escribió (sin redondear decimales); mientras crece se muestra con sus mismos decimales.
   const decimales = (v: number) => (String(v).split('.')[1] ?? '').length;
   const escrito = (x: {valor: number; texto?: string}) => x.texto || String(x.valor);
@@ -535,6 +536,9 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
         const sale = s > 0 ? {transform: `translateX(${lado * Math.pow(s / SALIDA, 2) * 1500}px) rotate(${lado * s * 1.6}deg)`} : {};
         const propio = ['lista', 'duo', 'flujo', 'barras', 'linea'].includes(p.tipo); // sus piezas entran una por una
         const fondo = p.tipo === 'imagen' || p.tipo === 'dato' || p.tipo === 'duo';
+        // Con una pieza `junto`, la imagen no se va: se hace a un lado y la pieza entra a su derecha.
+        const tj = p.junto ? real - p.junto.desde : -1;
+        const cede = p.junto ? spring({frame: tj, fps, config: {damping: 200, stiffness: 130}}) : 0;
         const crece = spring({frame: j === 0 ? t + 4 : t - SALIDA, fps, config: {damping: 200, stiffness: 120}}); // el fondo nuevo espera a que salga el plano anterior
         return (
           <div key={j} style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', ...sale}}>
@@ -548,7 +552,7 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
             </svg>}
             <div style={{position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', ...(propio ? {} : entrar(verbos[(indice + j) % verbos.length], t, fps))}}>
               {p.tipo === 'imagen' && p.imagen && (
-                <div style={{position: 'relative', transform: `translateY(${Math.sin(t / 24) * 5}px) rotate(${((indice + j) % 2 ? 2 : -2) + Math.sin(t / 37 + j) * 0.7}deg)`}}>
+                <div style={{position: 'relative', transformOrigin: 'center', transform: `translateX(${-ancho * 0.25 * cede}px) scale(${1 - 0.4 * cede}) translateY(${Math.sin(t / 24) * 5}px) rotate(${((indice + j) % 2 ? 2 : -2) + Math.sin(t / 37 + j) * 0.7}deg)`}}>
                   {p.foto ? (
                     // Foto real: copia en papel, en blanco y negro, con su crédito. Nunca se recorta como si fuera un objeto.
                     <div style={{background: '#fff', padding: '18px 18px 14px', boxShadow: `16px 16px 0 ${c.tinta}`}}>
@@ -571,6 +575,16 @@ const Planos: React.FC<{e: Escena; c: Colores; f: number; real: number; indice: 
               {p.tipo === 'barras' && <Barras p={p} c={c} real={real} alto={alto} ancho={ancho} />}
               {p.tipo === 'linea' && <LineaTiempo p={p} c={c} real={real} alto={alto} ancho={ancho} />}
             </div>
+            {p.junto && tj >= 0 && (
+              <div style={{position: 'absolute', left: ancho * 0.5, width: ancho * 0.5, top: 0, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center', ...(['lista', 'flujo', 'barras', 'linea'].includes(p.junto.tipo) ? {} : entrar('sello', tj, fps))}}>
+                {p.junto.tipo === 'dato' && <DatoGrande p={p.junto} c={c} t={tj} alto={alto * 0.62} texto={(ancho * 0.5 - 120) * 2} />}
+                {p.junto.tipo === 'lista' && <div style={{background: '#FFFDF7', padding: '18px 16px 14px 20px', boxShadow: `10px 10px 0 ${c.tinta}`, transform: 'rotate(1.5deg)'}}><Lista p={p.junto} c={c} real={real} alto={alto * 0.72} ancho={ancho * 0.5 - 10} /></div>}
+                {p.junto.tipo === 'calendario' && <Calendario p={p.junto} c={c} t={tj} alto={alto * 0.8} ancho={ancho * 0.5 + 20} />}
+                {p.junto.tipo === 'flujo' && <Flujo p={p.junto} c={c} real={real} alto={alto * 0.8} ancho={ancho * 0.5} />}
+                {p.junto.tipo === 'barras' && <div style={{background: '#FFFDF7', padding: '18px 16px 14px 20px', boxShadow: `10px 10px 0 ${c.tinta}`, transform: 'rotate(1.5deg)'}}><Barras p={p.junto} c={c} real={real} alto={alto * 0.62} ancho={ancho * 0.5 - 10} /></div>}
+                {p.junto.tipo === 'linea' && <div style={{background: '#FFFDF7', padding: '18px 16px 14px 20px', boxShadow: `10px 10px 0 ${c.tinta}`, transform: 'rotate(1.5deg)'}}><LineaTiempo p={p.junto} c={c} real={real} alto={alto * 0.8} ancho={ancho * 0.5 - 10} /></div>}
+              </div>
+            )}
             <Apunte p={p} c={c} real={real} der={(indice + j) % 2 === 0} arriba={alto + 38} />
           </div>
         );
@@ -777,6 +791,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
               {[...(p.pasos ?? []), ...(p.hitos ?? []), ...(p.barras ?? [])].map((it, m) => m > 0 && <Audio key={`m${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
               {(p.etiquetas ?? []).map((it, m) => <Audio key={`e${m}`} src={staticFile('sfx/pop.wav')} from={e.desde + it.desde} volume={0.14} />)}
               {p.apunte && <Audio src={staticFile('sfx/marcador.wav')} from={e.desde + p.apunte.desde} volume={0.16} />}
+              {p.junto && <Audio src={staticFile('sfx/pop.wav')} from={e.desde + p.junto.desde} volume={0.18} />}
             </React.Fragment>
           ))}
         </React.Fragment>

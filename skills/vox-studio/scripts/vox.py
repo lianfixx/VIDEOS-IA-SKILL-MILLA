@@ -72,6 +72,7 @@ ESCENA_LARGA = 7.0  # segundos; más que esto sin cambio de plano se siente lent
 LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
 # Planos: lo que se ve dentro de una escena. Cada uno entra cuando la voz dice su palabra ancla (`en`).
 PLANOS = ("imagen", "cita", "lista", "calendario", "dato", "duo", "flujo", "barras", "linea")
+JUNTOS = ("dato", "lista", "calendario", "barras", "linea", "flujo")  # piezas de código que pueden ir al lado de una imagen
 PLANO_VIVO = {"cita", "lista", "calendario", "flujo", "barras", "linea"}  # se mueven solos mientras duran
 PLANO_QUIETO = 4.5  # segundos; un recorte o una cifra sin nada nuevo se siente detenido
 MAX_PLANOS = 5
@@ -363,6 +364,20 @@ def validar_planos(s: dict, p: str) -> list[str]:
                 anclas[j] = k
         if tipo == "imagen" and not (isinstance(pl.get("imagen_archivo"), str) and pl["imagen_archivo"] and ruta_segura(pl["imagen_archivo"])):
             e.append(f"{q}: imagen_archivo debe ser una ruta relativa a public/")
+        if pl.get("junto") is not None:
+            jt = pl["junto"]
+            if tipo != "imagen":
+                e.append(f"{q}: `junto` acompaña a una imagen; solo va en planos `imagen`")
+            elif not isinstance(jt, dict) or jt.get("tipo") not in JUNTOS:
+                e.append(f"{q}: `junto` es una pieza de código al lado de la imagen; tipos {list(JUNTOS)}")
+            else:
+                if jt.get("en"):
+                    k = buscar_ancla(narr, jt["en"], max(0, pos - 1))
+                    if k < 0:
+                        e.append(f"{q}: `junto` pide una palabra que la narración no dice después ({jt['en']!r})")
+                    else:
+                        ultimas[j] = max(ultimas[j], k)
+                e.extend(validar_planos({"narracion": s.get("narracion", ""), "planos": [{x: y for x, y in jt.items() if x != "en"}]}, f"{q} · junto"))
         if tipo == "imagen" and pl.get("foto_real") and not 5 <= len(str(pl.get("credito", ""))) <= 60:
             e.append(f"{q}: una foto real exige `credito` (autor y licencia, de 5 a 60 caracteres) a la vista")
         if tipo == "cita":
@@ -479,6 +494,8 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
     narr = [w["t"] for w in palabras]
     def cuadro(k: int) -> int:
         return max(0, int(round(palabras[k]["a"] * FPS)) - desde - 4)  # entra 4 frames antes de la palabra
+    def arma(pl: dict, en: int, pos: int) -> dict:
+        return _arma_plano(pl, en, pos, narr, cuadro)
     out, pos, previo = [], 0, -MIN_PLANO
     for j, pl in enumerate(s.get("planos") or []):
         en = 0
@@ -491,73 +508,91 @@ def planos_en_tiempo(s: dict, palabras: list[dict], desde: int, dur: int) -> lis
             if en > dur - MIN_PLANO:
                 raise ErrorVox(f"el plano {j + 1} de la escena {s['id']} entraría a {dur - en} frames del final; ánclalo antes")
         previo = en
-        n: dict = {"tipo": pl["tipo"], "desde": en}
-        if pl["tipo"] == "imagen":
-            n["imagen"] = pl["imagen_archivo"]
-            if pl.get("foto_real"):
-                n.update(foto=True, credito=str(pl.get("credito", "")))
-        elif pl["tipo"] == "cita":
-            n.update(texto=" ".join(str(pl["texto"]).split()), resaltar=" ".join(str(pl.get("resaltar", "")).split()), origen=str(pl["origen"]))
-        elif pl["tipo"] == "lista":
-            items, ipos = [], max(0, pos - 1)
-            for m, it in enumerate(pl["items"]):
-                t = en + 8 + 9 * m
-                if it.get("en"):
-                    k = buscar_ancla(narr, it["en"], ipos)
-                    if k >= 0:
-                        ipos, t = k + 1, max(cuadro(k), en + 4)
-                if items:
-                    t = max(t, items[-1]["desde"] + 5)
-                items.append({"texto": str(it["texto"]).upper(), "marca": it.get("marca", ""), "desde": t})
-            n["items"] = items
-        elif pl["tipo"] == "calendario":
-            n["celdas"] = pl.get("celdas") or [{"t": str(x + 1), "estado": "tachado"} for x in range(pl["dias"])]
-            n["etiqueta"] = str(pl.get("etiqueta", ""))
-        elif pl["tipo"] == "dato":
-            n.update(dato=str(pl["dato"]), etiqueta=str(pl.get("etiqueta", "")), tachar=bool(pl.get("tachar", False)))
-        elif pl["tipo"] == "duo":
-            n.update(imagenes=list(pl["imagenes"]), entre=str(pl.get("entre", "")).upper())
-
-        def con_tiempo(xs: list[dict], campos: tuple, paso: int, mayus: tuple = ()) -> list[dict]:
-            """Cada pieza entra con su ancla (tiempo real) o, sin ancla, a ritmo fijo tras la anterior."""
-            hechos, ipos = [], max(0, pos - 1)
-            for m, x in enumerate(xs):
-                t = en + 8 + paso * m
-                if x.get("en"):
-                    k = buscar_ancla(narr, x["en"], ipos)
-                    if k >= 0:
-                        ipos, t = k + 1, max(cuadro(k), en + 4)
-                if hechos:
-                    t = max(t, hechos[-1]["desde"] + 6)
-                d = {c: (str(x.get(c, "")).upper() if c in mayus else x.get(c, "")) for c in campos}
-                hechos.append({**d, "desde": t})
-            return hechos
-        if pl["tipo"] == "flujo":
-            n["pasos"] = con_tiempo(pl["pasos"], ("texto", "nota"), 14, ("texto",))
-        elif pl["tipo"] == "linea":
-            n["hitos"] = con_tiempo(pl["hitos"], ("fecha", "texto"), 16, ("fecha",))
-        elif pl["tipo"] == "barras":
-            n["barras"] = con_tiempo(pl["barras"], ("etiqueta", "valor", "texto"), 10, ("etiqueta",))
-            n["origen"] = str(pl["origen"])
-        if pl.get("etiquetas"):
-            n["etiquetas"] = con_tiempo(pl["etiquetas"], ("texto", "x", "y"), 12, ("texto",))
-        if pl.get("apunte"):
-            n["apunte"] = con_tiempo([pl["apunte"]], ("texto",), 0)[0]
-            if not pl["apunte"].get("en"):
-                n["apunte"]["desde"] = en + 22
+        n = arma(pl, en, pos)
+        jt = pl.get("junto") if pl["tipo"] == "imagen" else None
+        if jt:  # pieza de código al lado de la imagen: entra con su palabra y la imagen se queda
+            en_j, pos_j = en + 10, pos
+            if jt.get("en"):
+                k = buscar_ancla(narr, jt["en"], max(0, pos - 1))
+                if k >= 0:
+                    en_j, pos_j = max(cuadro(k), en + 4), k + 1
+            n["junto"] = arma({x: y for x, y in jt.items() if x != "en"}, en_j, pos_j)
         out.append(n)
     for j, n in enumerate(out):
         n["dur"] = (out[j + 1]["desde"] if j + 1 < len(out) else dur) - n["desde"]
         fin = n["desde"] + n["dur"]
+        if n.get("junto"):
+            n["junto"]["desde"] = max(n["desde"], min(n["junto"]["desde"], fin - 24))
+            n["junto"]["dur"] = fin - n["junto"]["desde"]
         # Ninguna pieza entra cuando su plano ya se fue: las últimas se adelantan lo justo para verse.
-        for clave in ("items", "pasos", "hitos", "barras", "etiquetas"):
-            piezas = n.get(clave) or []
-            for m in range(len(piezas) - 1, -1, -1):
-                tope = fin - 12 - 5 * (len(piezas) - 1 - m)
-                piezas[m]["desde"] = max(n["desde"], min(piezas[m]["desde"], tope))
+        for pieza in (n, n.get("junto") or {}):
+            for clave in ("items", "pasos", "hitos", "barras", "etiquetas"):
+                piezas = pieza.get(clave) or []
+                for m in range(len(piezas) - 1, -1, -1):
+                    tope = fin - 12 - 5 * (len(piezas) - 1 - m)
+                    piezas[m]["desde"] = max(pieza.get("desde", n["desde"]), min(piezas[m]["desde"], tope))
         if n.get("apunte"):
             n["apunte"]["desde"] = max(n["desde"], min(n["apunte"]["desde"], fin - 20))
     return out
+
+
+def _arma_plano(pl: dict, en: int, pos: int, narr: list[str], cuadro) -> dict:
+    """Un plano (o la pieza que va junto a una imagen) con sus piezas en tiempo."""
+    n: dict = {"tipo": pl["tipo"], "desde": en}
+    if pl["tipo"] == "imagen":
+        n["imagen"] = pl["imagen_archivo"]
+        if pl.get("foto_real"):
+            n.update(foto=True, credito=str(pl.get("credito", "")))
+    elif pl["tipo"] == "cita":
+        n.update(texto=" ".join(str(pl["texto"]).split()), resaltar=" ".join(str(pl.get("resaltar", "")).split()), origen=str(pl["origen"]))
+    elif pl["tipo"] == "lista":
+        items, ipos = [], max(0, pos - 1)
+        for m, it in enumerate(pl["items"]):
+            t = en + 8 + 9 * m
+            if it.get("en"):
+                k = buscar_ancla(narr, it["en"], ipos)
+                if k >= 0:
+                    ipos, t = k + 1, max(cuadro(k), en + 4)
+            if items:
+                t = max(t, items[-1]["desde"] + 5)
+            items.append({"texto": str(it["texto"]).upper(), "marca": it.get("marca", ""), "desde": t})
+        n["items"] = items
+    elif pl["tipo"] == "calendario":
+        n["celdas"] = pl.get("celdas") or [{"t": str(x + 1), "estado": "tachado"} for x in range(pl["dias"])]
+        n["etiqueta"] = str(pl.get("etiqueta", ""))
+    elif pl["tipo"] == "dato":
+        n.update(dato=str(pl["dato"]), etiqueta=str(pl.get("etiqueta", "")), tachar=bool(pl.get("tachar", False)))
+    elif pl["tipo"] == "duo":
+        n.update(imagenes=list(pl["imagenes"]), entre=str(pl.get("entre", "")).upper())
+
+    def con_tiempo(xs: list[dict], campos: tuple, paso: int, mayus: tuple = ()) -> list[dict]:
+        """Cada pieza entra con su ancla (tiempo real) o, sin ancla, a ritmo fijo tras la anterior."""
+        hechos, ipos = [], max(0, pos - 1)
+        for m, x in enumerate(xs):
+            t = en + 8 + paso * m
+            if x.get("en"):
+                k = buscar_ancla(narr, x["en"], ipos)
+                if k >= 0:
+                    ipos, t = k + 1, max(cuadro(k), en + 4)
+            if hechos:
+                t = max(t, hechos[-1]["desde"] + 6)
+            d = {c: (str(x.get(c, "")).upper() if c in mayus else x.get(c, "")) for c in campos}
+            hechos.append({**d, "desde": t})
+        return hechos
+    if pl["tipo"] == "flujo":
+        n["pasos"] = con_tiempo(pl["pasos"], ("texto", "nota"), 14, ("texto",))
+    elif pl["tipo"] == "linea":
+        n["hitos"] = con_tiempo(pl["hitos"], ("fecha", "texto"), 16, ("fecha",))
+    elif pl["tipo"] == "barras":
+        n["barras"] = con_tiempo(pl["barras"], ("etiqueta", "valor", "texto"), 10, ("etiqueta",))
+        n["origen"] = str(pl["origen"])
+    if pl.get("etiquetas"):
+        n["etiquetas"] = con_tiempo(pl["etiquetas"], ("texto", "x", "y"), 12, ("texto",))
+    if pl.get("apunte"):
+        n["apunte"] = con_tiempo([pl["apunte"]], ("texto",), 0)[0]
+        if not pl["apunte"].get("en"):
+            n["apunte"]["desde"] = en + 22
+    return n
 
 
 def partir(texto: str) -> list[str]:
@@ -725,13 +760,11 @@ def avisos_guion(g: dict) -> list[str]:
         m_esc = (perfiles()[g["perfil"]].get("voz_comentario") or {}).get("modelo", "") if s.get("voz") == "comentario" and modelo else modelo
         if mudas and not m_esc.startswith(MODELOS_CON_EXPRESION):
             a.append(f"escena {i + 1}: las expresiones {mudas} solo las dice un modelo expresivo ({', '.join(MODELOS_CON_EXPRESION)}); con {m_esc or 'esta voz'} se omiten")
-    if g.get("estilo") == "pizarra":
-        todos = [pl for s in escenas for pl in (s.get("planos") or []) if isinstance(pl, dict)]
-        fotos = [pl for pl in todos if pl.get("tipo") in ("imagen", "duo") and not pl.get("foto_real")]
-        if not todos:
-            a.append("estilo pizarra sin `planos`: en pizarra la historia se dibuja con cita, lista, flujo, línea, barras, calendario y cifras")
-        elif len(fotos) * 3 > len(todos):
-            a.append(f"estilo pizarra con {len(fotos)} de {len(todos)} planos de imagen generada: en pizarra casi todo se dibuja con código")
+    # El código se suma a las imágenes; no las sustituye (Emi, 11/11/2026). Una escena sin ninguna imagen se avisa.
+    for i, s in enumerate(escenas[:-1]):
+        planos = [pl for pl in (s.get("planos") or []) if isinstance(pl, dict)] if isinstance(s.get("planos"), list) else []
+        if planos and not any(pl.get("tipo") in ("imagen", "duo") for pl in planos):
+            a.append(f"escena {i + 1}: solo lleva piezas de código, sin ninguna imagen. La receta aprobada lleva imagen en cada escena y el código va al lado (`junto`, `etiquetas`, `apunte`) o como plano adicional")
     if not g.get("bucle"):
         a.append("falta `bucle`: escribe qué pregunta deja abierta el gancho y en qué escena se responde (NARRATIVA.md)")
     for i, s in enumerate(escenas):

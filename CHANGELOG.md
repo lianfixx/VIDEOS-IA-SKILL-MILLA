@@ -1,5 +1,16 @@
 # Cambios
 
+## 2026-11-11 · Vox Studio 0.12.0 y MILLA Video Studio 1.3.1: el código se suma a las imágenes, no las sustituye
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026, al ver las muestras v3, v4 y la de pizarra: «está mal, el anterior ya estaba perfecto; los quiero así; solo te dije que agregaras cosas con código, no que todo lo reemplazaras con él».
+- Motivo: error de interpretación del agente. En las muestras se cambiaron imágenes y un sello por diagramas, y la muestra de pizarra no llevaba ninguna imagen; además se había escrito en la skill la regla contraria («código primero»).
+- Cambios en Vox Studio: (1) plano de imagen con `junto`: una pieza de código (`dato`, `lista`, `calendario`, `barras`, `linea`, `flujo`) que entra a su lado con su palabra mientras la imagen se queda. (2) Reglas reescritas en `SKILL.md`, `NARRATIVA.md` y `CATALOGO.md`: la imagen es la base de cada escena y el código se suma; se retiró «código primero» y el aviso que pedía dibujar casi todo en estilo pizarra. (3) `validar` avisa de cualquier escena que quede solo con código. (4) Producción `pagos-digitales-v5`: el guion del video aprobado sin quitarle nada, con su voz original, más cinco añadidos (tres apuntes, un flujo junto al reloj de arena y unas barras junto a la pila de hojas).
+- Cambios en MILLA Video Studio 1.3.1: los `beats` ya conviven con las imágenes de la escena (van debajo, donde iría el diagrama) en lugar de excluirlas; solo excluyen `diagram`, y `body` cuando hay imágenes. Mismas reglas en Python y Remotion.
+- Archivos: `skills/vox-studio/{SKILL.md,NARRATIVA.md,CATALOGO.md,TECNICA.md}`, `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/milla-video-studio/{SKILL.md,references/rendering.md,references/narrative-motion.md}`, `skills/milla-video-studio/assets/remotion-template/src/{MillaVideo.tsx,manifest-validation.mjs}`, `skills/milla-video-studio/assets/remotion-template/test/timeline.test.mjs`, `skills/milla-video-studio/assets/remotion-template/{package.json,package-lock.json}`, `skills/milla-video-studio/scripts/{milla.py,test_milla.py}`, `MANUAL_COMPLETO.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 57/57 → aprobado; pruebas Python de milla-video-studio 45/45 y del compositor 17/17 → aprobado; `tsc --noEmit` en ambas plantillas → aprobado. Cuadros de prueba: flujo junto al reloj, barras junto a la pila de hojas y apunte junto al billete (Vox); imagen con cifra y con barras debajo (pizarra) → aprobado. La v5 conserva los mismos planos y tiempos del video aprobado (56.1 s, voz ya pagada, sin gasto) → aprobado. Render completo de la v5 → en curso al registrar. Opinión de Emi → no ejecutado.
+- Pendiente: que Emi vea la v5; las muestras v3, v4 y la primera de pizarra quedan descartadas.
+
 ## 2026-11-11 · MILLA Video Studio 1.3.0: planos animados en el compositor de pizarra
 
 - Agente: Claude Code (sesión en la nube)

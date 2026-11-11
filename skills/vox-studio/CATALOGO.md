@@ -50,7 +50,7 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 | `linea` | línea de tiempo con hitos | plazos encadenados, vigencias, historia de un asunto |
 | `barras` | barras que crecen, con fuente | comparar montos o cantidades |
 
-Añadidos a cualquier plano: `apunte` (nota a mano con flecha) y, en imágenes, `etiquetas` que señalan una parte.
+Añadidos a cualquier plano: `apunte` (nota a mano con flecha) y, en imágenes, `etiquetas` que señalan una parte y `junto` (una pieza de código que entra al lado mientras la imagen se queda). El código se suma a las imágenes; no las sustituye.
 
 Cada plano entra con la palabra ancla (`en`) en su tiempo real de voz y suena al entrar (papel, pop o deslizar; marcador en las citas). `remate_en` ancla el sello a una palabra.
 

@@ -500,11 +500,12 @@ class Tiempos(unittest.TestCase):
     def test_estilo_pizarra(self):
         g = guion(); g["estilo"] = "pizarra"
         self.assertEqual(vox.validar_guion(g), [])
-        self.assertIn("estilo pizarra sin `planos`", " | ".join(vox.avisos_guion(g)))
-        g["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=[{"tipo": "imagen", "imagen_archivo": "img/a.png"}])
-        self.assertIn("casi todo se dibuja", " | ".join(vox.avisos_guion(g)))
-        g["escenas"][1]["planos"] = [{"tipo": "dato", "dato": "1"}, {"tipo": "flujo", "en": "tres", "pasos": [{"texto": "a"}, {"texto": "b"}]}]
-        self.assertNotIn("pizarra", " | ".join(vox.avisos_guion(g)))
+        g["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.", planos=[{"tipo": "dato", "dato": "1"}, {"tipo": "flujo", "en": "tres", "pasos": [{"texto": "a"}, {"texto": "b"}]}])
+        # El código se suma a las imágenes, no las sustituye: una escena solo de código se avisa, en cualquier estilo.
+        self.assertIn("solo lleva piezas de código", " | ".join(vox.avisos_guion(g)))
+        g["escenas"][1]["planos"] = [{"tipo": "imagen", "imagen_archivo": "img/a.png", "junto": {"tipo": "dato", "dato": "1", "en": "tres"}}]
+        self.assertEqual(vox.validar_guion(g), [])
+        self.assertNotIn("solo lleva piezas de código", " | ".join(vox.avisos_guion(g)))
         palabras, fin = alinear(g)
         for nombre, pf in vox.perfiles().items():  # cualquier espacio puede hacer un video de pizarra con su marca
             v = vox.armar_video({**g, "perfil": nombre}, palabras, fin, pf)
@@ -610,6 +611,32 @@ class Tiempos(unittest.TestCase):
         finally:
             vox.narrar = real
             (Path(__file__).parent / "__silencio.mp3").unlink(missing_ok=True)
+
+    def test_pieza_de_codigo_junto_a_la_imagen(self):
+        g = guion(); e = g["escenas"][1]
+        e["narracion"] = "La Corte tumbó el cobro de veintitrés pesos por certificar una hoja."
+        e["planos"] = [{"tipo": "imagen", "imagen_archivo": "img/a.png",
+                        "junto": {"tipo": "barras", "en": "cobro", "origen": "SCJN", "barras": [{"etiqueta": "A", "valor": 23}, {"etiqueta": "B", "valor": 66}]}},
+                       {"tipo": "dato", "dato": "$23", "en": "certificar"}]
+        self.assertEqual(vox.validar_guion(g), [])
+        palabras, fin = alinear(g, paso=0.4)
+        esc = vox.armar_video(g, palabras, fin, vox.perfiles()["castorena"])["escenas"][1]
+        imagen = esc["planos"][0]
+        self.assertEqual(imagen["tipo"], "imagen")           # la imagen sigue ahí
+        self.assertEqual(imagen["imagen"], "img/a.png")
+        junto = imagen["junto"]
+        k = [w["t"] for w in palabras].index("cobro")
+        self.assertEqual(junto["desde"], round(palabras[k]["a"] * vox.FPS) - esc["desde"] - 4)  # entra con su palabra
+        self.assertEqual(junto["desde"] + junto["dur"], imagen["desde"] + imagen["dur"])        # y se va con la imagen
+        self.assertTrue(all(junto["desde"] <= b["desde"] <= imagen["dur"] - 12 for b in junto["barras"]))
+        def errores(junto, tipo="imagen"):
+            g2 = guion(); g2["escenas"][1].update(narracion="Uno dos tres cuatro cinco seis.",
+                planos=[{"tipo": tipo, "imagen_archivo": "img/a.png", "dato": "1", "junto": junto}] if tipo == "imagen" else [{"tipo": "dato", "dato": "1", "junto": junto}])
+            return " | ".join(vox.validar_guion(g2))
+        self.assertIn("solo va en planos `imagen`", errores({"tipo": "dato", "dato": "1"}, tipo="dato"))
+        self.assertIn("pieza de código al lado", errores({"tipo": "imagen", "imagen_archivo": "img/b.png"}))
+        self.assertIn("no dice después", errores({"tipo": "dato", "dato": "1", "en": "nueve"}))
+        self.assertIn("junto", errores({"tipo": "barras", "barras": [{"etiqueta": "A", "valor": 1}, {"etiqueta": "B", "valor": 2}]}))  # sin origen
 
     def test_bucle_abierto(self):
         g = guion()

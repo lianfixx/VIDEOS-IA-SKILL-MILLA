@@ -188,8 +188,10 @@ function BarsBeat({beat, frame, at, fps, tone, height}: {beat: Extract<Beat, {ki
 
 function Beats({scene, manifest, start, end, frame, fps, tone}: {scene: Scene; manifest: Manifest; start: number; end: number; frame: number; fps: number; tone: Tone}) {
   const beats = scene.beats ?? [];
-  const height = 600;
-  return <div style={{position: 'absolute', left: 120, right: 150, top: 755, height}}>
+  // Con imágenes en la escena, los planos van debajo de ellas (donde iría el diagrama): se suman, no las sustituyen.
+  const withImages = scene.asset_ids.length > 0;
+  const height = withImages ? 380 : 600;
+  return <div style={{position: 'absolute', left: 120, right: 150, top: withImages ? 1260 : 755, height}}>
     {beats.map((beat, n) => {
       const at = n === 0 ? Math.min(start, frameOf(beat.at, fps)) : frameOf(beat.at, fps);
       const next = n + 1 < beats.length ? frameOf(beats[n + 1].at, fps) : end;
@@ -226,7 +228,7 @@ function SceneLayer({scene, manifest, index, start, end, overlap, frame}: {scene
       <div style={{fontSize: scene.title.length > 48 ? 66 : 76, lineHeight: 1.08, fontWeight: 800, letterSpacing: -2.2, textWrap: 'balance', textShadow: dark ? '0 4px 0 rgba(0,0,0,0.18)' : '0 4px 0 rgba(23,38,54,0.09)'}}>{scene.title}</div>
       <div style={{marginTop: 30, width: 90 + 36 * smooth(age / 24), height: 5, backgroundColor: C.gold}} />
     </div>
-    {images.length > 0 && <div style={{position: 'absolute', left: 120, right: 150, top: 720, height: scene.diagram ? 540 : 760, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, transform: `translateY(${-8 * travel}px)`}}>
+    {images.length > 0 && <div style={{position: 'absolute', left: 120, right: 150, top: 720, height: scene.diagram || scene.beats ? 520 : 760, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, transform: `translateY(${-8 * travel}px)`}}>
       {images.map((id, i) => <Img key={id} src={byId(manifest, id)} style={{objectFit: 'contain', objectPosition: 'center', width: `${100 / images.length}%`, minWidth: 0, height: '100%', transform: `perspective(1800px) translateY(${Math.sin((age + i * 12) / 70) * 4}px) scale(${0.97 + travel * 0.02})`, filter: 'drop-shadow(0 20px 16px rgba(23,38,54,0.12))'}} />)}
     </div>}
     {scene.diagram && <div style={{position: 'absolute', left: 120, right: 150, top: images.length ? 1260 : 755, height: images.length ? 380 : 600}}>

@@ -538,8 +538,11 @@ def validate(data, root, allow_pending=False):
         if diagram is not None and refs and scene.get("body") is not None:
             fail(f"{label}: image + diagram + body exceeds the safe layout zones")
         if scene.get("beats") is not None:
-            if diagram is not None or refs:
-                fail(f"{label}: beats use the image and diagram zone; use image beats instead of asset_ids and remove diagram")
+            # Beats add to the scene's images (they sit below, where the diagram would go); they do not replace them.
+            if diagram is not None:
+                fail(f"{label}: beats use the diagram zone; use one or the other")
+            if refs and scene.get("body") is not None:
+                fail(f"{label}: image + beats + body exceeds the safe layout zones")
 
             def use_image(aid, beat_label):
                 if not isinstance(aid, str) or aid not in asset_map:

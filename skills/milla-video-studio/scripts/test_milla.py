@@ -318,8 +318,11 @@ class ProjectTests(unittest.TestCase):
         cases.append(("bad:gap", scene_with(ok["figure"], at=0.3), False))
         cases.append(("bad:tail", scene_with(ok["figure"], at=1.0), False))
         cases.append(("bad:with-diagram", scene_with(ok["figure"], diagram={"nodes": [{"id": "a", "label": "A", "x": 50, "y": 50}], "edges": []}), False))
+        # Los planos se suman a la imagen de la escena; lo que no cabe es imagen + planos + body.
         with_assets = scene_with(ok["figure"]); with_assets["scenes"][0]["asset_ids"] = ["visual0"]; with_assets["scenes"][0]["beats"] = [{"at": 0, **ok["figure"]}]
-        cases.append(("bad:with-asset-ids", with_assets, False))
+        cases.append(("ok:with-asset-ids", with_assets, True))
+        crowded = copy.deepcopy(with_assets); crowded["scenes"][0]["body"] = "Texto de apoyo."
+        cases.append(("bad:image-beats-body", crowded, False))
         many = scene_with(ok["figure"]); many["scenes"][0]["beats"] = [{"at": 0, "kind": "image", "asset_id": "visual0"}] + [{"at": 0, **ok["figure"]}] * 5
         cases.append(("bad:six-beats", many, False))
         return cases

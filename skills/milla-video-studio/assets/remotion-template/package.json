@@ -1,6 +1,6 @@
 {
   "name": "milla-video-template",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "private": true,
   "type": "module",
   "description": "Plantilla nueva y determinista; no es el código recuperado ni un render aprobado.",

@@ -33,7 +33,7 @@ test('beats: planos dentro de la escena, en orden, con tiempo de verse y sin mez
   assert.throws(()=>validateManifest(withBeats([beat({at:0}),beat({at:0.3})])),/frames entre sí/);
   assert.throws(()=>validateManifest(withBeats([beat({at:2.3})])),/fuera de su escena/);
   assert.throws(()=>validateManifest(withBeats([beat({kind:'video'})])),/kind no implementado/);
-  assert.throws(()=>validateManifest(withBeats([beat()],{diagram:{nodes:[{id:'a',label:'A',x:50,y:50}],edges:[]}})),/zona de imágenes y diagrama/);
+  assert.throws(()=>validateManifest(withBeats([beat()],{diagram:{nodes:[{id:'a',label:'A',x:50,y:50}],edges:[]}})),/zona del diagrama/);
   assert.throws(()=>validateManifest(withBeats([{at:0,kind:'quote',text:'El patrón deberá pagar el salario.',highlight:'otra cosa',source:'LFT'}])),/fragmento literal/);
   assert.throws(()=>validateManifest(withBeats([{at:0,kind:'bars',bars:[{label:'A',value:1},{label:'B',value:2}]}])),/source/);
   assert.throws(()=>validateManifest(withBeats([{at:0,kind:'list',items:[{text:'A'},{text:'B',at:9}]}])),/fuera de su plano/);

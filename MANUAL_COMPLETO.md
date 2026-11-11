@@ -12,7 +12,7 @@ Este archivo transmite instrucciones. Para ejecutar se necesita la carpeta de c�
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.3.0"
+  version: "1.3.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -822,7 +822,7 @@ No confundir una portada candidata con una portada aprobada. Seleccionar el fram
 | `scene.theme` | `ivory` o `navy`; paleta fija marfil `#F6F0E4`, azul `#172636`, dorado `#D6A72C` |
 | `scene.transition` | `family` implementada y `durationSeconds` de solapamiento entrante |
 | `scene.diagram` | Nodos y aristas nativos exactos, descritos abajo |
-| `scene.beats` | De 1 a 5 planos dibujados con código que entran con la voz; descritos en «Planos dentro de la escena». Excluyen `diagram` y `asset_ids` en esa escena |
+| `scene.beats` | De 1 a 5 planos dibujados con código que entran con la voz; descritos en «Planos dentro de la escena». Se suman a las imágenes de la escena; excluyen `diagram` |
 | `subtitleCues` | Opcional; `{start,end,text}` con tiempos medidos sobre la narración final; nunca generados por reparto de palabras |
 | `subtitlesVerified` | Debe ser `true` si existen cues; declaración no sustituye escucha y evidencia |
 | `subtitleCues[].words` | Opcional; `{start,end,text}` absoluto por palabra, obtenido del audio real, mismo texto que el cue |
@@ -907,7 +907,7 @@ Consulta: 4 de octubre de 2026. Documentación oficial; revalidar cambios cuando
 
 Candidato desde la versión 1.3.0 (11/11/2026): probado en validadores, cuadros y un render técnico sin audio; ningún video de MILLA aprobado los usa todavía. Una escena larga no se queda con un título quieto: se cuenta con planos que entran cuando la voz dice su palabra.
 
-Cada plano lleva `at` (segundos absolutos del audio final) y `kind`. El primero puede empezar con la escena; los demás van al menos 18 frames después del anterior y terminan de entrar 12 frames antes del fin de la escena. Al entrar un plano, el anterior sale. Ocupan la zona de imágenes y diagrama (y de 755 a 1355), así que la escena no lleva `diagram` ni `asset_ids`; una imagen se muestra con un plano `image`.
+Cada plano lleva `at` (segundos absolutos del audio final) y `kind`. El primero puede empezar con la escena; los demás van al menos 18 frames después del anterior y terminan de entrar 12 frames antes del fin de la escena. Al entrar un plano, el anterior sale. **Se suman a las imágenes; no las sustituyen.** Si la escena lleva `asset_ids`, las imágenes conservan su zona (y de 720 a 1240) y los planos van debajo (y de 1260 a 1640), donde iría el diagrama; por eso no conviven con `diagram`, ni con `body` cuando hay imágenes. Sin imágenes en la escena ocupan la zona central (y de 755 a 1355). El plano `image` sirve para cambiar de imagen dentro de una escena sin `asset_ids`.
 
 | `kind` | Campos | Para qué |
 |---|---|---|
@@ -1127,11 +1127,12 @@ Reglas de método, sin cambiar el estándar de MILLA (Kie Nano Banana Lite, Fish
 
 1. **Narrativa.** Leer [NARRATIVA.md de Vox Studio](skills/vox-studio/NARRATIVA.md) antes del guion: gancho con consecuencia para quien mira, bucle abierto declarado (qué pregunta abre y qué escena la responde), evidencia antes que explicación, una idea por escena, cierre con disyuntiva. Trae sus fuentes y su grado de certeza.
 2. **Guion visual.** Cada escena larga se cuenta con varios planos que entran con la palabra que los nombra, no con una imagen quieta. Algo cambia en pantalla cada 2 a 4 segundos.
-3. **Explicar a la par.** Lo que explica va junto a lo explicado y al mismo tiempo: etiquetas sobre la imagen, apuntes al lado, cita de la norma subrayada. Coincide con la regla 2 de esta skill (diagramas exactos con código).
-4. **De dónde sale cada imagen.** Código para lo que se explica; Apify para instituciones, lugares, documentos y hechos reales, con licencia y crédito; Kie para objetos y situaciones.
-5. **Ritmo de la voz.** Pausa antes del remate y tras la cifra que debe pesar; al cambiar de tema, respiro y más despacio; redactar como se habla. Con Fish se logra con puntuación y tomas por tramo; las marcas `[pausa]` y `cambio_tema` son de la herramienta de Vox Studio.
-6. **Un video, cuatro redes.** Un solo corte vertical que se entienda sin sonido, con fuente en pantalla; versiones por red solo si Emi las pide.
-7. **Proceso.** Guion completo a Emi antes de gastar; cuadros de prueba de cada pieza antes del render completo; tira de cuadros y recortes a tamaño real del titular en la revisión final.
+3. **El código se suma; no sustituye.** Emi lo precisó el 11/11/2026: pidió agregar piezas hechas con código junto a las imágenes, no reemplazarlas. Cada escena conserva sus imágenes y los planos van a su lado o debajo.
+4. **Explicar a la par.** Lo que explica va junto a lo explicado y al mismo tiempo: etiquetas sobre la imagen, apuntes al lado, cita de la norma subrayada. Coincide con la regla 2 de esta skill (diagramas exactos con código).
+5. **De dónde sale cada imagen.** Código para lo que se explica; Apify para instituciones, lugares, documentos y hechos reales, con licencia y crédito; Kie para objetos y situaciones.
+6. **Ritmo de la voz.** Pausa antes del remate y tras la cifra que debe pesar; al cambiar de tema, respiro y más despacio; redactar como se habla. Con Fish se logra con puntuación y tomas por tramo; las marcas `[pausa]` y `cambio_tema` son de la herramienta de Vox Studio.
+7. **Un video, cuatro redes.** Un solo corte vertical que se entienda sin sonido, con fuente en pantalla; versiones por red solo si Emi las pide.
+8. **Proceso.** Guion completo a Emi antes de gastar; cuadros de prueba de cada pieza antes del render completo; tira de cuadros y recortes a tamaño real del titular en la revisión final.
 
 ## Qué no se adopta sin decisión de Emi
 

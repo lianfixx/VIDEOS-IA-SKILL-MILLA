@@ -8,11 +8,12 @@ Reglas de método, sin cambiar el estándar de MILLA (Kie Nano Banana Lite, Fish
 
 1. **Narrativa.** Leer [NARRATIVA.md de Vox Studio](../../vox-studio/NARRATIVA.md) antes del guion: gancho con consecuencia para quien mira, bucle abierto declarado (qué pregunta abre y qué escena la responde), evidencia antes que explicación, una idea por escena, cierre con disyuntiva. Trae sus fuentes y su grado de certeza.
 2. **Guion visual.** Cada escena larga se cuenta con varios planos que entran con la palabra que los nombra, no con una imagen quieta. Algo cambia en pantalla cada 2 a 4 segundos.
-3. **Explicar a la par.** Lo que explica va junto a lo explicado y al mismo tiempo: etiquetas sobre la imagen, apuntes al lado, cita de la norma subrayada. Coincide con la regla 2 de esta skill (diagramas exactos con código).
-4. **De dónde sale cada imagen.** Código para lo que se explica; Apify para instituciones, lugares, documentos y hechos reales, con licencia y crédito; Kie para objetos y situaciones.
-5. **Ritmo de la voz.** Pausa antes del remate y tras la cifra que debe pesar; al cambiar de tema, respiro y más despacio; redactar como se habla. Con Fish se logra con puntuación y tomas por tramo; las marcas `[pausa]` y `cambio_tema` son de la herramienta de Vox Studio.
-6. **Un video, cuatro redes.** Un solo corte vertical que se entienda sin sonido, con fuente en pantalla; versiones por red solo si Emi las pide.
-7. **Proceso.** Guion completo a Emi antes de gastar; cuadros de prueba de cada pieza antes del render completo; tira de cuadros y recortes a tamaño real del titular en la revisión final.
+3. **El código se suma; no sustituye.** Emi lo precisó el 11/11/2026: pidió agregar piezas hechas con código junto a las imágenes, no reemplazarlas. Cada escena conserva sus imágenes y los planos van a su lado o debajo.
+4. **Explicar a la par.** Lo que explica va junto a lo explicado y al mismo tiempo: etiquetas sobre la imagen, apuntes al lado, cita de la norma subrayada. Coincide con la regla 2 de esta skill (diagramas exactos con código).
+5. **De dónde sale cada imagen.** Código para lo que se explica; Apify para instituciones, lugares, documentos y hechos reales, con licencia y crédito; Kie para objetos y situaciones.
+6. **Ritmo de la voz.** Pausa antes del remate y tras la cifra que debe pesar; al cambiar de tema, respiro y más despacio; redactar como se habla. Con Fish se logra con puntuación y tomas por tramo; las marcas `[pausa]` y `cambio_tema` son de la herramienta de Vox Studio.
+7. **Un video, cuatro redes.** Un solo corte vertical que se entienda sin sonido, con fuente en pantalla; versiones por red solo si Emi las pide.
+8. **Proceso.** Guion completo a Emi antes de gastar; cuadros de prueba de cada pieza antes del render completo; tira de cuadros y recortes a tamaño real del titular en la revisión final.
 
 ## Qué no se adopta sin decisión de Emi
 
