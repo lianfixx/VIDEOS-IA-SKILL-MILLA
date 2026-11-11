@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-11 · Primer video real de Pizarra Studio (¡ACCIÓNate!, espacio pan): aprendizajes
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: video pizarra del evento ¡ACCIÓNate! (sábado 14 de noviembre, El Tenayo) para el grupo de WhatsApp, la Lic. Rafaela y la Lic. Laura Luja, y también TikTok y X.
+- Cambios: entrevista completa (17 respuestas), resumen y storyboard aprobados por Emi; producción privada en `productions/pan/accionate-14nov` (fuera de git): estilo minimal, 9:16, 38.7 s, voz del espacio, música «energía» y efectos por código, QR nuevo al formulario del flyer. Al repositorio solo entran tres aprendizajes.
+- Archivos: `espacios/APRENDIZAJES-PIZARRA.md`, `espacios/pan/aprendizajes.md` y este registro.
+- Verificación: `qa` (32 cuadros) → revisado; `render` → sin avisos (−14.37 LUFS, pico −2.31 dBTP); `revisar` → 5 hallazgos corregidos y anotados en `out/revision.json`; el QR del cuadro final se lee y lleva al formulario → aprobado; `cierre` → 675 caracteres de ElevenLabs, Kie sin gasto. Formulario de registro en sí → no abierto.
+- Pendiente: que Emi vea y escuche el video y dé su opinión; el video no está aprobado.
+
 ## 2026-11-11 · Vox Studio 0.9.0 y Pizarra Studio 0.3.0: mejoras tomadas de cuatro referencias de X
 
 - Agente: Claude Code (sesión en la nube)
