@@ -168,3 +168,5 @@ El paquete para la app se genera con `python3 tools/empaquetar_vox.py` y lleva l
 ## Terminado
 
 `validar` sin errores, `render` completo, `revisar` hecho y `out/revision.json` firmado sobre el render actual, audio en rango, tabla de saldos entregada, aprendizajes guardados y visto bueno de Emi sobre el MP4. No publicar en redes sin que lo pida.
+
+Si Emi **ya grabó** el video y quiere editarlo, no es esta skill: es [Editor Studio](../editor-studio/SKILL.md).

@@ -1,0 +1,25 @@
+{
+ "version": 1,
+ "espacio": "personal",
+ "formato": "9:16",
+ "nivel": 2,
+ "nivel_razon": "Explica tres reglas: pide movimiento y un panel, no producción de anuncio",
+ "tramos": [{"de": 0, "a": 3.5, "nivel": 3}],
+ "color": {"look": "natural"},
+ "subtitulos": {"modo": "karaoke", "razon": "Reel rápido del espacio personal: palabra por palabra y en mayúsculas para que se siga sin sonido"},
+ "piezas": [
+  {"id": "barra", "tipo": "barra", "porque": "Es una lista de tres: la barra dice cuánto falta"},
+  {"id": "gancho", "tipo": "detras", "texto": "FIRMAR", "ancla": {"palabra": "firmar", "desfase": -0.4}, "dura": 1.5, "porque": "La palabra del gancho, detrás de Emi mientras la dice"},
+  {"id": "z1", "tipo": "zoom", "ancla": {"palabra": "nadie"}, "z": 1.1, "dura": 1.6, "porque": "Subraya «nadie te dice»"},
+  {"id": "s1", "tipo": "sello", "texto": "LETRA CHICA", "ancla": {"palabra": "importa", "desfase": -0.3}, "dura": 1.2, "porque": "Remata la primera regla"},
+  {"id": "d1", "tipo": "dato", "cifra": "8 de 10", "etiqueta": "no sabe cuánto cuesta salirse", "fuente": "Institución, año (enlace en la descripción)", "ancla": {"palabra": "Ocho"}, "dura": 1.9, "porque": "La cifra aparece cuando se oye"},
+  {"id": "lista", "tipo": "panel", "titulo": "Antes de firmar", "items": ["Lee la letra chiquita", "Pregunta cuánto cuesta salirte", "Nunca firmes con prisa"], "ancla": {"palabra": "tercera", "desfase": 0.1}, "hasta": {"palabra": "señal", "al_final": true, "desfase": 0.2}, "porque": "Resume las tres reglas al llegar a la última"},
+  {"id": "fin", "tipo": "cierre", "texto": "COMENTA", "ancla": {"palabra": "opinas", "desfase": -0.3}, "dura": 2.0, "porque": "La voz pide la opinión: se señala dónde darla"}
+ ],
+ "sonido": {
+  "densidad": "media",
+  "efectos": [{"en": "gancho", "sonido": "golpe"}, {"en": "s1", "sonido": "golpe"}, {"en": "d1", "sonido": "ding"}, {"en": "lista", "sonido": "deslizar"}, {"en": "fin", "sonido": "pop"}],
+  "musica": {"decision": "ninguna", "preguntado_a_emi": true}
+ },
+ "marca_en_pantalla": false
+}

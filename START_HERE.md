@@ -12,6 +12,10 @@ Ejemplo:
 
 > Usa MILLA Video Studio. Haz un video sobre prevenir problemas al firmar un contrato, dirigido a personas de 30 a 60 años en México. Investiga primero. Conserva la identidad y las exclusiones del estándar. Avanza y explícame brevemente cada hito; pregunta solo lo que de verdad cambie el resultado.
 
+## Si lo que quieres es editar un video que ya grabaste
+
+Eso es Editor Studio: dile a la IA «usa editor-studio» y pásale el video. Te hará las preguntas, te explicará los tres niveles de edición y te pedirá tu visto bueno antes de cortar. Empieza en `skills/editor-studio/SKILL.md`. Lo demás de esta página es de MILLA Video Studio.
+
 ## Si usas Claude Code
 
 Clona el repositorio en una carpeta de trabajo:

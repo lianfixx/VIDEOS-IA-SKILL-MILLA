@@ -133,6 +133,28 @@
     },
     {
       "type": "before_git",
+      "git": "commit",
+      "staged_regex": "^(skills/editor-studio|espacios)/",
+      "requires": "python3 -c 'import numpy'",
+      "run": "python3 -m unittest discover -s skills/editor-studio/scripts -p 'test_*.py'",
+      "reason": "Las pruebas de Editor Studio no pasan."
+    },
+    {
+      "type": "before_git",
+      "git": "commit",
+      "staged_regex": "^(skills/editor-studio|\\.claude/skills/editor-studio|\\.agents/skills/editor-studio)/SKILL\\.md$",
+      "run": "python3 ia/check_skill.py skills/editor-studio .claude/skills/editor-studio .agents/skills/editor-studio",
+      "reason": "El SKILL.md de Editor Studio o sus puentes dejarían de ser válidos."
+    },
+    {
+      "type": "before_git",
+      "git": "commit",
+      "staged_regex": "^(cerebro|espacios/[^/]+/radar\\.json)",
+      "run": "python3 -m unittest discover -s cerebro -p 'test_*.py'",
+      "reason": "Las pruebas del radar del cerebro no pasan."
+    },
+    {
+      "type": "before_git",
       "git": "push",
       "run": "python3 skills/milla-video-studio/scripts/milla.py secret-scan .",
       "reason": "El escaneo de secretos encontró hallazgos."

@@ -1,0 +1,104 @@
+/* Editor Studio · aspecto de las piezas. Colores y fuentes llegan como variables desde el perfil del espacio.
+   --resalte: el color de marca que se lee sobre oscuro · --sobre-acento: texto sobre el acento · --sobre-papel: acento legible sobre papel */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:var(--W);height:var(--H);overflow:hidden;background:#000}
+#root{position:relative;width:var(--W);height:var(--H);overflow:hidden;font-family:var(--texto),sans-serif;font-variant-numeric:lining-nums}
+#fondo{position:absolute;inset:0;background:var(--papel)}
+#camwrap{position:absolute;inset:0;overflow:hidden;clip-path:inset(0px 0px 0px 0px round 0px)}
+#cam{position:absolute;left:0;top:0;width:var(--W);height:var(--H);transform-origin:0 0}
+#base,.rec{position:absolute;left:0;top:0;width:var(--W);height:var(--H);object-fit:cover}
+#detras{position:absolute;inset:0}
+#insertos,#graficos{position:absolute;inset:0;pointer-events:none}
+.pz{position:absolute;visibility:hidden}
+.pz .in{will-change:transform,opacity}
+b.ac{font-weight:inherit;color:var(--resalte)}
+
+/* título: bloque de tinta con texto papel; se lee sobre cualquier fondo */
+.titulo{display:flex;align-items:flex-start;justify-content:flex-start}
+.titulo .in{font-family:var(--titular),sans-serif;line-height:1.04;color:var(--papel);background:var(--tinta);max-width:100%;
+  padding:.14em .3em .18em;box-shadow:.12em .12em 0 var(--acento);letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
+
+.rotulo{display:flex;align-items:flex-end}
+.rotulo .in{display:grid;grid-template-columns:auto 1fr;column-gap:.5em;align-items:center;background:var(--papel);max-width:100%;
+  padding:16px 28px 18px 20px;box-shadow:0 10px 30px rgba(0,0,0,.28)}
+.rotulo .barra{grid-row:1 / span 2;width:12px;height:100%;min-height:64px;background:var(--acento)}
+.rotulo .tx{font-family:var(--titular),sans-serif;color:var(--tinta);line-height:1.05;white-space:nowrap}
+.rotulo .sub{grid-column:2;font:700 34px/1.2 var(--texto),sans-serif;color:var(--tinta);opacity:.8;white-space:nowrap}
+
+.fuente{display:flex;align-items:flex-end;justify-content:flex-start}
+.fuente .in{font:700 34px/1.25 var(--texto),sans-serif;color:#fff;background:rgba(0,0,0,.68);padding:8px 16px;border-left:6px solid var(--resalte);max-width:100%}
+
+.sello{display:flex;align-items:flex-start;justify-content:flex-end}
+.sello .in{font-family:var(--titular),sans-serif;color:var(--tinta);border:9px solid var(--acento);border-radius:14px;
+  padding:.08em .34em .12em;background:var(--papel);letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;transform-origin:100% 0}
+
+.dato{display:flex;align-items:flex-start;justify-content:flex-start}
+.dato .in{display:grid;grid-template-columns:auto 1fr;column-gap:26px;align-items:center;background:var(--tinta);padding:12px 30px 14px 26px;
+  box-shadow:12px 12px 0 var(--acento);max-width:100%}
+.dato .cifra{grid-row:1 / span 2;font-family:var(--titular),sans-serif;color:var(--papel);line-height:1;white-space:nowrap}
+.dato .eti{font:700 40px/1.1 var(--texto),sans-serif;color:var(--resalte);align-self:end}
+.dato .fu{font:400 32px/1.2 var(--texto),sans-serif;color:var(--papel);opacity:.85;align-self:start;margin-top:4px}
+
+.cierre{display:flex;align-items:center;justify-content:center}
+.cierre .in{display:flex;flex-direction:row;align-items:center;gap:.3em;font-family:var(--titular),sans-serif;color:var(--tinta);line-height:1;
+  background:var(--apoyo);padding:.16em .42em .2em;border:8px solid var(--tinta);box-shadow:10px 10px 0 var(--tinta);text-transform:uppercase;white-space:nowrap}
+.cierre .flecha{height:.9em;width:.6em;stroke:var(--tinta)}
+
+/* la foto a pantalla entra y sale por corte, como un plano más: sin fondo propio que parpadee */
+.foto.pantalla{inset:0;overflow:hidden}
+.foto.pantalla .in{position:absolute;inset:0}
+.foto.pantalla img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.foto.tarjeta .in{position:absolute;inset:0;background:var(--papel);padding:14px;box-shadow:0 24px 60px rgba(0,0,0,.45);transform-origin:50% 50%}
+.foto.tarjeta img{width:100%;height:100%;object-fit:cover;display:block}
+.foto.pantalla .pie{left:8%;right:auto;max-width:76%}
+.foto .pie{position:absolute;left:0;right:0;bottom:0;font:700 34px/1.25 var(--texto),sans-serif;color:#fff;background:rgba(0,0,0,.7);padding:10px 18px}
+
+.inserto{inset:0;overflow:hidden}
+.inserto .in{position:absolute;inset:0;clip-path:circle(0% at 50% 50%);background:var(--papel)}
+.inserto video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+.sticker .in{position:absolute;inset:0;filter:drop-shadow(0 0 0 #fff) drop-shadow(0 10px 24px rgba(0,0,0,.4))}
+.sticker video{width:100%;height:100%;object-fit:contain}
+
+.detras{left:0;right:0;text-align:center}
+.detras .in{display:inline-block;font-family:var(--titular),sans-serif;line-height:.9;color:var(--apoyo);-webkit-text-stroke:10px var(--tinta);
+  paint-order:stroke fill;text-shadow:0 12px 0 var(--tinta);white-space:nowrap}
+
+.barra{left:0;top:0;width:100%;height:12px;background:rgba(0,0,0,.25)}
+.barra .in{position:absolute;left:0;top:0;height:100%;width:100%;background:var(--resalte);transform-origin:0 50%}
+
+.barrido{inset:0;overflow:hidden}
+.barrido .in{position:absolute;top:0;left:0;width:100%;height:100%;background:var(--tinta)}
+
+.particulas i{position:absolute;left:0;top:0;width:16px;height:16px;background:var(--resalte);border-radius:50%}
+.particulas i:nth-child(3n){background:var(--apoyo);border-radius:3px}
+.particulas i:nth-child(3n+1){background:var(--papel)}
+
+/* panel: el tamaño de letra de los renglones lo calcula armar para que todo quepa */
+.panel .in{position:absolute;inset:0;background:var(--tinta);border-radius:32px;padding:34px 40px;display:flex;flex-direction:column;justify-content:flex-start;
+  gap:20px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.panel .cab{font-family:var(--titular),sans-serif;line-height:1.1;color:var(--papel);text-transform:uppercase;white-space:nowrap;flex:none}
+.panel .item{display:flex;align-items:center;gap:.45em;font:700 1em/1.12 var(--texto),sans-serif;color:var(--papel)}
+.panel .item .n{flex:none;width:1.4em;height:1.4em;border-radius:50%;background:var(--acento);color:var(--sobre-acento);display:flex;align-items:center;
+  justify-content:center;font-family:var(--titular),sans-serif;font-size:.86em}
+.panel img{flex:1;width:100%;min-height:0;object-fit:contain;border-radius:18px}
+
+/* subtítulos: un grupo a la vez, centrado en su franja */
+#subs{position:absolute;pointer-events:none}
+.grupo{position:absolute;left:0;right:0;bottom:0;text-align:center;visibility:hidden;font-family:var(--subs),sans-serif;line-height:1.06;white-space:nowrap}
+.grupo .w{display:inline-block;transform-origin:50% 80%;margin:0 .1em}
+.subs-contorno .grupo{color:#fff;-webkit-text-stroke:9px #111;paint-order:stroke fill;text-shadow:0 6px 0 rgba(0,0,0,.45)}
+.subs-caja .grupo{left:50%;right:auto;translate:-50% 0;color:var(--papel);background:rgba(10,12,18,.84);padding:.14em .42em .2em;border-radius:14px}
+.subs-sobrio .grupo{color:#fff;font-weight:700;text-shadow:0 2px 12px rgba(0,0,0,.9),0 0 4px rgba(0,0,0,.95)}
+
+/* una pieza en la zona del torso se apoya abajo, pegada a los subtítulos; arriba, se cuelga del borde superior */
+.z-torso{align-items:flex-end!important}
+.z-arriba{align-items:flex-start!important}
+
+/* movimiento sobrio (espacios institucionales): sin sombras duras, sin giros, sin flecha */
+.mov-sobrio .titulo .in{box-shadow:none;border-bottom:5px solid var(--acento);text-transform:none;letter-spacing:0}
+.mov-sobrio .panel .cab{text-transform:none}
+.mov-sobrio .dato .in{box-shadow:none;border-left:8px solid var(--acento)}
+.mov-sobrio .cierre .in{box-shadow:none;border:2px solid var(--tinta);background:var(--papel);text-transform:none;letter-spacing:.01em}
+.mov-sobrio .cierre .flecha{display:none}
+.mov-sobrio .sello .in{border-width:3px;border-radius:4px}

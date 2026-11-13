@@ -2,6 +2,10 @@
 
 Guía común para recomendar; la decisión es de Emi. Cada skill conserva sus propias instrucciones: esta hoja solo ayuda a elegir entre ellas y se actualiza con lo que Emi apruebe o rechace.
 
+## Primero: ¿hay video grabado?
+
+Si Emi **grabó** algo (él a cámara, una entrevista, un evento) y quiere editarlo, es [Editor Studio](../skills/editor-studio/SKILL.md). Lo de abajo es para **crear** un video desde un guion. Un video editado puede llevar dentro un inserto hecho con Vox o con Pizarra.
+
 ## Dos skills, dos familias
 
 | Emi pide | Skill | Cómo se ve |

@@ -115,3 +115,5 @@ Se entrega `out/final-movil.mp4` (y dónde está el master), un resumen de 3 a 5
 - Las reglas comunes del repositorio (`ia/REGLAS.md`) valen aquí: registro en `CHANGELOG.md` en el mismo commit, sin secretos, producciones fuera de git.
 - Si el video dice que todo es código, no se usan imágenes generadas por IA en él.
 - Música de terceros solo con derechos documentados; por defecto se compone con código.
+
+Si Emi **ya grabó** el video y quiere editarlo, no es esta skill: es [Editor Studio](../editor-studio/SKILL.md).
