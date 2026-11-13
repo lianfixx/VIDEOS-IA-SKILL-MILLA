@@ -968,5 +968,41 @@ class Paletas(unittest.TestCase):
         self.assertGreaterEqual(MON.contraste(c["acento"], "#151515"), 4.5)     # el naranja se lee sobre oscuro
 
 
+class Decisiones13Nov(unittest.TestCase):
+    """Respuestas de Emi del 13/11/2026 (recogidas por la Matriz de Redes): música por código y modismos fuera."""
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def test_modismos_se_proponen_cortar_y_no_quedan_como_aviso(self):
+        palabras = pal((0.0, 0.5, "Nunca"), (0.6, 1.0, "firmes,"), (1.1, 1.4, "güey."), (2.0, 2.5, "Fin"))
+        w = wav_con_voz(self.tmp / "a.wav", [(0.0, 1.4), (2.0, 2.5)], 3.0)
+        p = COR.plan(w, palabras, "natural", 30, modismos="cortar")
+        self.assertTrue(any(c["tipo"] == "modismo" and c["t0"] <= 1.1 and c["t1"] >= 1.4 for c in p["cortes"]))
+        self.assertFalse([c for c in p["censura"] if c["accion"] == "avisar"])
+        p2 = COR.plan(w, palabras, "natural", 30)
+        self.assertFalse(any(c["tipo"] == "modismo" for c in p2["cortes"]))
+        self.assertTrue(any(c["accion"] == "avisar" for c in p2["censura"]))
+
+    def test_musica_por_codigo(self):
+        s = lambda m: plan(sonido={"densidad": "minima", "efectos": [], "musica": {"preguntado_a_emi": True, **m}})  # noqa: E731
+        self.assertEqual(validar(s({"decision": "codigo", "animo": "serio"}))[0], [])
+        self.assertTrue(any("animo" in e for e in validar(s({"decision": "codigo", "animo": "épico"}))[0]))
+
+    @unittest.skipUnless(HAY_FFMPEG, "sin FFmpeg")
+    def test_la_pista_compuesta_queda_muy_bajo_la_voz(self):
+        musica = ED.componer_musica(self.tmp / "m.wav", "serio", 6.0, [2.0, 4.0], "a1b2c3d4")
+        self.assertAlmostEqual(comun.duracion(musica), 6.0, delta=0.2)
+        comun.correr(["ffmpeg", "-y", "-v", "error", "-f", "lavfi", "-i", "anoisesrc=c=pink:a=0.3:d=6", "-ar", "48000", "-ac", "2", str(self.tmp / "voz.wav")], capture_output=True)
+        AUD.sintetizar(self.tmp / "fx")
+        info = AUD.mezclar(self.tmp / "voz.wav", self.tmp / "mx.wav", [], self.tmp / "fx", 6.0, musica=musica)
+        self.assertGreaterEqual(info["musica"]["bajo_la_voz_lu"], 17)
+
+    def test_el_espacio_personal_corta_modismos(self):
+        ed = json.loads((comun.RAIZ.parent.parent / "espacios" / "personal" / "edicion.json").read_text(encoding="utf-8"))
+        self.assertEqual(ed["modismos_accion"], "cortar")
+
+
 if __name__ == "__main__":
     unittest.main()

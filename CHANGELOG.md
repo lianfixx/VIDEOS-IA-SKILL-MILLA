@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-13 · Editor Studio 0.2.3: música compuesta por código y modismos fuera en el espacio personal
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: respuestas de Emi del 13/11/2026 a las preguntas de Editor Studio, recogidas por la sesión «Matriz de Redes» y registradas en lianfixx/redes `docs/DECISIONES-EMI-2026-11-13.md`; Emi autorizó en esta sesión enviarle esas preguntas.
+- Cambios: `sonido.musica.decision: "codigo"` con `animo` compone una pista original con el compositor de Vox Studio (`sonido.py`), a la medida del video y 18 LU bajo la voz; el empaquetador lleva `sonido.py`. `modismos_accion: "cortar"` en `edicion.json` hace que `cortes` proponga cortar «güey» y similares en vez de solo avisar; activado en el espacio personal («Güey, quítalo, suena horrible»). Las demás respuestas (marcas nombradas, «datos de ejemplo», cierre con pregunta, nivel 2 con gancho en 3, ironía sin efectos de chiste, nadie más a cuadro, guion y tres ganchos antes de grabar) quedan en `espacios/APRENDIZAJES-EDICION.md`.
+- Archivos: `skills/editor-studio/{SKILL.md,OFICIO.md}`, `skills/editor-studio/scripts/{corte.py,editor.py,montaje.py,test_editor.py}`, `tools/empaquetar_editor.py`, `espacios/personal/edicion.json`, `espacios/APRENDIZAJES-EDICION.md` y este registro.
+- Verificación: pruebas de editor-studio 112/112 (cuatro nuevas: modismos cortados, música por código validada, pista compuesta a la medida y bajo la voz, espacio personal configurado) → aprobado; paquete sin enlaces rotos → aprobado.
+- Pendiente: escuchar la pista compuesta con un video real de Emi.
+
 ## 2026-11-13 · Editor Studio 0.2.2: paletas de serie y la paleta «ia-derecho»
 
 - Agente: Claude Code (sesión en la nube)

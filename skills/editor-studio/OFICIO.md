@@ -19,6 +19,7 @@ Lo que aquí se dice vale mientras Emi no diga otra cosa. Lo que él corrija se 
 - El video arranca pegado a la voz y termina con medio segundo de cola.
 - **Muletillas.** Sonidos de relleno («eh», «mmm») se proponen siempre. Las palabras que a veces dicen algo («este», «pues», «bueno», «o sea») salen como `dudoso`: se lee la frase y se decide. Emi pidió quitar casi todas; se dejan las que dan naturalidad o sostienen el ritmo de una frase.
 - **Tomas repetidas y arranques en falso.** Gana la última completa. Son propuestas: se leen las dos y, si la primera estaba mejor dicha, se propone esa.
+- **Modismos en el espacio personal**: Emi, 13/11/2026: «Güey, quítalo, suena horrible». Con `modismos_accion: "cortar"` en `edicion.json`, `cortes` propone cortarlos (tipo `modismo`); si la frase queda trunca al quitarlo, se le dice a Emi para que decida.
 - **Groserías.** No se cortan: se tapan con un tono y en subtítulos se ve la inicial con asteriscos. «Güey», «pinche» y similares son modismo: salen como `avisar` y se le pregunta a Emi por espacio (`decidir --censura 0=tapar`).
 - Tras cortar, `cortar` comprueba la duración exacta y que ningún empalme caiga en plena voz. Cualquier aviso se escucha.
 - Si la transcripción es aproximada (viene de SRT o de frases), solo se proponen silencios; lo demás se marca a mano con `decidir --quitar 12.4~18.9 --motivo "…"`.
@@ -98,7 +99,7 @@ Zona segura en 9:16: x de 90 a 960, y de 230 a 1440. Lo demás lo tapa la interf
 - Voz a −16 LUFS; efectos de 6 a 14 unidades de sonoridad por debajo de la voz (8 por defecto), medidos por cómo suenan y no por su pico: un tono puro con el mismo pico que la voz se oye mucho más fuerte; música 18 LU bajo la voz; entrega a −14 LUFS con pico máximo de −1.5 dBTP.
 - Efectos disponibles: `pop`, `clic`, `deslizar`, `golpe`, `subida`, `ding`, `papel`, `teclas`. Se sintetizan aquí. Uno por idea; el mismo cuatro veces seguidas pierde la gracia. `deslizar` y `subida` arrancan antes de la pieza y terminan en el golpe.
 - Densidad por espacio: personal y pan `media`, milla `minima`, castorena `ninguna`.
-- Música: decisión de Emi en cada video. Si la quiere, la pista entra como archivo en `assets/` con `origen` (de dónde salió y con qué derecho se usa). Para componerla con código o traerla de Flow Music se usa lo que ya documenta Vox Studio; aquí no se duplica.
+- Música: decisión de Emi en cada video. `"decision": "codigo"` con un `animo` (tension, energia, serio, ironia o motivacion) compone aquí una pista original con el compositor de Vox Studio, a la medida del video y sin derechos de terceros: es la opción por defecto para un máster que se sube a varias redes. `"archivo"` usa una pista en `assets/` con su `origen`. La música va 18 LU bajo la voz. Un sonido en tendencia no va en el máster: si Emi lo quiere, lo añade él dentro de TikTok o Instagram.
 - Bibliotecas externas de efectos: hoy no se usa ninguna. El radar semanal revisa novedades y licencias; un sonido ajeno solo entra con su licencia leída y anotada.
 
 ## Color

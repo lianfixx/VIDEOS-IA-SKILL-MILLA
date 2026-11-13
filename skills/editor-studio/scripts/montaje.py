@@ -567,8 +567,17 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
     # sonido
     son = plan.get("sonido") or {}
     mus = son.get("musica") or {}
-    if mus.get("decision") not in ("ninguna", "archivo"):
-        err.append("sonido.musica.decision debe ser «ninguna» o «archivo» (la pista se le pregunta a Emi en cada video)")
+    if mus.get("decision") not in ("ninguna", "archivo", "codigo"):
+        err.append("sonido.musica.decision debe ser «ninguna», «codigo» (compuesta aquí, sin derechos de terceros) o «archivo» "
+                   "(la pista se le pregunta a Emi en cada video)")
+    if mus.get("decision") == "codigo":
+        try:
+            import sonido as SON
+            animos = set(SON.ANIMOS)
+        except ImportError:
+            animos = {"tension", "energia", "serio", "ironia", "motivacion"}
+        if mus.get("animo") not in animos:
+            err.append(f"sonido.musica.animo debe ser uno de {sorted(animos)} para componer la pista")
     if mus.get("decision") == "archivo" and (mus.get("archivo") not in archivos or not str(mus.get("origen", "")).strip()):
         err.append("sonido.musica: falta el archivo en assets/ o su `origen` (de dónde salió y con qué derecho se usa)")
     if mus.get("decision") == "archivo" and str(mus.get("archivo", "")).lower().rsplit(".", 1)[-1] not in ("mp3", "wav", "m4a", "aac", "flac", "ogg"):
