@@ -1,5 +1,23 @@
 # Cambios
 
+## 2026-11-13 · Editor Studio 0.2.3: música compuesta por código y modismos fuera en el espacio personal
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: respuestas de Emi del 13/11/2026 a las preguntas de Editor Studio, recogidas por la sesión «Matriz de Redes» y registradas en lianfixx/redes `docs/DECISIONES-EMI-2026-11-13.md`; Emi autorizó en esta sesión enviarle esas preguntas.
+- Cambios: `sonido.musica.decision: "codigo"` con `animo` compone una pista original con el compositor de Vox Studio (`sonido.py`), a la medida del video y 18 LU bajo la voz; el empaquetador lleva `sonido.py`. `modismos_accion: "cortar"` en `edicion.json` hace que `cortes` proponga cortar «güey» y similares en vez de solo avisar; activado en el espacio personal («Güey, quítalo, suena horrible»). Las demás respuestas (marcas nombradas, «datos de ejemplo», cierre con pregunta, nivel 2 con gancho en 3, ironía sin efectos de chiste, nadie más a cuadro, guion y tres ganchos antes de grabar) quedan en `espacios/APRENDIZAJES-EDICION.md`.
+- Archivos: `skills/editor-studio/{SKILL.md,OFICIO.md}`, `skills/editor-studio/scripts/{corte.py,editor.py,montaje.py,test_editor.py}`, `tools/empaquetar_editor.py`, `espacios/personal/edicion.json`, `espacios/APRENDIZAJES-EDICION.md` y este registro.
+- Verificación: pruebas de editor-studio 112/112 (cuatro nuevas: modismos cortados, música por código validada, pista compuesta a la medida y bajo la voz, espacio personal configurado) → aprobado; paquete sin enlaces rotos → aprobado.
+- Pendiente: escuchar la pista compuesta con un video real de Emi.
+
+## 2026-11-13 · Editor Studio 0.2.2: paletas de serie y la paleta «ia-derecho»
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 13/11/2026, para sus cuatro videos de IA + Derecho del espacio personal: «Usa también esos de castorena y los que acabas de crear por favor» (combinar su marca personal con los colores de Castorena).
+- Cambios: una serie de videos puede llevar una paleta propia sin tocar la marca del espacio: `espacios/<espacio>/paletas.json` (cada paleta con `aprobada_por_emi` y su origen) y `"paleta"` en `plan.json`; el validador rechaza una paleta inexistente, sin aprobación o con colores mal escritos. Paleta `ia-derecho` en el espacio personal: papel #F4ECD6 y acento #FF5A1F (marca personal), tinta #0D1B2A y apoyo #C8A96B (Castorena). La marca de `perfil.json` y los demás espacios no cambian.
+- Archivos: `espacios/personal/paletas.json` (nuevo), `skills/editor-studio/scripts/{comun.py,montaje.py,test_editor.py}`, `skills/editor-studio/OFICIO.md` y este registro.
+- Verificación: pruebas de editor-studio con dos nuevas (paleta de serie; la de este repositorio está aprobada y se lee: contraste papel/tinta 7 o más, acento sobre oscuro 4.5 o más) → aprobado; clip de prueba armado con la paleta y cuadros de muestra mirados → se lee en títulos, dato, panel, sello y cierre.
+- Pendiente: ver la paleta sobre el primer video real de Emi.
+
 ## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
 
 - Agente: Claude Code (sesión en la nube)

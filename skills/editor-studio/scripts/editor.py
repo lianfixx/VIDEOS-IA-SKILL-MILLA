@@ -530,6 +530,8 @@ def render(d: Path, borrador: bool = False) -> dict:
         efectos.append({"t": cuando, "sonido": e["sonido"], "db": e.get("db", AUD.EFECTO_BAJO_VOZ)})
     mus = (t["plan"].get("sonido") or {}).get("musica") or {}
     pista = d / "assets" / mus["archivo"] if mus.get("decision") == "archivo" else None
+    if mus.get("decision") == "codigo":
+        pista = componer_musica(out / "musica-codigo.wav", mus["animo"], t["duracion"], t["aplicado"]["empalmes"], huella_de_plan(t["plan"]))
     voz = out / "voz.wav"
     correr(["ffmpeg", "-y", "-v", "error", "-i", str(d / "limpio.mp4"), "-vn", "-ar", "48000", "-ac", "2", "-c:a", "pcm_s16le", str(voz)], capture_output=True)
     info = AUD.mezclar(voz, out / "mezcla.wav", efectos, out / "efectos", t["duracion"], t["censura"], pista)
@@ -554,6 +556,15 @@ def render(d: Path, borrador: bool = False) -> dict:
             "lufs": auditoria["lufs"], "fecha": time.strftime("%Y-%m-%d %H:%M:%S")})
     return {"final": str(final), "avisos_plan": avi, "avisos_audio": auditoria["avisos"], "avisos_video": video_av["avisos"],
             "lufs": auditoria["lufs"], "pico": auditoria["pico_dbtp"], "duracion_s": auditoria["duracion_s"]}
+
+
+def componer_musica(destino: Path, animo: str, segundos: float, cortes: list[float], firma: str) -> Path:
+    """Pista original compuesta con código (el compositor de Vox Studio): sin derechos de terceros, a la medida del video."""
+    import numpy as np  # noqa: F401  (el compositor lo necesita)
+    import sonido as SON
+    semilla = int(firma[:8], 16) % 100000
+    SON.guardar(destino, SON.componer(animo, segundos, semilla, cortes), nivel=-20.0)
+    return destino
 
 
 def auditar_video(final: Path, t: dict) -> dict:
@@ -847,7 +858,7 @@ def despachar(a) -> int:
         ritmo = a.ritmo or ed.get("ritmo", "natural")
         mul = a.muletillas or ed.get("muletillas", "seguras")
         palabras = [] if pal.get("aproximado") else pal["palabras"]
-        p = COR.plan(d / "audio.wav", palabras, ritmo, medios["fps"], mul)
+        p = COR.plan(d / "audio.wav", palabras, ritmo, medios["fps"], mul, "cortar" if ed.get("modismos_accion") == "cortar" else "avisar")
         if pal.get("aproximado"):
             p["avisos"].append("transcripción aproximada: solo se proponen silencios; muletillas y tomas se marcan a mano con `decidir --quitar`")
         p["palabras_sha"] = sha_archivo(d / "palabras.json")       # los cortes valen para ESTA transcripción

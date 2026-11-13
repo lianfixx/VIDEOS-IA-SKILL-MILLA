@@ -27,6 +27,7 @@ with tempfile.TemporaryDirectory() as tmp:
     ignora = shutil.ignore_patterns("node_modules", "out", "__pycache__", "*.pyc", "test_*.py")
     shutil.copytree(RAIZ / "skills" / "editor-studio", destino, ignore=ignora)
     shutil.copyfile(RAIZ / "skills" / "vox-studio" / "scripts" / "autoria.py", destino / "scripts" / "autoria.py")  # regla compartida
+    shutil.copyfile(RAIZ / "skills" / "vox-studio" / "scripts" / "sonido.py", destino / "scripts" / "sonido.py")    # música por código
     shutil.copytree(RAIZ / "espacios", destino / "espacios", ignore=ignora)
     (destino / "cerebro").mkdir()
     shutil.copyfile(RAIZ / "cerebro" / "CEREBRO.md", destino / "cerebro" / "CEREBRO.md")
