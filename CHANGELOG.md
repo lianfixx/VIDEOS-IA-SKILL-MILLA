@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-13 · Editor Studio 0.2.2: paletas de serie y la paleta «ia-derecho»
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 13/11/2026, para sus cuatro videos de IA + Derecho del espacio personal: «Usa también esos de castorena y los que acabas de crear por favor» (combinar su marca personal con los colores de Castorena).
+- Cambios: una serie de videos puede llevar una paleta propia sin tocar la marca del espacio: `espacios/<espacio>/paletas.json` (cada paleta con `aprobada_por_emi` y su origen) y `"paleta"` en `plan.json`; el validador rechaza una paleta inexistente, sin aprobación o con colores mal escritos. Paleta `ia-derecho` en el espacio personal: papel #F4ECD6 y acento #FF5A1F (marca personal), tinta #0D1B2A y apoyo #C8A96B (Castorena). La marca de `perfil.json` y los demás espacios no cambian.
+- Archivos: `espacios/personal/paletas.json` (nuevo), `skills/editor-studio/scripts/{comun.py,montaje.py,test_editor.py}`, `skills/editor-studio/OFICIO.md` y este registro.
+- Verificación: pruebas de editor-studio con dos nuevas (paleta de serie; la de este repositorio está aprobada y se lee: contraste papel/tinta 7 o más, acento sobre oscuro 4.5 o más) → aprobado; clip de prueba armado con la paleta y cuadros de muestra mirados → se lee en títulos, dato, panel, sello y cierre.
+- Pendiente: ver la paleta sobre el primer video real de Emi.
+
 ## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
 
 - Agente: Claude Code (sesión en la nube)

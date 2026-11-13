@@ -80,6 +80,8 @@ Zonas de texto: `arriba` (sobre la cabeza, si hay sitio), `torso` (entre la cara
 
 Reglas que el validador también cumple: un `barrido` solo va sobre un corte (su centro cae en un empalme) y apaga los subtítulos mientras pasa; un renglón de `panel` no pasa de 32 letras; una `foto` en tarjeta no tapa la cara; como mucho dos `detras` por video; un título que no cabe legible se rechaza en vez de encogerse. Los subtítulos llevan un solo tamaño en todo el video. En los espacios de movimiento `sobrio` los títulos van en altas y bajas, sin sombras duras, sin giros y sin flecha.
 
+Paletas de serie: una serie de videos puede llevar colores propios, aprobados por Emi, sin tocar la marca del espacio. Viven en `espacios/<espacio>/paletas.json` (con `aprobada_por_emi`) y se eligen con `"paleta": "nombre"` en `plan.json`. Primera: `ia-derecho` (personal, 13/11/2026): papel crema y acento naranja de la marca personal, tinta azul #0D1B2A y dorado #C8A96B tomados de Castorena.
+
 Colores: sobre fondo oscuro se usa el acento de la marca solo si se lee (contraste de 4.5 o más); si no, entra su color de apoyo. Por eso en PAN la palabra activa y los resaltes van en dorado y no en azul.
 
 Zona segura en 9:16: x de 90 a 960, y de 230 a 1440. Lo demás lo tapa la interfaz de TikTok y Reels.

@@ -1,0 +1,16 @@
+{
+ "_doc": "Paletas para series concretas del espacio personal (Editor Studio: `paleta` en plan.json). No cambian la marca de perfil.json. Cada una la aprueba Emi y se anota con sus palabras.",
+ "paletas": {
+  "ia-derecho": {
+   "para": "serie de videos sobre las herramientas de IA y Derecho de Emi (Matriz General, monitor del DOF, avisos de boletines, Vox Studio), noviembre de 2026",
+   "colores": {
+    "papel": "#F4ECD6",
+    "tinta": "#0D1B2A",
+    "acento": "#FF5A1F",
+    "apoyo": "#C8A96B"
+   },
+   "origen": "papel y acento de la marca personal; tinta azul y dorado de apoyo tomados de Castorena",
+   "aprobada_por_emi": "13/11/2026: «Usa también esos de castorena y los que acabas de crear por favor»"
+  }
+ }
+}

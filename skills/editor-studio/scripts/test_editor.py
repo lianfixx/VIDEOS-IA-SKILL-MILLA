@@ -941,5 +941,32 @@ class Compuertas2(Cierre):
         self.assertIn("FALTA que Emi", ED.cierre(self.d))
 
 
+class Paletas(unittest.TestCase):
+    """Una serie puede llevar una paleta propia aprobada por Emi, sin tocar la marca del espacio."""
+
+    def test_paleta_de_serie(self):
+        pal = {"ia-derecho": {"colores": {"papel": "#F4ECD6", "tinta": "#0D1B2A", "acento": "#FF5A1F", "apoyo": "#C8A96B"},
+                              "aprobada_por_emi": "13/11/2026: sí"}}
+        con = {**PERFIL, "paletas": pal}
+        self.assertEqual(validar(plan(paleta="ia-derecho"), perfil=con)[0], [])
+        pagina, _ = MON.armar_html(plan(paleta="ia-derecho"), [], con, [], 8.0, ROSTRO)
+        self.assertIn("--tinta:#0D1B2A", pagina)
+        self.assertIn("--apoyo:#C8A96B", pagina)
+        pagina, _ = MON.armar_html(plan(), [], con, [], 8.0, ROSTRO)
+        self.assertIn("--tinta:#20180F", pagina)                         # sin `paleta`, la marca de siempre
+        self.assertTrue(any("no existe" in e for e in validar(plan(paleta="otra"), perfil=con)[0]))
+        sin_ok = {**PERFIL, "paletas": {"x": {"colores": pal["ia-derecho"]["colores"]}}}
+        self.assertTrue(any("aprobada_por_emi" in e for e in validar(plan(paleta="x"), perfil=sin_ok)[0]))
+        mala = {**PERFIL, "paletas": {"x": {"colores": {"papel": "crema"}, "aprobada_por_emi": "sí"}}}
+        self.assertTrue(any("hexadecimal" in e for e in validar(plan(paleta="x"), perfil=mala)[0]))
+
+    def test_la_paleta_ia_derecho_del_repositorio_esta_aprobada_y_se_lee(self):
+        p = json.loads((comun.RAIZ.parent.parent / "espacios" / "personal" / "paletas.json").read_text(encoding="utf-8"))["paletas"]["ia-derecho"]
+        self.assertTrue(p["aprobada_por_emi"])
+        c = p["colores"]
+        self.assertGreaterEqual(MON.contraste(c["papel"], c["tinta"]), 7)       # texto sobre los bloques de tinta
+        self.assertGreaterEqual(MON.contraste(c["acento"], "#151515"), 4.5)     # el naranja se lee sobre oscuro
+
+
 if __name__ == "__main__":
     unittest.main()
