@@ -24,6 +24,8 @@ Ejecutar `python3 scripts/milla.py doctor` desde la carpeta de la skill. Comprue
 
 ## Reglas permanentes
 
+0. **Nunca se dice que el video lo hizo una IA** (regla de Emi, 13/11/2026: «jamás en nada digas que lo armó una IA»). Ni «lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA» ni nada parecido, en narración, titulares, notas, remates, portada o cierre, en ningún espacio. Hablar de la IA como tema sí se puede.
+
 1. Priorizar Kie `nano-banana-2-lite`; verificar contrato actual. Usar otro Nano Banana/Kie solo ante fallo o calidad insuficiente documentados. **Nunca ChatGPT Image**, tampoco como respaldo.
 2. Construir diagramas exactos con código/vector. Usar Apify solo para realidad necesaria y verificar derechos. Un diagrama nativo no es generación de imágenes con ChatGPT.
 3. Excluir partículas, logos visibles Gemini, marcas de agua, texto inventado, cuadros de fondo de recortes, halos y repetición como relleno. Revisar píxeles; un JSON no demuestra ausencia.

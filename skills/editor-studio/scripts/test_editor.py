@@ -907,6 +907,23 @@ class Compuertas2(Cierre):
         err, _, _, _ = ED.validar_produccion(self.d)
         self.assertTrue(any("cambiaron después de `cortar`" in e for e in err))
 
+    def test_regla_de_emi_nunca_decir_que_lo_hizo_una_ia(self):
+        err, avi, _, _ = ED.validar_produccion(self.d)
+        self.assertFalse(any("Regla de Emi" in e for e in err))
+        self.plan["piezas"][0]["texto"] = "LO HIZO UNA IA"           # texto que añade la skill: error
+        self.escribir()
+        err, _, _, _ = ED.validar_produccion(self.d)
+        self.assertTrue(any("Regla de Emi" in e for e in err))
+        self.plan["piezas"][0]["texto"] = "COMENTA"
+        self.escribir()
+        dicho = [dict(w) for w in PALABRAS]                          # lo que Emi dice a cámara: aviso, decide él
+        for w, nuevo in zip(dicho, ["nadie", "lo", "editó"]):
+            w["txt"] = nuevo
+        (self.d / "palabras_limpio.json").write_text(json.dumps({"palabras": dicho}))
+        err, avi, _, _ = ED.validar_produccion(self.d)
+        self.assertFalse(any("Regla de Emi" in e for e in err))
+        self.assertTrue(any("nunca que el video lo hizo una IA" in x for x in avi))
+
     def test_mapa_de_rostro_de_otro_corte(self):
         (self.d / "limpio.mp4").write_bytes(b"corte nuevo")
         (self.d / "rostro.json").write_text(json.dumps({"cajas": ROSTRO["cajas"], "limpio": "otro"}))

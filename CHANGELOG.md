@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-13 · Regla de Emi en las cuatro skills de video: nunca decir que el video lo hizo una IA
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 13/11/2026 (llegó por la sesión «Matriz de Redes» y Emi la confirmó aquí: «por favor, audita todo de manera profunda, arregla y continúa»): «jamás en nada digas que lo armó una IA».
+- Cambios: módulo único `skills/vox-studio/scripts/autoria.py` que detecta cuando un texto atribuye el propio video a una IA, a una máquina o a «nadie» («lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA», «te habla una IA»…) sin estorbar a la IA como tema. Vox Studio 0.13.0: `validar` lo rechaza en narración, titulares, notas, remates, kicker, fuente, portada, título, pregunta de cierre y ganchos. Pizarra Studio 0.3.2: `voz` y `render` se niegan antes de gastar. Editor Studio 0.2.1: error si lo dice una pieza del plan; aviso si Emi lo dice a cámara, para que decida si se corta; su paquete para la app lleva una copia del módulo. MILLA Video Studio: regla escrita. Regla en `espacios/personal/MARCA.md` y en los aprendizajes. Auditoría: el empaquetador de Vox encontró tres enlaces nuevos a Editor Studio que se rompían en el paquete → ahora quedan como texto. `MANUAL_COMPLETO.md` regenerado.
+- Archivos: `skills/vox-studio/{SKILL.md,scripts/autoria.py,scripts/vox.py,scripts/test_vox.py}`, `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}`, `skills/editor-studio/{SKILL.md,scripts/editor.py,scripts/test_editor.py}`, `skills/milla-video-studio/SKILL.md`, `espacios/{APRENDIZAJES.md,personal/MARCA.md,personal/aprendizajes.md}`, `tools/{empaquetar_vox.py,empaquetar_editor.py}`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de vox-studio, pizarra-studio, editor-studio (106), milla-video-studio e `ia/test_guard.py` → aprobado; 17 frases prohibidas detectadas y 13 frases sobre IA como tema, o con «nadie … más que yo», sin falso positivo; `tsc --noEmit` de Vox → aprobado; paquetes de Vox y Editor regenerados y probados descomprimidos en limpio (Editor importa la regla sin el repositorio) → aprobado. Producciones privadas revisadas: los demos técnicos `demo-2` y `demo-vox` dicen «lo editó una inteligencia artificial» y «nadie abrió CapCut» → ahora `validar` los rechaza; son privados y no se publican.
+- Pendiente: que Emi suba los paquetes nuevos a la app; fusionar a `main`. Las etiquetas de contenido con IA que piden las plataformas al publicar son decisión aparte de Emi.
+
 ## 2026-11-11 · GitHub corre las pruebas de todas las skills en cada push
 
 - Agente: Claude Code (sesión en la nube)

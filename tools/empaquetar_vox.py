@@ -39,7 +39,8 @@ with tempfile.TemporaryDirectory() as tmp:
         t = t.replace("](../../espacios/", "](espacios/").replace("](../../biblioteca/)", "](#)")
         if md.parent.name != "pizarra":
             t = t.replace("](../pizarra-studio/SKILL.md)", "](pizarra/PIZARRA.md)")
-        t = re.sub(r"\[([^\]]+)\]\(\.\./milla-video-studio/SKILL\.md\)", r"\1", t)
+        # skills que no viajan en este paquete: el enlace queda como texto
+        t = re.sub(r"\[([^\]]+)\]\((?:\.\./)+(?:skills/)?(?:milla-video-studio|editor-studio)/[^)]*\)", r"\1", t)
         if md.parent.name == "espacios":  # desde espacios/ el repositorio enlaza a skills/...; en el paquete la skill es la raíz
             t = t.replace("](../skills/vox-studio/SKILL.md)", "](../SKILL.md)").replace("](../skills/pizarra-studio/SKILL.md)", "](../pizarra/PIZARRA.md)")
         md.write_text(t, encoding="utf-8")

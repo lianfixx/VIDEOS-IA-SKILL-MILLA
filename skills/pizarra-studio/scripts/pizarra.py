@@ -230,9 +230,19 @@ def sin_efectos(texto: str) -> bool:
 
 # ---------- voz ----------
 
+def exigir_autoria(d: Path) -> None:
+    """Regla de Emi (13/11/2026): ningún texto del video dice que lo hizo una IA (ni «nadie»)."""
+    g = d / "guion.json"
+    if g.is_file():
+        errores = vox.revisar_autoria(vox.textos_de(json.loads(g.read_text(encoding="utf-8"))))
+        if errores:
+            raise ErrorVox("guion.json: " + " | ".join(errores))
+
+
 def narrar_guion(d: Path, ejecutar: bool, prueba: bool = False) -> dict:
     """Una sola toma para toda la narración; reparte los tiempos reales entre escenas contando palabras."""
     b = leer_brief(d)
+    exigir_autoria(d)  # antes de pagar la voz
     g = json.loads((d / "guion.json").read_text(encoding="utf-8"))
     escenas = g.get("escenas") or []
     if not escenas or any(not str(s.get("narracion", "")).strip() for s in escenas):
@@ -408,6 +418,7 @@ def _lufs(audio: Path) -> float:
 def rendir(d: Path, prueba: bool = False) -> dict:
     """Con `prueba` rinde un borrador técnico (out/prueba.mp4) sin exigir la entrevista: nunca es un entregable."""
     b = leer_brief(d) if prueba else exigir_aprobado(d)
+    exigir_autoria(d)
     resp = b.get("respuestas") or {}
     esperado = leer_formato(resp.get("formato", ""))      # el brief se interpreta ANTES de gastar minutos de render
     pedido = leer_duracion(resp.get("duracion_s", ""))

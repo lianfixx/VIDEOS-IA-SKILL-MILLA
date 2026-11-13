@@ -46,6 +46,11 @@ import audio as AUD  # noqa: E402
 import corte as COR  # noqa: E402
 import montaje as MON  # noqa: E402
 import transcripcion as TRA  # noqa: E402
+# Regla de Emi (13/11/2026): jamás decir que el video lo hizo una IA. Una sola implementación, la de Vox Studio;
+# el paquete de la app la copia junto a estos scripts.
+if not (Path(__file__).resolve().parent / "autoria.py").exists():
+    sys.path.append(str(Path(__file__).resolve().parents[2] / "vox-studio" / "scripts"))
+from autoria import dice_que_lo_hizo_una_ia, revisar_autoria, textos_de  # noqa: E402
 from comun import (ESPACIOS, FORMATOS, FPS, PLANTILLA, VERSION, ZONAS_APP, ErrorEditor, aprender, correr,  # noqa: E402
                    dir_produccion, duracion, escribir_json, espacio_de, formato_tiempo, huella, leer_aprendizajes,
                    leer_json, perfil, saldo, sha_archivo, sonda, tabla_saldo)
@@ -341,6 +346,13 @@ def validar_produccion(d: Path) -> tuple[list[str], list[str], list[dict], dict]
             if (abs(m.get("t0", -9) - p["t0"]) > 0.02 or abs(m.get("t1", -9) - p["t1"]) > 0.02
                     or (base.exists() and m.get("base") != sha_archivo(base))):
                 err.append(f"{p['id']} (detras): su recorte es de otro tramo o de otro corte; repite `recorte`")
+    # Lo que la skill añade en pantalla nunca dice que el video lo hizo una IA: es error.
+    err += revisar_autoria(textos_de(t["plan"].get("piezas") or [], "piezas"))
+    # Lo que dice Emi a cámara es suyo, pero la regla también es suya: se le avisa para que decida si se corta.
+    dicho = " ".join(str(w.get("txt", "")) for w in t["palabras"])
+    frase = dice_que_lo_hizo_una_ia(dicho)
+    if frase:
+        avi.append(f"en la grabación se dice «{frase}»: tu regla es no decir nunca que el video lo hizo una IA. ¿Se corta ese tramo?")
     t["piezas"], t["censura"] = piezas, censura
     return err, avi, piezas, t
 
