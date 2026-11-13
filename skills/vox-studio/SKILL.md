@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.13.0"
+  version: "0.13.1"
   release_date: "2026-11-13"
   language: "es-MX"
 ---
@@ -58,7 +58,7 @@ Si Emi pide un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acu
 
 ## Solo video
 
-Esta skill hace video y nada más: guion, imagen, voz, sonido, montaje, portada y su auditoría. No redacta ni programa publicaciones en X ni en ninguna red, y no mezcla instrucciones de otras skills. La skill de X de Emi (`lianfixx/X`) es independiente: puede dejar ideas de video en su propio repositorio (`puente/para-vox.md`) y aquí se toman solo como propuestas de tema para el espacio `personal`, preguntando igual la postura de Emi. El `handle` de un espacio es el @ de la red donde se publica el video; un @ de otra red va en `cuentas` y no se muestra en pantalla.
+Esta skill hace video y nada más: guion, imagen, voz, sonido, montaje, portada y su auditoría. No redacta ni programa publicaciones en X ni en ninguna red, y no mezcla instrucciones de otras skills. La skill de X de Emi (`lianfixx/X`) es independiente: puede dejar ideas de video en su propio repositorio (`puente/para-vox.md`) y aquí se toman solo como propuestas de tema para el espacio `personal`, preguntando igual la postura de Emi. Lo mismo con la skill de LinkedIn de Emi (`linkedin-pro`, repositorio `lianfixx/linkedin`): sus ideas están en [puente/para-vox.md](https://github.com/lianfixx/linkedin/blob/main/puente/para-vox.md) y son solo propuestas de tema para el espacio `personal` (autorizado por Emi el 13/11/2026). Vox Studio no publica en LinkedIn ni toma reglas de esa skill; el post que acompaña a un video lo escribe `linkedin-pro`. El `handle` de un espacio es el @ de la red donde se publica el video; un @ de otra red va en `cuentas` y no se muestra en pantalla.
 
 ## Cierre
 

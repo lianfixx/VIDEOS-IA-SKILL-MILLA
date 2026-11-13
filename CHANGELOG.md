@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: petición de la skill `linkedin-pro` (`lianfixx/linkedin`, `puente/PETICION-vox.md`), confirmada por Emi en esta sesión el 13/11/2026: «Sí».
+- Cambios: la sección «Solo video» de `skills/vox-studio/SKILL.md` enlaza `puente/para-vox.md` de `lianfixx/linkedin` como fuente de ideas de tema para el espacio personal, igual que el puente de X: se sigue preguntando la postura de Emi, Vox no publica en LinkedIn ni copia reglas de esa skill. No se añadió `cuentas.linkedin` al perfil (opcional; Vox no lo usa).
+- Archivos: `skills/vox-studio/SKILL.md` y este registro.
+- Verificación: el archivo enlazado existe y es público; `ia/check_skill.py` y pruebas de vox-studio → aprobado.
+- Pendiente: avisar a `linkedin-pro` con fecha y commit; fusionar a `main`.
+
 ## 2026-11-13 · Regla de Emi en las cuatro skills de video: nunca decir que el video lo hizo una IA
 
 - Agente: Claude Code (sesión en la nube)
