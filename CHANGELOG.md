@@ -1,5 +1,23 @@
 # Cambios
 
+## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: petición de la skill `linkedin-pro` (`lianfixx/linkedin`, `puente/PETICION-vox.md`), confirmada por Emi en esta sesión el 13/11/2026: «Sí».
+- Cambios: la sección «Solo video» de `skills/vox-studio/SKILL.md` enlaza `puente/para-vox.md` de `lianfixx/linkedin` como fuente de ideas de tema para el espacio personal, igual que el puente de X: se sigue preguntando la postura de Emi, Vox no publica en LinkedIn ni copia reglas de esa skill. No se añadió `cuentas.linkedin` al perfil (opcional; Vox no lo usa).
+- Archivos: `skills/vox-studio/SKILL.md` y este registro.
+- Verificación: el archivo enlazado existe y es público; `ia/check_skill.py` y pruebas de vox-studio → aprobado.
+- Pendiente: avisar a `linkedin-pro` con fecha y commit; fusionar a `main`.
+
+## 2026-11-13 · Regla de Emi en las cuatro skills de video: nunca decir que el video lo hizo una IA
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 13/11/2026 (llegó por la sesión «Matriz de Redes» y Emi la confirmó aquí: «por favor, audita todo de manera profunda, arregla y continúa»): «jamás en nada digas que lo armó una IA».
+- Cambios: módulo único `skills/vox-studio/scripts/autoria.py` que detecta cuando un texto atribuye el propio video a una IA, a una máquina o a «nadie» («lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA», «te habla una IA»…) sin estorbar a la IA como tema. Vox Studio 0.13.0: `validar` lo rechaza en narración, titulares, notas, remates, kicker, fuente, portada, título, pregunta de cierre y ganchos. Pizarra Studio 0.3.2: `voz` y `render` se niegan antes de gastar. Editor Studio 0.2.1: error si lo dice una pieza del plan; aviso si Emi lo dice a cámara, para que decida si se corta; su paquete para la app lleva una copia del módulo. MILLA Video Studio: regla escrita. Regla en `espacios/personal/MARCA.md` y en los aprendizajes. Auditoría: el empaquetador de Vox encontró tres enlaces nuevos a Editor Studio que se rompían en el paquete → ahora quedan como texto. `MANUAL_COMPLETO.md` regenerado.
+- Archivos: `skills/vox-studio/{SKILL.md,scripts/autoria.py,scripts/vox.py,scripts/test_vox.py}`, `skills/pizarra-studio/{SKILL.md,scripts/pizarra.py,scripts/test_pizarra.py}`, `skills/editor-studio/{SKILL.md,scripts/editor.py,scripts/test_editor.py}`, `skills/milla-video-studio/SKILL.md`, `espacios/{APRENDIZAJES.md,personal/MARCA.md,personal/aprendizajes.md}`, `tools/{empaquetar_vox.py,empaquetar_editor.py}`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de vox-studio, pizarra-studio, editor-studio (106), milla-video-studio e `ia/test_guard.py` → aprobado; 17 frases prohibidas detectadas y 13 frases sobre IA como tema, o con «nadie … más que yo», sin falso positivo; `tsc --noEmit` de Vox → aprobado; paquetes de Vox y Editor regenerados y probados descomprimidos en limpio (Editor importa la regla sin el repositorio) → aprobado. Producciones privadas revisadas: los demos técnicos `demo-2` y `demo-vox` dicen «lo editó una inteligencia artificial» y «nadie abrió CapCut» → ahora `validar` los rechaza; son privados y no se publican.
+- Pendiente: que Emi suba los paquetes nuevos a la app; fusionar a `main`. Las etiquetas de contenido con IA que piden las plataformas al publicar son decisión aparte de Emi.
+
 ## 2026-11-11 · GitHub corre las pruebas de todas las skills en cada push
 
 - Agente: Claude Code (sesión en la nube)
@@ -62,6 +80,14 @@
 - Archivos: `docs/REFERENCIAS-EXTERNAS.md`, `docs/PLAN-EDITOR.md` (nuevo) y este registro.
 - Verificación: transcripciones de seis de los siete videos obtenidas con Apify (0.03 USD) y leídas completas → hecho; el séptimo (Warp) no tiene subtítulos, solo se leyó su descripción; los videos no se vieron. Trece repositorios clonados en lectura y leídos sin ejecutar → hecho. HyperFrames 0.9.34: instalación y render de prueba 1080×1920 de 2 s en 2.7 s → aprobado (con la biblioteca de animación local; cargada de internet falla). Dominios probados: Kie, ElevenLabs, Apify, Google Fonts y Gemini alcanzables; YouTube, AssemblyAI, OpenAI, Higgsfield, Pixabay, TikTok, Instagram y la descarga directa de Drive bloqueados. Box encendido. No comprobado: Kling ni Scribe con gasto real; ninguna edición de un video de Emi. Pruebas del repositorio → aprobadas (ver commit).
 - Pendiente: respuestas de Emi a las 45 preguntas; un crudo de prueba; decidir transcripción y forma de recibir los crudos. La comparación Obsidian/Notion se abrió como sesión aparte, a pedido de Emi; no forma parte de este repositorio.
+## 2026-11-11 · Paquete de Vox Studio para la app: auditoría y enlaces corregidos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 11/11/2026: auditar a fondo antes de darle el texto para que otra IA suba la skill a la app de Claude.
+- Cambios: el empaquetador corrige los dos enlaces de `espacios/ESTILOS.md` que en el paquete apuntaban fuera, y ahora se niega a entregar un paquete con cualquier enlace roto.
+- Archivos: `tools/empaquetar_vox.py` y este registro.
+- Verificación: paquete regenerado y descomprimido en limpio: nombre y descripción dentro de los límites de la app (10 y 457 caracteres), 0 enlaces rotos (antes 2), sin claves, correos ni archivos de medios, 411 KB sin comprimir; `vox.py espacios` y `validar` del ejemplo funcionan desde el paquete → aprobado. Subida a la app → no ejecutado (requiere la sesión de Emi).
+- Pendiente: subir `dist/vox-studio.zip` a la app; fusionar este arreglo a `main`.
 
 ## 2026-11-11 · Vox Studio 0.12.0: Flow Music como complemento opcional de la música
 

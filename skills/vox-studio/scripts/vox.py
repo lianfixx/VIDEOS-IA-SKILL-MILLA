@@ -99,6 +99,7 @@ LIMITES = {"kicker": 18, "nota": 38, "fuente": 46, "dato": 6, "remate": 14}
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import sonido as SON  # noqa: E402  (música y efectos hechos con código)
+from autoria import dice_que_lo_hizo_una_ia, revisar_autoria, textos_de  # noqa: E402,F401  (regla de Emi: nunca «lo hizo una IA»)
 
 
 class ErrorVox(Exception):
@@ -181,6 +182,23 @@ def efectivas(escenas: list[dict], campo: str, ciclo: list[str]) -> list[str]:
             vecinas = {out[-1] if out else None, escenas[i + 1].get(campo) if i + 1 < len(escenas) else None}
             v = next((ciclo[(i + k) % len(ciclo)] for k in range(len(ciclo)) if ciclo[(i + k) % len(ciclo)] not in vecinas), ciclo[i % len(ciclo)])
         out.append(v)
+    return out
+
+
+def textos_del_guion(g: dict) -> list[tuple[str, str]]:
+    """Todo lo que se ve o se oye en un video de Vox Studio, con su lugar en el guion."""
+    out = [(c, str(g.get(c, ""))) for c in ("titulo", "cta_pregunta") if g.get(c)]
+    out += [(f"ganchos_propuestos[{i}]", str(x)) for i, x in enumerate(g.get("ganchos_propuestos") or []) if isinstance(x, str)]
+    port = g.get("portada") or {}
+    if isinstance(port, dict) and port.get("texto"):
+        out.append(("portada.texto", str(port["texto"])))
+    for i, s in enumerate(e for e in (g.get("escenas") or []) if isinstance(e, dict)):
+        for c in ("narracion", "keyword", "resaltar", "kicker", "nota", "dato", "fuente", "remate"):
+            if isinstance(s.get(c), str) and s[c].strip():
+                out.append((f"escena {i + 1}.{c}", s[c]))
+        alt = s.get("alternativa_plana")
+        if isinstance(alt, dict) and isinstance(alt.get("dato"), str):
+            out.append((f"escena {i + 1}.alternativa_plana.dato", alt["dato"]))
     return out
 
 
@@ -354,6 +372,7 @@ def validar_guion(g: dict) -> list[str]:
             e.append("ninguna escena tiene funcion `opinion`: la postura de Emi debe oírse en el video, no solo guiarlo")
     if escenas and "?" not in str(escenas[-1].get("narracion", "")):
         e.append("la última escena debe narrar la pregunta de cierre (cta_pregunta)")
+    e += revisar_autoria(textos_del_guion(g))
     return e
 
 

@@ -793,6 +793,39 @@ class Comfy(unittest.TestCase):
             self.con_url(previo)
 
 
+class AutoriaIA(unittest.TestCase):
+    """Regla de Emi (13/11/2026): «jamás en nada digas que lo armó una IA». Hablar de IA como tema sí se puede."""
+    PROHIBIDAS = ["Esto lo hizo una IA.", "Este cierre no lo editó nadie.", "Nadie lo editó", "HECHO CON IA", "Hecho 100% con IA",
+                  "Este video fue hecho con inteligencia artificial", "nadie abrió CapCut", "$0 DE EDITOR", "sin editor",
+                  "Te habla una IA", "voz de IA", "Lo armó una IA con código", "todo lo editó una máquina", "Esta voz no es real",
+                  "Este short lo generó ChatGPT", "Lo hizo Claude", "ni un editor"]
+    PERMITIDAS = ["La IA ya redacta contratos, ¿son válidos?", "Un contrato generado con IA no tiene firma", "¿Te reemplazará la inteligencia artificial?",
+                  "El SAT usa IA para auditar", "Hecho con amor", "Nadie te lo dijo", "La IA lo hizo mal en el juicio de Nueva York",
+                  "Faltan 9 días", "El algoritmo de TikTok decide", "Lo hizo el gobierno", "editor de la revista", "No lo hizo nadie más que yo",
+                  "Nadie lo editó, salvo yo"]
+
+    def test_detecta_y_no_estorba_al_tema(self):
+        for t in self.PROHIBIDAS:
+            self.assertTrue(vox.dice_que_lo_hizo_una_ia(t), t)
+        for t in self.PERMITIDAS:
+            self.assertEqual(vox.dice_que_lo_hizo_una_ia(t), "", t)
+
+    def test_el_guion_no_pasa_en_ningun_texto_visible(self):
+        for campo in ("narracion", "keyword", "nota", "remate", "kicker"):
+            g = guion(); g["escenas"][1][campo] = "Esto lo hizo una IA."
+            self.assertIn("Regla de Emi", " | ".join(vox.validar_guion(g)), campo)
+        g = guion(); g["portada"] = {"texto": "HECHO CON IA"}
+        self.assertIn("portada.texto", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["opinion_emi"] = "No quiero que digamos que esto lo hizo una IA, nunca."   # notas para la IA: no salen en pantalla
+        self.assertEqual(vox.validar_guion(g), [])
+        g = guion(); g["escenas"][1]["narracion"] = "La IA ya redacta contratos."
+        self.assertEqual(vox.validar_guion(g), [])
+
+    def test_textos_de_omite_lo_que_no_se_ve(self):
+        rutas = [r for r, _ in vox.textos_de({"escenas": [{"narracion": "a", "porque": "b", "imagen_archivo": "c"}], "_doc": "d"})]
+        self.assertEqual(rutas, ["escenas[0].narracion"])
+
+
 class MusicaExterna(unittest.TestCase):
     def tono(self, ruta, segundos, silencio=0.0):
         import subprocess

@@ -2,7 +2,7 @@
 name: editor-studio
 description: "Editar videos que Emi grabó (a cámara, entrevistas, eventos, vlogs, clips de podcast) para sus espacios (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado: transcribe, propone cortes, subtítulos, movimiento, apoyos, sonido y color en tres niveles, se revisa y entrega. Usar cuando Emi pase un video crudo o pida editar, cortar, subtitular, poner animaciones o B-roll a un video grabado, preparar la escaleta antes de grabar, o comparar niveles de edición. Siempre pregunta antes, explica los tres niveles y sugiere uno, espera su aprobación de cortes y estilo, informa saldos y aprende de cada video. Para crear un video desde un guion se usan vox-studio o pizarra-studio."
 metadata:
-  version: "0.2.0"
+  version: "0.2.1"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -104,6 +104,7 @@ Se entrega en su carpeta de Drive «Editor Studio» (una subcarpeta por espacio)
 
 ## Que se vea hecho por Emi
 
+- **Nunca se dice que el video lo hizo una IA** (regla de Emi, 13/11/2026: «jamás en nada digas que lo armó una IA»). Ni «lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA» ni nada parecido, en narración, titulares, notas, remates, portada o cierre, en ningún espacio. Hablar de la IA como tema sí se puede. Si una pieza del plan lo dice, `armar` no arma; si Emi lo dice a cámara, se le avisa para que decida si se corta.
 - Cortes con respiro; no se pega cada frase a la siguiente.
 - Primero lo real. Nada generado sin que él lo pida.
 - Un acento de color y dos fuentes por espacio; nada se mueve sin decir algo.

@@ -2,7 +2,7 @@
 name: pizarra-studio
 description: "Producir videos dibujados a mano estilo pizarra (pizarrón, acuarela, acuarela viva, cuaderno, minimal) para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar cuando Emi pida un video estilo pizarra, pizarrón, whiteboard, dibujado a mano, acuarela, cuaderno o minimal. Siempre entrevista a Emi con todas las preguntas antes de producir, espera su aprobación del storyboard, audita, informa saldos y aprende de cada video. Para el estilo vox o box se usa vox-studio."
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -86,6 +86,7 @@ Con voz, cada escena dura exactamente lo que dice `tiempos.json` y se usa `speed
 
 ## 5. Que se vea hecho por una persona
 
+- **Nunca se dice que el video lo hizo una IA** (regla de Emi, 13/11/2026: «jamás en nada digas que lo armó una IA»). Ni «lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA» ni nada parecido, en narración, titulares, notas, remates, portada o cierre, en ningún espacio. Hablar de la IA como tema sí se puede. `voz` y `render` se niegan si `guion.json` lo dice.
 - Un foco por escena: un texto grande y un elemento dibujado. La voz carga el resto.
 - **Sin personaje** por decisión de Emi: la vida la dan la mano que escribe (plumón, gis, lápiz, pincel), los objetos que se dibujan y actúan (algo cae, se tacha, se sella, se compara) y la cámara. Si un video necesitara personaje, se le pregunta; nunca la mascota de fábrica del motor, que es la de Claude.
 - Fondo, herramienta y composición distintos de una escena a otra; ninguna transición repetida seguida; transiciones de 0.4 a 0.8 s y motivadas por algo de la escena.

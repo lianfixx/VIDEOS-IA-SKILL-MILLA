@@ -251,3 +251,25 @@ class Hoja(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Autoria(unittest.TestCase):
+    """Regla de Emi (13/11/2026): jamás decir que el video lo hizo una IA."""
+
+    def test_no_se_narra_ni_se_rinde_si_el_guion_lo_dice(self):
+        import json
+        import tempfile
+        from pathlib import Path
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "guion.json").write_text(json.dumps({"escenas": [
+                {"id": "01", "narracion": "La IA ya redacta contratos.", "porque": "esto lo hizo una IA no se ve en pantalla"},
+                {"id": "02", "narracion": "¿Tú qué opinas?"}]}))
+            pizarra.exigir_autoria(d)                              # hablar de IA como tema sí se puede
+            (d / "guion.json").write_text(json.dumps({"escenas": [{"id": "01", "narracion": "Este video lo hizo una IA."}]}))
+            with self.assertRaises(pizarra.ErrorVox):
+                pizarra.exigir_autoria(d)
+            (d / "brief.json").write_text(json.dumps(brief_completo()))
+            with self.assertRaises(pizarra.ErrorVox) as cm:       # antes de pagar la voz, aunque sea en seco
+                pizarra.narrar_guion(d, ejecutar=False)
+            self.assertIn("Regla de Emi", str(cm.exception))
