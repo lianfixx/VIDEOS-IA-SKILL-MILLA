@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-17 · Vox Studio 0.12.2: apuntes largos y aviso de plano quieto
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 17/11/2026: segundo video semanal de Castorena (DOF y SJF del 13 al 17 de noviembre); aprobó el guion y pidió auditar todo de fondo.
+- Cambios: un apunte de más de 22 letras baja de 60 a 47 px, porque dos líneas grandes chocaban con los subtítulos; el aviso de plano quieto ya no salta cuando la imagen lleva una pieza `junto`. Producción privada `productions/castorena/perdon-sat-2027` (perdón de multas y recargos de la Ley de Ingresos 2027; flashes de piratería y condominios).
+- Archivos: `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/scripts/vox.py`, `skills/vox-studio/SKILL.md` y este registro.
+- Verificación: pruebas de vox-studio 57/57 → aprobado; ocho cuadros de prueba del video nuevo → aprobado. Transitorio Vigésimo Primero de la LIF 2027 y artículo 424 Bis del CPF cotejados con dof.gob.mx → aprobado; la jurisprudencia de condominios no pudo abrirse en el Semanario → no ejecutado. Render completo y cotejo jurídico independiente → en curso al registrar.
+- Pendiente: corregir lo que señale el cotejo, entregar el video y guardar las lecciones.
+
 ## 2026-11-11 · Vox Studio 0.12.1 y MILLA Video Studio 1.3.2: código solo cuando haga falta y en el mismo estilo
 
 - Agente: Claude Code (sesión en la nube)

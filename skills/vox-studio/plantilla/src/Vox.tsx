@@ -513,7 +513,7 @@ const Apunte: React.FC<{p: Plano; c: Colores; real: number; der: boolean; arriba
       <svg width={150} height={110} viewBox="0 0 150 110" style={{position: 'absolute', top: -105, [der ? 'left' : 'right']: 40, transform: der ? undefined : 'scaleX(-1)'}}>
         {t > 0.001 && <path d="M130 100 C 110 40, 70 20, 22 18 M22 18 l 26 -14 M22 18 l 20 22" fill="none" stroke={c.tinta} strokeWidth={8} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - t} />}
       </svg>
-      <div style={{fontFamily: 'Caveat', fontSize: 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(-10% ${(1 - t) * 100}% -10% 0)`}}>{p.apunte.texto}</div>
+      <div style={{fontFamily: 'Caveat', fontSize: p.apunte.texto.length > 22 ? 47 : 60, lineHeight: 1, color: c.tinta, textAlign: der ? 'right' : 'left', clipPath: `inset(-10% ${(1 - t) * 100}% -10% 0)`}}>{p.apunte.texto}</div>
     </div>
   );
 };

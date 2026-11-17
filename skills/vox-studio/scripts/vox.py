@@ -1468,7 +1468,7 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
         receta.unlink(missing_ok=True)
     for e in video["escenas"]:  # ritmo real, medido en la voz
         for j, pl in enumerate(e.get("planos") or []):
-            extra = len(pl.get("etiquetas") or []) + (1 if pl.get("apunte") else 0)
+            extra = len(pl.get("etiquetas") or []) + (1 if pl.get("apunte") else 0) + (1 if pl.get("junto") else 0)
             if pl["tipo"] not in PLANO_VIVO and not extra and pl["dur"] / FPS > PLANO_QUIETO and not (j == len(e["planos"]) - 1 and e is video["escenas"][-1]):
                 print(f"⚠ escena {e['id']}, plano {j + 1} ({pl['tipo']}): {pl['dur'] / FPS:.1f} s sin nada nuevo; si se siente detenido, dale otra imagen o, solo si aclara algo, un apunte")
         if e["dur"] / FPS > ESCENA_LARGA and len(e.get("planos") or []) < 2:
