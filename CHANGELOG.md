@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-18 · Segundo video semanal de Castorena: perdón de multas y recargos (LIF 2027)
+
+- Agente: Claude Code (sesión en la nube), con un subagente revisor jurídico independiente
+- Solicitud: Emi, 17/11/2026: nuevo video del reporte DOF y SJF del 13 al 17 de noviembre; aprobó el guion y pidió auditar todo de fondo.
+- Cambios: producción privada `productions/castorena/perdon-sat-2027` entregada; once recortes nuevos en `biblioteca/castorena/`; dos lecciones generales. El cotejo independiente obligó a corregir el guion ya aprobado (supuestos del transitorio Vigésimo Primero, año de los plazos, respuesta no impugnable, «a sabiendas» y escala comercial en el art. 424 Bis, alcance de la tesis de condominios).
+- Archivos: `biblioteca/`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: LIF 2027 (transitorio Vigésimo Primero) y CPF art. 424 Bis cotejados con dof.gob.mx → aprobado; cotejo independiente del guion → aprobado tras correcciones; jurisprudencia PR.A.C.CS. J/14 C (12a.) solo según el reporte de Emi, el Semanario no pudo abrirse → no ejecutado; la vigencia de la LIF al 1 de enero de 2027 consta en el reporte, no la localicé en el texto → no ejecutado. Render final: 69.03 s, H.264 1080×1920, −14.16 LUFS, pico −2.24 dBTP, sin avisos de audio ni de imagen → aprobado técnicamente; tira de 41 cuadros y portada revisadas por la IA → aprobado. Escucha y visto bueno de Emi → no ejecutado.
+- Pendiente: opinión de Emi (voz, pausas, duración de 69 s); avisarle que su reporte junta la solicitud del 31 de octubre con el pago al 31 de diciembre.
+
 ## 2026-11-17 · Vox Studio 0.12.2: apuntes largos y aviso de plano quieto
 
 - Agente: Claude Code (sesión en la nube)
