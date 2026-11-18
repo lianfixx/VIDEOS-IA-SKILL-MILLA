@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-18 · Vox Studio 0.13.2: ideas de temas desde la skill de TikTok y usuario de TikTok guardado
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: petición de la skill `tiktok-studio` (`lianfixx/tiktok`, `puente/PETICION-vox.md`), llegada por la Matriz de Redes y confirmada por Emi en esta sesión el 18/11/2026: «sí a todo, lo de usuario en la pantalla aún no».
+- Cambios: «Solo video» enlaza `puente/para-vox.md` de `lianfixx/tiktok` como fuente de ideas de tema para el espacio personal (Vox no publica en TikTok ni copia reglas de esa skill). `cuentas.tiktok` = `@emiliano_milla_` en `espacios/personal/perfil.json`; `handle` sigue vacío por decisión de Emi, así que ningún video muestra el @. `MARCA.md` y los aprendizajes del espacio lo registran.
+- Archivos: `skills/vox-studio/SKILL.md`, `espacios/personal/{perfil.json,MARCA.md,aprendizajes.md}` y este registro.
+- Verificación: el archivo enlazado existe; `vox.py espacios`, `ia/check_skill.py` y pruebas de vox-studio → aprobado.
+- Pendiente: avisar a la Matriz de Redes y a `tiktok-studio` con fecha y commit. Para Emi: el puente de TikTok pide «sin voces realistas hechas con IA»; la voz de Vox (ElevenLabs) lo es, y eso lo decide él con la sesión de TikTok.
+
 ## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
 
 - Agente: Claude Code (sesión en la nube)
