@@ -4,4 +4,4 @@
 
 **Nunca se dice que el video lo hizo una IA** (regla de Emi, 13/11/2026).
 
-Tono: suelto, crítico y con humor; gym, vlogs y estilo de vida. Es el único espacio donde el chiste puede ir en el gancho. Cuentas: X `@emilianomilla_` (confirmado por Emi el 10/11/2026). TikTok: aún no existe; cuando Emi la cree, se escribe su @ en `handle` de `perfil.json` y aparecerá en los videos. Mientras tanto los videos no muestran ningún @.
+Tono: suelto, crítico y con humor; gym, vlogs y estilo de vida. Es el único espacio donde el chiste puede ir en el gancho. Cuentas: X `@emilianomilla_` (confirmado por Emi el 10/11/2026). TikTok: `@emiliano_milla_` (con guion bajo en medio; distinto del de X), guardado en `cuentas.tiktok`. **Emi decidió el 18/11/2026 que aún no aparezca en pantalla**: `handle` sigue vacío y los videos no muestran ningún @ hasta que él lo pida.
