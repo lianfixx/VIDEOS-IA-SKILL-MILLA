@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-18 · Aprendizaje del espacio personal: voz expresiva y motion en videos de opinión
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 18/11/2026, sobre la serie de dos videos de la portada 2027 de The Economist: «más expresiva la voz (da mucha hueva así), necesito más transiciones, más animaciones, efectos, contar más cosas a la vez (con timing perfecto)… Usa motion».
+- Cambios: se guarda la lección en `espacios/personal/aprendizajes.md` (voz eleven_v3 con etiquetas de actuación y pausas recortadas; cámara viva; una transición distinta por corte con desenfoque de movimiento; varias capas por escena amarradas a palabras; un efecto por animación). Sin datos privados. No cambia código de las skills: la composición vive en la producción privada.
+- Archivos: `espacios/personal/aprendizajes.md` y este registro.
+- Verificación: render de los dos videos revisado cuadro por cuadro (hojas de escenas, transiciones y tamaño teléfono); sonoridad −14 LUFS. Falta el oído de Emi.
+- Pendiente: si Emi aprueba el estilo, pasar los componentes de motion (transiciones con desenfoque, etiquetas, contadores, efectos por evento) a `skills/vox-studio/plantilla/` con su prueba.
+
 ## 2026-11-18 · Vox Studio 0.13.2: ideas de temas desde la skill de TikTok y usuario de TikTok guardado
 
 - Agente: Claude Code (sesión en la nube)
