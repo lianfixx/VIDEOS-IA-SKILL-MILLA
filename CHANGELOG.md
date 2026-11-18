@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-18 · Video del perdón del SAT: visto bueno de Emi
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 18/11/2026, sobre la versión corregida: «está bien».
+- Cambios: se registra el visto bueno y la lección de velocidad de voz del espacio Castorena.
+- Archivos: `espacios/castorena/aprendizajes.md` y este registro.
+- Verificación: render 63.74 s, −14.08 LUFS, pico −2.14 dBTP → aprobado técnicamente; 0 s de subtítulo sin palabra resaltada, medido cuadro por cuadro → aprobado; visto bueno de Emi → aprobado. Aviso de imagen pendiente (0.5 % bajo la descripción de TikTok, escena 08) → no ejecutado. Publicación → no ejecutado: no se pidió.
+- Pendiente: corregir el aviso de la escena 08 si se sube a TikTok.
+
 ## 2026-11-18 · Vox Studio 0.12.3: voz en una sola toma, subtítulos sin parpadeo y lista junto a la imagen
 
 - Agente: Claude Code (sesión en la nube)
