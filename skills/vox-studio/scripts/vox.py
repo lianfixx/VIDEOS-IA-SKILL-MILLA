@@ -79,6 +79,7 @@ MAX_PLANOS = 5
 # Estilo del video: «collage» (recortes sobre papel) o «pizarra» (motion: casi todo dibujado con código sobre cuadrícula).
 ESTILOS_VIDEO = ("collage", "pizarra")
 PAPEL_PIZARRA = "#FBFBF7"
+RITMO_VOZ = (2.1, 3.0)  # palabras por segundo por escena; el video aprobado va de 2.2 a 2.8
 MIN_PLANO = 18  # frames; con menos no da tiempo de leerlo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -138,7 +139,9 @@ EXPRESIONES = {"ríe": "laughs", "suspira": "sighs", "carraspea": "clears throat
                "sorprendida": "surprised", "seria": "serious", "emocionada": "excited", "lento": "slow", "duda": "hesitates"}
 MODELOS_CON_EXPRESION = ("eleven_v3", "eleven_v4")  # entienden etiquetas entre corchetes; los demás, solo pausas
 MARCA = re.compile(r"\[([^\[\]]{1,24})\]")
-CAMBIO_TEMA = {"silencio": 0.55, "velocidad": 0.9}  # al cambiar de tema: respiro y la escena se dice más despacio
+# Al cambiar de tema solo hay un respiro, dentro de la MISMA toma. Partir la voz en tomas con otra velocidad
+# sonó disparejo (1.75 a 3 palabras por segundo en un mismo video) y Emi lo rechazó el 18/11/2026.
+CAMBIO_TEMA = {"silencio": 0.6, "velocidad": 1.0}
 SILENCIO_ENTRE_VOCES = 0.18
 
 
@@ -193,15 +196,17 @@ def plan_de_voz(g: dict, perfil: dict) -> list[dict]:
             raise ErrorVox(f"la escena {s.get('id')} pide la voz de comentario y el espacio no tiene `voz_comentario` en su perfil")
         cambio = bool(s.get("cambio_tema")) and i > 0
         v = velocidad_voz({}, voz) if coment else vel
-        if cambio:
-            v = round(max(VELOCIDAD_VOZ[0], v * CAMBIO_TEMA["velocidad"]), 3)
         clave = (voz["voice_id"], voz.get("modelo", "eleven_multilingual_v2"), v)
-        nuevo = not tramos or cambio or tramos[-1]["cambio"] or tramos[-1]["clave"] != clave
+        nuevo = not tramos or tramos[-1]["clave"] != clave  # solo otra voz abre otra toma
         if nuevo:
-            silencio = 0.0 if not tramos else CAMBIO_TEMA["silencio"] if cambio else SILENCIO_ENTRE_VOCES if tramos[-1]["clave"][0] != clave[0] else 0.0
-            tramos.append({"voz": voz, "velocidad": v, "clave": clave, "cambio": cambio, "comentario": coment, "silencio": silencio, "textos": [], "palabras": 0})
+            silencio = SILENCIO_ENTRE_VOCES if tramos else 0.0
+            tramos.append({"voz": voz, "velocidad": v, "clave": clave, "cambio": False, "comentario": coment, "silencio": silencio, "textos": [], "palabras": 0})
         t = tramos[-1]
-        t["textos"].append(texto_para_voz(s, clave[1]))
+        respiro = ""
+        if cambio and not nuevo:  # el respiro va dentro de la toma, como una pausa más
+            respiro = "[pause] " if clave[1].startswith(MODELOS_CON_EXPRESION) else f'<break time="{CAMBIO_TEMA["silencio"]}s" /> '
+            t["cambio"] = True
+        t["textos"].append(respiro + texto_para_voz(s, clave[1]))
         t["palabras"] += len(narracion_limpia(s).split())
     for t in tramos:
         t["texto"] = " ".join(t.pop("textos"))
@@ -210,7 +215,7 @@ def plan_de_voz(g: dict, perfil: dict) -> list[dict]:
 
 def firma_de_voz(g: dict, tramos: list[dict]) -> str:
     """Huella de lo que se narró. Con un solo tramo sin marcas es la de siempre: las voces ya pagadas siguen vigentes."""
-    if len(tramos) == 1 and tramos[0]["texto"] == texto_completo(g):
+    if len(tramos) == 1 and tramos[0]["texto"] == texto_completo(g):  # sin marcas ni cambios de tema
         t = tramos[0]
         return huella(t["texto"], t["voz"]["voice_id"], t["voz"].get("modelo", ""), *([f"vel={t['velocidad']}"] if t["velocidad"] != 1.0 else []))
     return huella("tramos", json.dumps([[t["texto"], *t["clave"], t["silencio"]] for t in tramos], ensure_ascii=False))
@@ -1466,6 +1471,13 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     else:  # sin música: no dejar restos de un armado anterior
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
+    for e in video["escenas"]:  # velocidad real de la voz: dispareja suena artificial
+        ini, fin = e["desde"] / FPS - 0.2, (e["desde"] + e["dur"]) / FPS - 0.2
+        suyas = [w for w in video["palabras"] if ini <= w["a"] < fin]
+        if len(suyas) >= 6:
+            pps = len(suyas) / max(0.1, suyas[-1]["b"] - suyas[0]["a"])
+            if not RITMO_VOZ[0] <= pps <= RITMO_VOZ[1]:
+                print(f"⚠ la escena {e['id']} se dice a {pps:.2f} palabras por segundo (lo natural va de {RITMO_VOZ[0]} a {RITMO_VOZ[1]}): ajusta voz_velocidad o el texto y vuelve a narrar")
     for e in video["escenas"]:  # ritmo real, medido en la voz
         for j, pl in enumerate(e.get("planos") or []):
             extra = len(pl.get("etiquetas") or []) + (1 if pl.get("apunte") else 0) + (1 if pl.get("junto") else 0)
@@ -1557,7 +1569,7 @@ def main(argv=None) -> int:
                 print(f"En seco: {letras} caracteres en {len(tramos)} tramo(s). Añade --execute para narrar.")
                 for n, t in enumerate(tramos):
                     print(f"  tramo {n + 1}: {t['voz']['nombre']} · velocidad {t['velocidad']} · {len(t['texto'])} caracteres"
-                          + (" · cambio de tema (respiro y más despacio)" if t["cambio"] else "") + (" · comentario" if t["comentario"] else ""))
+                          + (" · con respiro en los cambios de tema" if t["cambio"] else "") + (" · comentario" if t["comentario"] else ""))
             else:
                 palabras = narrar_guion(g, perfil, d / "public" / "audio" / "voz.mp3", d / "estados" / "tramos")
                 cache.parent.mkdir(parents=True, exist_ok=True)

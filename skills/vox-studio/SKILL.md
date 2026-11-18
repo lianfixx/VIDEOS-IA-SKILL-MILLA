@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.12.2"
+  version: "0.12.3"
   release_date: "2026-11-11"
   language: "es-MX"
 ---
@@ -55,7 +55,7 @@ Antes de generar imágenes se escribe el guion visual: qué se ve en cada frase 
 La voz no lee: cuenta. Tres recursos, escritos en el guion:
 
 - **Pausas**: `[pausa]` (medio segundo) o `[pausa larga]` (uno) dentro de la narración, antes del remate o después de una cifra fuerte. No se leen ni salen en subtítulos.
-- **Cambio de tema**: `cambio_tema: true` en la escena que abre otro asunto (los flashes, un «por otro lado»). La voz respira 0.55 s y dice esa escena 10 % más despacio; se narra en un tramo propio.
+- **Cambio de tema**: `cambio_tema: true` en la escena que abre otro asunto (los flashes, un «por otro lado»). La voz respira 0.6 s antes de esa escena, dentro de la misma toma. **Una sola toma por voz, a velocidad pareja**: partirla en tomas con otra velocidad sonó disparejo y Emi lo rechazó (18/11/2026). Tras narrar, comprobar el ritmo por escena: entre 2.2 y 2.9 palabras por segundo, como el video aprobado; fuera de eso, ajustar `voz_velocidad` y volver a narrar.
 - **Expresiones humanas**: redactar como se habla (muletillas medidas, autocorrecciones como «bueno, casi», preguntas al que mira). Las marcas `[ríe]`, `[suspira]`, `[carraspea]`, `[susurra]`, `[irónica]`, `[sorprendida]`, `[seria]`, `[emocionada]`, `[lento]` y `[duda]` solo las dice un modelo expresivo (`eleven_v3`, `eleven_v4`); con la voz clásica se omiten y `validar` lo avisa.
 
 **Segunda voz (candidata)**: cada espacio tiene `voz_comentario`, la que opina, bromea y comenta, distinta de la que informa. Una escena con `voz: "comentario"` la usa; en pantalla sus subtítulos van en caja invertida con la etiqueta «OPINIÓN», para que opinión y dato no se confundan. Es para un video polémico cuando salga algo muy relevante y Emi lo pida: antes, él elige la voz por oído con una muestra.

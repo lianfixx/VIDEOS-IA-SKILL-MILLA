@@ -1,5 +1,15 @@
 # Cambios
 
+## 2026-11-18 · Vox Studio 0.12.3: voz en una sola toma, subtítulos sin parpadeo y lista junto a la imagen
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 18/11/2026, sobre el video del perdón del SAT: «veo fallas, textos que parpadean, falta una imagen y la naturalidad y velocidad de la voz».
+- Motivo y evidencia: medido sobre el MP4 de máxima calidad frente al video aprobado. (1) El resaltado del subtítulo se apagaba en cada hueco entre palabras: 6.7 s en total frente a 1.9 s del aprobado. (2) En «El truco» la imagen salía y quedaba solo la lista. (3) La voz, partida en cuatro tomas con velocidades distintas, iba de 1.75 a 2.99 palabras por segundo por escena; la aprobada, de 2.21 a 2.77.
+- Cambios: la palabra del subtítulo sigue resaltada hasta que empieza la siguiente; `cambio_tema` ya no abre otra toma ni cambia la velocidad, solo mete un respiro de 0.6 s dentro de la misma toma; `armar` avisa de cualquier escena fuera de 2.1–3.0 palabras por segundo; el texto de una lista estrecha (`junto`) aprovecha el ancho. Video rehecho: una sola toma a velocidad 1.08, lupa junto a la lista, tarjeta de fechas antes.
+- Archivos: `skills/vox-studio/plantilla/src/Vox.tsx`, `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio 57/57 → aprobado. Nueva toma: 63.7 s, 2.27 a 2.89 palabras por segundo por escena → aprobado. Cuadros de prueba de la lista junto a la lupa y de la tarjeta de fechas → aprobado. Render completo y revisión cuadro por cuadro → en curso al registrar. Escucha de Emi → no ejecutado.
+- Pendiente: entregar el video corregido.
+
 ## 2026-11-18 · Segundo video semanal de Castorena: perdón de multas y recargos (LIF 2027)
 
 - Agente: Claude Code (sesión en la nube), con un subagente revisor jurídico independiente

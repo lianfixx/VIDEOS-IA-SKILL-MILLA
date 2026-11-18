@@ -470,10 +470,9 @@ class Tiempos(unittest.TestCase):
                                                              *([f"vel={uno[0]['velocidad']}"] if uno[0]["velocidad"] != 1.0 else [])))  # huella de siempre
         g["escenas"][2]["cambio_tema"] = True
         tramos = vox.plan_de_voz(g, perfil)
-        self.assertEqual([t["cambio"] for t in tramos][:3], [False, True, False] if len(g["escenas"]) > 3 else [False, True])
-        lento = tramos[1]
-        self.assertAlmostEqual(lento["velocidad"], round(uno[0]["velocidad"] * vox.CAMBIO_TEMA["velocidad"], 3))
-        self.assertEqual(lento["silencio"], vox.CAMBIO_TEMA["silencio"])
+        self.assertEqual(len(tramos), 1)  # el cambio de tema no parte la voz: una sola toma suena pareja
+        self.assertEqual(tramos[0]["velocidad"], uno[0]["velocidad"])
+        self.assertEqual(tramos[0]["texto"].count('<break time="0.6s" />'), 1)  # solo un respiro antes de esa escena
         self.assertEqual(sum(t["palabras"] for t in tramos), len(vox.texto_completo(g).split()))
         self.assertNotEqual(vox.firma_de_voz(g, tramos), vox.firma_de_voz(g, uno))
         g["escenas"][0]["cambio_tema"] = True
@@ -584,7 +583,7 @@ class Tiempos(unittest.TestCase):
         self.assertEqual(vox.firma_de_voz(g, vox.plan_de_voz(g, pf)), vox.huella(vox.texto_completo(g), pf["voz"]["voice_id"], pf["voz"]["modelo"], "vel=1.0625"))
 
     def test_tramos_pagados_no_se_vuelven_a_cobrar(self):
-        g = guion(); g["perfil"] = "castorena"; g["escenas"][2]["cambio_tema"] = True
+        g = guion(); g["perfil"] = "castorena"; g["escenas"][1]["voz"] = "comentario"  # dos voces: varias tomas
         perfil = vox.perfiles()["castorena"]
         llamadas = []
         real = vox.narrar

@@ -265,7 +265,7 @@ const Lista: React.FC<{p: Plano; c: Colores; real: number; alto: number; ancho: 
   const items = p.items ?? [];
   const fila = Math.min(124, (alto - 10) / Math.max(1, items.length));
   const largo = Math.max(...items.map((x) => x.texto.length), 4);
-  const tam = Math.min(fila * 0.66, (ancho - fila - 90) / (largo * 0.5));
+  const tam = Math.min(fila * 0.66, (ancho - fila * 0.72 - 46) / (largo * 0.47)); // en una pieza estrecha (junto) el texto aprovecha todo el ancho
   return (
     <div style={{width: ancho - 40, display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
       {items.map((it, m) => {
@@ -678,7 +678,9 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string; eti
         {opina && etiqueta && <div style={{position: 'absolute', left: -14, top: -40, fontFamily: 'Anton', fontSize: 32, lineHeight: 1, letterSpacing: 2, color: c.papel, background: c.acento, padding: '5px 14px 7px', transform: 'rotate(-3deg)'}}>{etiqueta}</div>}
         {grupo.map((p, k) => {
           const dicha = t >= p.a - 0.04;
-          const activa = dicha && t < p.b + 0.06;
+          // La palabra sigue resaltada hasta que empieza la siguiente: si se apagaba en cada hueco de la voz, el subtítulo parpadeaba.
+          const sigue = grupo[k + 1];
+          const activa = dicha && (sigue ? t < sigue.a - 0.04 : true);
           const golpe = spring({frame: frame - Math.round((p.a - 0.04) * fps), fps, config: {damping: 17, stiffness: 240, mass: 0.6}});
           return (
             <span key={k} style={{fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: fuente === 'Anton' ? 74 : 62, lineHeight: fuente === 'Anton' ? 1.05 : 1.2, textTransform: 'uppercase', color: activa ? c.papel : dicha ? (opina ? c.papel : c.tinta) : `${opina ? c.papel : c.tinta}${opina ? '66' : '38'}`, background: activa ? c.acento : 'transparent', padding: '0 10px', transform: `scale(${activa ? interpolate(golpe, [0, 1], [0.8, 1]) : 1})`, display: 'inline-block'}}>
