@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-24 · Aprobación: video de jurisprudencias v2 para TikTok
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026: «Perfecto, va para publicación de TikTok la versión de 50.1MB».
+- Cambios: visto bueno registrado en la entrada de Vox Studio 0.13.0 y en `espacios/castorena/aprendizajes.md`; la v2 sustituye a la v1. La publica Emi.
+- Archivos: `espacios/castorena/aprendizajes.md` y este registro.
+- Verificación: el archivo de 50.1 MB es el máster del render auditado (mismo tamaño en bytes que `out/final.mp4`) → aprobado.
+- Pendiente: después de publicar, anotar retención, envíos y comentarios.
+
 ## 2026-11-24 · Vox Studio 0.13.0: estabilidad y estilo de la voz por guion, y elección de toma con el reconocedor
 
 - Agente: Claude Code (sesión en la nube)
@@ -7,8 +16,8 @@
 - Evidencia: siete tomas transcritas con el reconocedor de ElevenLabs (`scribe_v1`). Todas pronuncian el guion completo; solo «ping-pong» quedó con baja confianza y una toma oyó «INPI». Pausas a media frase de 0.3 s o más: 6 en la toma aprobada, 7 a 12 con estabilidad 0.4 y estilo 0.3, 4 con estabilidad 0.6 y estilo 0.15 (la de mayor confianza), 8 con estabilidad 0.75.
 - Cambios: el guion acepta `voz_estabilidad` y `voz_estilo` (0 a 1), que entran en los ajustes de ElevenLabs, en la huella de la toma y en la validación. La skill documenta cómo elegir toma con el reconocedor y que cambiar ajustes invalida la toma pagada. Lección general guardada.
 - Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md` y este registro.
-- Verificación: pruebas de vox-studio → aprobado (incluye `test_estabilidad_de_la_toma`). Render del video corregido: 77.84 s, −14.08 LUFS, pico −1.97 dBTP, sin avisos → aprobado técnicamente; el reconocedor oye el guion completo en el archivo final (coincidencia 0.995; solo «veintitrés» escrito como «23») → aprobado; hoja de cuadros y zonas de TikTok revisadas → aprobado. Quedan dos pausas cortas a media frase en la escena 06 y la escena 07 a 3.3 palabras por segundo. Escucha de Emi → no ejecutado.
-- Pendiente: visto bueno de Emi a la versión corregida.
+- Verificación: pruebas de vox-studio → aprobado (incluye `test_estabilidad_de_la_toma`). Render del video corregido: 77.84 s, −14.08 LUFS, pico −1.97 dBTP, sin avisos → aprobado técnicamente; el reconocedor oye el guion completo en el archivo final (coincidencia 0.995; solo «veintitrés» escrito como «23») → aprobado; hoja de cuadros y zonas de TikTok revisadas → aprobado. Quedan dos pausas cortas a media frase en la escena 06 y la escena 07 a 3.3 palabras por segundo. Escucha y visto bueno de Emi → aprobado («Perfecto, va para publicación de TikTok la versión de 50.1MB»).
+- Pendiente: Emi la publica en TikTok; anotar retención, envíos y comentarios en `espacios/castorena/aprendizajes.md`.
 
 ## 2026-11-24 · Corrección: lección de titubeos
 
