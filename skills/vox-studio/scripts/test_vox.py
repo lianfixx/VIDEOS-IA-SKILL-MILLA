@@ -637,6 +637,11 @@ class Tiempos(unittest.TestCase):
         self.assertIn("no dice después", errores({"tipo": "dato", "dato": "1", "en": "nueve"}))
         self.assertIn("junto", errores({"tipo": "barras", "barras": [{"etiqueta": "A", "valor": 1}, {"etiqueta": "B", "valor": 2}]}))  # sin origen
 
+    def test_titubeos(self):
+        w = [{"t": "el", "a": 0.0, "b": 0.2}, {"t": "colegiado", "a": 0.25, "b": 0.8}, {"t": "decide,", "a": 1.3, "b": 1.7},
+             {"t": "sin", "a": 2.3, "b": 2.5}, {"t": "más.", "a": 2.55, "b": 2.9}]
+        self.assertEqual([(x["t"], y["t"]) for x, y in vox.titubeos(w)], [("colegiado", "decide,")])  # la coma sí puede respirar
+
     def test_bucle_abierto(self):
         g = guion()
         self.assertIn("falta `bucle`", " | ".join(vox.avisos_guion(g)))

@@ -1,5 +1,15 @@
 # Cambios
 
+## 2026-11-24 · Vox Studio 0.12.4: auditoría de naturalidad de la voz y aviso de titubeos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026, sobre el video de las tres jurisprudencias: «ESTÁ PERFECTO, solo audita la naturalidad, pausas, respiros, fluidez».
+- Evidencia: medido sobre la pista de voz (silencios reales con ffmpeg) y sobre la alineación por palabra, comparado con los dos videos aprobados. Respiros de cambio de tema de 0.81 y 0.97 s; pausas tras punto de 0.28 a 0.45 s; tres pausas de 0.34 a 0.38 s a media frase sin signo («registro / ante», «suspensión / y», «colegiado / decide»), todas en frases de más de 20 palabras.
+- Cambios: `armar` avisa de cada titubeo (silencio de más de 0.3 s entre dos palabras sin signo) con su prueba; la skill pide frases de 15 palabras o menos. Visto bueno de Emi y lecciones guardadas. El video aprobado no se tocó.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md`, `espacios/castorena/aprendizajes.md` y este registro.
+- Verificación: pruebas de vox-studio 58/58 → aprobado; el aviso nuevo detecta los tres titubeos del video → aprobado. Escucha de Emi del video → aprobado («ESTÁ PERFECTO»).
+- Pendiente: aplicar la regla de frases cortas en el próximo guion.
+
 ## 2026-11-24 · Tercer video semanal de Castorena: tres jurisprudencias del Pleno (P./J. 233, 234 y 235/2026)
 
 - Agente: Claude Code (sesión en la nube), con un subagente revisor jurídico independiente

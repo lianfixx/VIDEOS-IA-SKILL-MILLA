@@ -145,6 +145,15 @@ CAMBIO_TEMA = {"silencio": 0.6, "velocidad": 1.0}
 SILENCIO_ENTRE_VOCES = 0.18
 
 
+TITUBEO = 0.3  # s de silencio sin signo de puntuación: se oye como duda o como texto leído
+
+
+def titubeos(palabras: list[dict]) -> list[tuple[dict, dict]]:
+    """Pares de palabras con una pausa larga entre ellas sin que el texto la pida (ningún signo)."""
+    return [(x, y) for x, y in zip(palabras, palabras[1:])
+            if x["t"][-1:] not in ".,;:?!…»)" and y["a"] - x["b"] > TITUBEO]
+
+
 def narracion_limpia(s: dict) -> str:
     """La narración sin marcas de voz: lo que se oye como palabras y sale en subtítulos."""
     return " ".join(MARCA.sub(" ", str(s.get("narracion", ""))).split())
@@ -1471,6 +1480,8 @@ def _escribir_video(g: dict, d: Path, palabras: list[dict]) -> dict:
     else:  # sin música: no dejar restos de un armado anterior
         pista.unlink(missing_ok=True)
         receta.unlink(missing_ok=True)
+    for x, y in titubeos(video["palabras"]):  # pausa larga sin signo: suena leído, parte la frase
+        print(f"⚠ titubeo de {y['a'] - x['b']:.2f} s entre «{x['t']}» y «{y['t']}» ({x['b']:.1f} s): acorta la frase o pon una coma donde sí quieras la pausa")
     for e in video["escenas"]:  # velocidad real de la voz: dispareja suena artificial
         ini, fin = e["desde"] / FPS - 0.2, (e["desde"] + e["dur"]) / FPS - 0.2
         suyas = [w for w in video["palabras"] if ini <= w["a"] < fin]
