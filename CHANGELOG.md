@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-24 · Biblioteca: tres recortes reciclados para el video de jurisprudencias
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026: video de la semana 20–24 de noviembre (P./J. 233, 234 y 235/2026); con Kie en 3.5 créditos, pidió hacerlo «con código».
+- Cambios: `biblioteca/catalogo.json` registra un segundo uso del mazo con laptop, el reloj de arena y el legajo, reciclados en la producción privada `productions/castorena/jurisprudencias-23nov`.
+- Archivos: `biblioteca/catalogo.json` y este registro.
+- Verificación: las tres tesis cotejadas en el Semanario el 24/11/2026; guion revisado por un subagente jurídico independiente y corregido → aprobado. Guion pendiente del visto bueno de Emi → no ejecutado.
+- Pendiente: aprobación del guion, narración y render.
+
 ## 2026-11-18 · Video del perdón del SAT: visto bueno de Emi
 
 - Agente: Claude Code (sesión en la nube)
