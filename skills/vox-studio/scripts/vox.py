@@ -19,6 +19,7 @@ Subcomandos (sin --execute nada llama a un proveedor de pago):
                                            objeto 3D rendido con Blender (PNG transparente o secuencia que gira)
   blender-instalar                         instala Blender como módulo de Python (solo cuando haga falta)
   comfy --dir D --flujo F.json --out RUTA --porque "..." [--execute]   imagen desde el servidor ComfyUI de Emi (COMFY_URL)
+  previa DIR                               cuadros fijos de cada escena + revisión antes del render (obligatoria para `render`)
   comparar DIR --escena ID                 la misma escena con 3D (o tratamiento) y en plano, lado a lado, para que Emi elija
   revisar DIR                              hojas de transiciones y de tamaño teléfono + informe de revisión (obligatorio antes de `cierre`)
   referencia ARCHIVO --dir DIR             convierte una imagen o video de referencia de Emi en una hoja para mirarla
@@ -77,6 +78,7 @@ CROMAS = {"verde": "pure green (#00FF00)", "magenta": "pure magenta (#FF00FF)"}
 SIGNOS = "¿¡?!.,;:"
 MIN_ESCENA = 24  # frames; con menos, la cámara no alcanza a llegar
 COLA = 1.5       # segundos tras la voz: ahí cae el llamado a comentar
+VIAJE_FRAMES = 9  # Vox.tsx `VIAJE`: la cámara sale 9 cuadros antes del corte
 LADO_HORNO = 720        # px del lienzo donde se hornea un objeto 3D
 ADELANTO_PRIMERA = 60   # cuadros que el compositor adelanta la primera escena (Vox.tsx: `k === 0 ? frame + 60`)
 LISTO = ".listo"        # marca de secuencia horneada completa
@@ -328,6 +330,25 @@ def validar_guion(g: dict) -> list[str]:
                 e.append(f"{p}: alternativa_plana es {{\"dato\": \"...\"}} o {{\"imagen_archivo\": \"img/...png\"}}: cómo se vería la escena sin 3D")
             elif not (s.get("objeto3d") or s.get("secuencia")):
                 e.append(f"{p}: alternativa_plana solo tiene sentido en una escena con objeto3d o secuencia")
+        # Looks nuevos (24/11/2026): tipografía en movimiento y foto propia animada con profundidad.
+        visuales = [c for c in ("imagen_archivo", "dato", "objeto3d", "secuencia", "foto_viva") if s.get(c)]
+        if s.get("cinetica") is not None:
+            if s["cinetica"] is not True:
+                e.append(f"{p}: cinetica es true o no va")
+            elif visuales:
+                e.append(f"{p}: cinetica ocupa el lugar del recorte (son las palabras de la voz); quita {', '.join(visuales)}")
+            elif len(n.split()) < 3:
+                e.append(f"{p}: cinetica necesita al menos 3 palabras de narración")
+        fv = s.get("foto_viva")
+        if fv is not None:
+            if not (isinstance(fv, dict) and isinstance(fv.get("archivo"), str) and ruta_segura(fv["archivo"])
+                    and Path(fv["archivo"]).suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}):
+                e.append(f"{p}: foto_viva es {{\"archivo\": \"img/foto.jpg\", \"origen\": \"...\"}} con una foto .jpg, .png o .webp en public/")
+            elif len(str(fv.get("origen", "")).strip()) < 10:
+                e.append(f"{p}: foto_viva.origen: de dónde es la foto y quién tiene los derechos (una foto de Emi, o una con licencia comprobada)")
+            otros = [c for c in visuales if c != "foto_viva"]
+            if otros or s.get("tratamiento"):
+                e.append(f"{p}: foto_viva ocupa el lugar del recorte; quita {', '.join(otros + (['tratamiento'] if s.get('tratamiento') else []))}")
         tr3 = s.get("tratamiento")
         if tr3:
             if tr3 not in TRATAMIENTOS:
@@ -393,7 +414,7 @@ def avisos_guion(g: dict) -> list[str]:
     for i, n in enumerate(cuenta):
         if n > 22:
             a.append(f"escena {i + 1}: {n} palabras (~{n / 2.7:.0f} s) sin cambio de plano; divídela en dos")
-    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not s.get("imagen_archivo") and not s.get("dato") and not s.get("objeto3d") and not s.get("secuencia")]
+    sin_imagen = [i + 1 for i, s in enumerate(escenas) if not any(s.get(c) for c in ("imagen_archivo", "dato", "objeto3d", "secuencia", "cinetica", "foto_viva"))]
     n3d = sum(1 for s in escenas if s.get("objeto3d") or s.get("secuencia"))
     if n3d > max(1, len(escenas) // 3):
         a.append(f"{n3d} escenas en 3D de {len(escenas)}: el 3D es un acento, no el estilo; deja solo las que de verdad lo necesitan")
@@ -408,7 +429,15 @@ def avisos_guion(g: dict) -> list[str]:
             a.append(f"escena {i + 1}: `tratamiento` sobre una imagen que no es foto real; en una ilustración la trama ensucia. Úsalo solo si la imagen es fotográfica")
     if sin_imagen:
         a.append(f"escenas {sin_imagen} sin imagen ni dato: quedan solo con texto")
-    if sum(1 for s in escenas if s.get("imagen_archivo") or s.get("objeto3d") or s.get("secuencia")) < max(2, len(escenas) // 2):
+    for i, s in enumerate(escenas):
+        if s.get("cinetica") is True and len(str(s.get("narracion", "")).split()) > 18:
+            a.append(f"escena {i + 1}: tipografía en movimiento con más de 18 palabras: la letra queda chica; recórtala o divide la escena")
+        if s.get("cinetica") is True and (s.get("remate") or s.get("nota")):
+            a.append(f"escena {i + 1}: tipografía en movimiento con remate o nota: compiten con las palabras; deja solo una cosa")
+    n_cin = sum(1 for s in escenas if s.get("cinetica") is True)
+    if n_cin > max(1, len(escenas) // 3):
+        a.append(f"{n_cin} escenas en tipografía en movimiento: es un acento; si todo es texto, el video pierde imágenes")
+    if sum(1 for s in escenas if any(s.get(c) for c in ("imagen_archivo", "objeto3d", "secuencia", "foto_viva"))) < max(2, len(escenas) // 2):
         a.append("menos de la mitad de las escenas lleva imagen; el estilo pide algo que ver casi siempre")
     primeras = [str(s.get("keyword", "")).split()[:1] for s in escenas]
     if len({tuple(x) for x in primeras}) < len(primeras) - 1:
@@ -464,6 +493,9 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
         img = s.get("imagen_archivo", "")
         if img and publico is not None and not (publico / img).is_file():
             raise ErrorVox(f"la escena {s['id']} pide {img} y no existe en {publico}")
+        fv = s.get("foto_viva") if isinstance(s.get("foto_viva"), dict) else None
+        if fv and publico is not None and not (publico / fv["archivo"]).is_file():
+            raise ErrorVox(f"la escena {s['id']} pide la foto {fv['archivo']} y no existe en {publico}")
         sec = s.get("secuencia") if isinstance(s.get("secuencia"), dict) else None
         if sec and publico is not None:
             faltan = [n for n in range(sec["cuadros"]) if not (publico / sec["carpeta"] / f"{n:04d}.png").is_file()]
@@ -478,6 +510,8 @@ def armar_video(g: dict, palabras: list[dict], duracion: float, perfil: dict, pu
             "sonido": s.get("sonido", ""), "remate": str(s.get("remate", "")).upper(),
             "objeto3d": ({k: v for k, v in s["objeto3d"].items() if k in ("tipo", "valores", "resaltar")} if isinstance(s.get("objeto3d"), dict) else None),
             "tratamiento": s.get("tratamiento", ""),
+            "cinetica": s.get("cinetica") is True,
+            "fotoViva": ({"archivo": fv["archivo"]} if fv else None),
             "alternativa": ({"dato": s["alternativa_plana"].get("dato", ""), "imagen": s["alternativa_plana"].get("imagen_archivo", "")}
                             if isinstance(s.get("alternativa_plana"), dict) else None),
             "secuencia": ({"carpeta": s["secuencia"]["carpeta"].strip("/"), "cuadros": s["secuencia"]["cuadros"]} if isinstance(s.get("secuencia"), dict) else None),
@@ -963,6 +997,13 @@ def plan_horno(datos: dict, publico: Path) -> tuple[dict, list[dict]]:
                                        "objeto3d": None, "src": e["imagen"], "tratamiento": e["tratamiento"]}})
             tratadas[e["imagen"]] = destino
             e["imagen"], e["tratada"] = destino, True  # `foto` se conserva: una foto real tratada sigue llevando su marco
+        if e.get("fotoViva"):
+            origen = publico / e["fotoViva"]["archivo"]
+            ancho, alto = medida_viva(origen)
+            firma = huella(sha_archivo(origen), "viva-1", str(VIVA_LADO))[:12]
+            carpeta = f"horno/{e['id']}-viva-{firma}"
+            trabajos.append({"modo": "viva", "destino": carpeta, "cuadros": 1, "props": {"src": e["fotoViva"]["archivo"]}})
+            e["fotoViva"] = {"fondo": f"{carpeta}/fondo.jpg", "sujeto": f"{carpeta}/sujeto.png", "ancho": ancho, "alto": alto}
         e.pop("objeto3d", None)
         e.pop("tratamiento", None)
         e.pop("alternativa", None)
@@ -970,6 +1011,63 @@ def plan_horno(datos: dict, publico: Path) -> tuple[dict, list[dict]]:
     if port.get("imagen") in tratadas:  # la portada muestra la misma imagen que el video, ya tratada
         port["imagen"] = tratadas[port["imagen"]]
     return listo, trabajos
+
+
+VIVA_LADO = 1400  # px del lado mayor de las capas de una foto viva
+
+
+def medida_viva(origen: Path) -> tuple[int, int]:
+    from PIL import Image
+    with Image.open(origen) as im:
+        w, h = im.size
+    k = min(1.0, VIVA_LADO / max(w, h))
+    return max(2, round(w * k)), max(2, round(h * k))
+
+
+def capas_foto_viva(origen: Path, carpeta: Path) -> dict:
+    """Separa el sujeto de una foto real (rembg, local y sin costo) y rellena su hueco en el fondo.
+
+    El video mueve el fondo y el sujeto a distinta velocidad (profundidad). El relleno es un promedio
+    ponderado de los alrededores a varias escalas: no inventa detalle, solo evita que asome el contorno
+    del sujeto original cuando las capas se separan unos píxeles.
+    """
+    import numpy as np
+    from PIL import Image, ImageFilter
+    from rembg import new_session, remove
+    w, h = medida_viva(origen)
+    with Image.open(origen) as im:
+        base = im.convert("RGB").resize((w, h), Image.LANCZOS)
+    sujeto = remove(base, session=new_session("isnet-general-use"))
+    alfa = np.asarray(sujeto.getchannel("A"), dtype=np.float32) / 255.0
+    ocupa = float((alfa > 0.5).mean())
+    if not 0.03 <= ocupa <= 0.85:
+        raise ErrorVox(f"en {origen.name} no se distingue un sujeto claro ({ocupa * 100:.0f} % de la foto): usa la foto como imagen normal")
+    radio = max(5, round(max(w, h) * 0.028)) | 1
+    hueco = np.asarray(Image.fromarray(((alfa > 0.04) * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(radio))
+                       .filter(ImageFilter.GaussianBlur(radio / 3)), dtype=np.float32) / 255.0  # borde suave: sin costura
+    img = np.asarray(base, dtype=np.float32)
+    peso = 1.0 - hueco
+    relleno = np.zeros_like(img)
+    falta = np.ones((h, w), dtype=bool)
+    for paso in (8, 16, 32, 64, 128):  # de lo cercano a lo lejano: cada píxel toma la escala más fina que tenga datos
+        cw, ch = max(1, w // paso), max(1, h // paso)
+        def bajar_subir(a):
+            chico = Image.fromarray(a.astype(np.float32), "F").resize((cw, ch), Image.BOX)
+            return np.asarray(chico.resize((w, h), Image.BICUBIC), dtype=np.float32)
+        den = bajar_subir(peso)
+        ok = falta & (den > 0.25)
+        for c in range(3):
+            num = bajar_subir(img[..., c] * peso)
+            relleno[..., c][ok] = (num / np.maximum(den, 1e-6))[ok]
+        falta &= ~ok
+    relleno[falta] = img.reshape(-1, 3).mean(axis=0)
+    relleno = np.asarray(Image.fromarray(np.clip(relleno, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(radio)), dtype=np.float32)
+    fondo = img * peso[..., None] + relleno * hueco[..., None]
+    fondo_img = Image.fromarray(np.clip(fondo, 0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))
+    carpeta.mkdir(parents=True, exist_ok=True)
+    fondo_img.save(carpeta / "fondo.jpg", quality=92)
+    sujeto.save(carpeta / "sujeto.png")
+    return {"ancho": w, "alto": h, "sujeto_pct": round(ocupa * 100, 1)}
 
 
 def _con_contenido(archivo: Path) -> bool:
@@ -990,6 +1088,19 @@ def hornear(d: Path, trabajos: list[dict], navegador: str) -> int:
         destino = d / "public" / t["destino"]
         completo = destino.is_file() if t["modo"] == "foto" else (destino / LISTO).is_file()
         if completo:
+            continue
+        if t["modo"] == "viva":  # sin WebGL: capas de la foto con rembg, armadas aparte y movidas de una vez
+            tmp = d / "out" / "_horno_viva"
+            shutil.rmtree(tmp, ignore_errors=True)
+            try:
+                capas_foto_viva(d / "public" / t["props"]["src"], tmp)
+                (tmp / LISTO).write_text("1")
+                shutil.rmtree(destino, ignore_errors=True)
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(tmp, destino)
+            finally:
+                shutil.rmtree(tmp, ignore_errors=True)
+            hechos += 1
             continue
         props = d / "out" / "_horno.json"
         props.parent.mkdir(exist_ok=True)
@@ -1033,12 +1144,159 @@ def hornear(d: Path, trabajos: list[dict], navegador: str) -> int:
     return hechos
 
 
-def rendir(d: Path) -> dict:
+# ---------- previa: el video se mira ANTES del render (24/11/2026) ----------
+# Cuadros fijos de cada escena (entrada, mitad, asentada) en segundos, revisión automática de lo medible
+# y revisión a ojo de lo demás. Hasta tres pasadas: lo débil se rehace antes de gastar el render completo.
+
+PREVIA_PASADAS = 3
+
+
+def cuadros_previa(datos: dict) -> list[dict]:
+    escenas, total = datos["escenas"], datos["frames"]
+    out = []
+    for i, e in enumerate(escenas):
+        des = 60 if i == 0 else (VIAJE_FRAMES + 3 if (e.get("transicion") or "viaje") == "viaje" else 14)
+        momentos = {"entrada": 0 if i == 0 else e["desde"] - des + 14, "mitad": e["desde"] + e["dur"] // 2,
+                    "asentada": total - 6 if i == len(escenas) - 1 else e["desde"] + int(e["dur"] * 0.75)}
+        for m, f in momentos.items():
+            out.append({"escena": e["id"], "momento": m, "frame": max(0, min(total - 1, int(f)))})
+    return out
+
+
+def _tinta(ruta: Path, papel_hex: str):
+    import numpy as np
+    from PIL import Image
+    papel = np.array([int(papel_hex[i:i + 2], 16) for i in (1, 3, 5)], dtype=np.float32)
+    with Image.open(ruta) as im:
+        a = np.asarray(im.convert("RGB").resize((1080, 1920)), dtype=np.float32)
+    return np.linalg.norm(a - papel, axis=2) > 90
+
+
+def revisar_cuadro(tinta, momento: str) -> list[str]:
+    """Lo que se puede medir en un cuadro. Lo que no (algo tapado, una figura plana, un chiste que no se entiende) se mira."""
+    import numpy as np
+    avisos = []
+    if momento == "entrada":
+        return avisos
+    util = float(tinta[230:1440, 90:960].mean())
+    if util < 0.06:
+        avisos.append(f"casi vacío ({util * 100:.0f} % de tinta en la zona útil)")
+    centro = float(tinta[720:1290, 90:960].mean())
+    if util >= 0.06 and centro < 0.03:
+        avisos.append(f"el centro de la pantalla está vacío ({centro * 100:.1f} %): el recorte es chico o no aparece")
+    bordes = float(np.concatenate([tinta[230:1440, :24].ravel(), tinta[230:1440, -24:].ravel()]).mean())
+    if bordes > 0.05:
+        avisos.append(f"algo toca el borde de la pantalla ({bordes * 100:.0f} % de los bordes): se ve cortado")
+    if momento == "asentada":
+        for nombre, (x0, y0, x1, y1) in ZONAS_TIKTOK.items():
+            frac = float(tinta[y0:y1, x0:x1].mean())
+            if frac > 0.004:
+                avisos.append(f"contenido bajo la {nombre} de TikTok ({frac * 100:.1f} %)")
+    return avisos
+
+
+def huella_previa(d: Path, listo: dict) -> str:
+    """Lo que cambia la imagen: el plan rendido, los archivos que pinta y el código del compositor."""
+    rutas = set()
+    for e in listo["escenas"]:
+        if e.get("imagen"):
+            rutas.add(e["imagen"])
+        if e.get("fotoViva"):
+            rutas.update((e["fotoViva"]["fondo"], e["fotoViva"]["sujeto"]))
+        if e.get("secuencia"):
+            rutas.add(f"{e['secuencia']['carpeta']}/0000.png")
+    if (listo.get("portada") or {}).get("imagen"):
+        rutas.add(listo["portada"]["imagen"])
+    partes = [json.dumps(listo, sort_keys=True, ensure_ascii=False)]
+    partes += [f"{r}:{sha_archivo(d / 'public' / r)}" for r in sorted(rutas) if (d / "public" / r).is_file()]
+    partes += [sha_archivo(d / "src" / n) for n in ("Vox.tsx", "Tres.tsx", "Root.tsx") if (d / "src" / n).is_file()]
+    return huella(*partes)[:16]
+
+
+def preparar_render(d: Path) -> dict:
+    """Hornea lo que haga falta y deja `src/data/_render.json`: lo mismo para la previa y para el render."""
     datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
     navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
     listo, trabajos = plan_horno(datos, d / "public")
     hornear(d, trabajos, navegador if Path(navegador).exists() else "")
     (d / "src" / "data" / "_render.json").write_text(json.dumps(listo, ensure_ascii=False), encoding="utf-8")
+    return listo
+
+
+def hoja_previa(cuadros: list[dict], carpeta: Path, salida: Path) -> None:
+    from PIL import Image, ImageDraw
+    filas = {}
+    for c in cuadros:
+        filas.setdefault(c["escena"], []).append(c)
+    W, H, M = 270, 480, 34
+    hoja = Image.new("RGB", (3 * W + 4 * 10, len(filas) * (H + M) + 10), (24, 24, 24))
+    dib = ImageDraw.Draw(hoja)
+    for r, (esc, cs) in enumerate(filas.items()):
+        for k, c in enumerate(cs):
+            x, y = 10 + k * (W + 10), 10 + r * (H + M)
+            with Image.open(carpeta / f"{c['frame']:05d}.jpg") as im:
+                hoja.paste(im.convert("RGB").resize((W, H)), (x, y + M - 6))
+            marca = "  ⚠" if c.get("avisos") else ""
+            dib.text((x, y), f"{esc} · {c['momento']} · {c['frame']}{marca}", fill=(255, 210, 90) if marca else (235, 235, 235), font_size=20)
+    hoja.save(salida, quality=90)
+
+
+def previa(d: Path) -> dict:
+    listo = preparar_render(d)
+    cuadros = cuadros_previa(listo)
+    carpeta = d / "out" / "previa"
+    shutil.rmtree(carpeta, ignore_errors=True)
+    script = d / ".previa.mjs"
+    shutil.copyfile(Path(__file__).with_name("previa.mjs"), script)
+    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
+    try:
+        _correr(["node", script.name, "src/data/_render.json", "out/previa", ",".join(str(c["frame"]) for c in cuadros)]
+                + ([navegador] if Path(navegador).exists() else []), cwd=d, capture_output=True, text=True)
+    finally:
+        script.unlink(missing_ok=True)
+    automaticos = []
+    for c in cuadros:
+        c["avisos"] = revisar_cuadro(_tinta(carpeta / f"{c['frame']:05d}.jpg", listo["perfil"]["colores"]["papel"]), c["momento"])
+        automaticos += [f"escena {c['escena']} ({c['momento']}): {a}" for a in c["avisos"]]
+    hoja_previa(cuadros, carpeta, d / "out" / "previa.png")
+    h = huella_previa(d, listo)
+    f = d / "out" / "previa.json"
+    viejo = json.loads(f.read_text(encoding="utf-8")) if f.is_file() else {}
+    misma = viejo.get("huella") == h
+    pasada = viejo.get("pasada", 0) if misma else viejo.get("pasada", 0) + 1
+    informe = {
+        "_doc": "Previa: cuadros fijos antes del render. Quien la revisa mira out/previa.png, anota las tomas débiles y qué hizo con cada aviso.",
+        "huella": h, "pasada": max(1, pasada), "cuadros": cuadros, "automaticos": automaticos,
+        "tomas_debiles": viejo.get("tomas_debiles", []) if misma else [],
+        "decisiones": viejo.get("decisiones", []) if misma else [],
+        "revisado_por": viejo.get("revisado_por", "") if misma else "",
+        "historial": (viejo.get("historial", []) + ([] if misma else [{"pasada": max(1, pasada), "huella": h, "automaticos": len(automaticos)}]))[-10:],
+    }
+    f.write_text(json.dumps(informe, ensure_ascii=False, indent=1), encoding="utf-8")
+    return informe
+
+
+def exigir_previa(d: Path, listo: dict) -> dict:
+    """No se gasta el render completo en algo que nadie miró en cuadros fijos."""
+    f = d / "out" / "previa.json"
+    if not f.is_file():
+        raise ErrorVox("falta la previa: ejecuta `previa`, mira out/previa.png y llena out/previa.json antes de rendir")
+    r = json.loads(f.read_text(encoding="utf-8"))
+    if r.get("huella") != huella_previa(d, listo):
+        raise ErrorVox("la previa es de otra versión del video (cambió el guion, una imagen o el compositor): vuelve a ejecutar `previa`")
+    if not (isinstance(r.get("revisado_por"), str) and r["revisado_por"].strip()):
+        raise ErrorVox("out/previa.json no dice quién miró los cuadros (`revisado_por`)")
+    dec = r.get("decisiones") or []
+    if len(r.get("automaticos") or []) > len([x for x in dec if isinstance(x, dict) and len(str(x.get("que_se_hizo", "")).strip()) >= 5]):
+        raise ErrorVox("la previa tiene avisos sin decisión: en `decisiones` anota, por cada aviso, `aviso` y `que_se_hizo` (corregido, o por qué se acepta)")
+    return r
+
+
+def rendir(d: Path) -> dict:
+    datos = json.loads((d / "src" / "data" / "video.json").read_text(encoding="utf-8"))
+    navegador = os.environ.get("VOX_NAVEGADOR", "/usr/local/bin/chrome-headless-shell")
+    listo = preparar_render(d)
+    exigir_previa(d, listo)
     cmd = ["npx", "remotion", "render", "src/index.ts", "Vox", "out/video.mp4", "--props=src/data/_render.json",
            "--codec=h264", "--audio-codec=aac", "--pixel-format=yuv420p", "--log=error",
            "--crf=16", "--jpeg-quality=95", "--color-space=bt709"]  # fuente limpia: TikTok vuelve a comprimir
@@ -1490,6 +1748,7 @@ def main(argv=None) -> int:
     p = sub.add_parser("comfy"); p.add_argument("--flujo", required=True); p.add_argument("--out", required=True); p.add_argument("--dir", required=True)
     p.add_argument("--porque", required=True); p.add_argument("--execute", action="store_true")
     p = sub.add_parser("comparar"); p.add_argument("dir"); p.add_argument("--escena", required=True)
+    p = sub.add_parser("previa"); p.add_argument("dir")
     p = sub.add_parser("revisar"); p.add_argument("dir")
     p = sub.add_parser("referencia"); p.add_argument("archivo"); p.add_argument("--dir", required=True)
     p = sub.add_parser("sonido"); p.add_argument("guion")
@@ -1744,6 +2003,15 @@ def main(argv=None) -> int:
             hechos.append({"salida": a.out, "flujo": huella(json.dumps(flujo, sort_keys=True)), "porque": a.porque.strip(), **info})
             reg.write_text(json.dumps(hechos, ensure_ascii=False, indent=1))
             print(f"Imagen de ComfyUI en {a.out}. Mírala antes de montar: es generada, se revisa igual que las de Kie.")
+        elif a.cmd == "previa":
+            r = previa(Path(a.dir))
+            print(f"Previa, pasada {r['pasada']}: {len(r['cuadros'])} cuadros en {a.dir}/out/previa.png")
+            for x in r["automaticos"]:
+                print("⚠", x)
+            print("Mírala toma por toma: algo tapado, una figura plana, media pantalla vacía, texto que no se lee, un chiste que no se entiende. "
+                  f"Anota en {a.dir}/out/previa.json `tomas_debiles`, `decisiones` (aviso y que_se_hizo) y `revisado_por`; rehaz lo débil y repite.")
+            if r["pasada"] >= PREVIA_PASADAS and r["automaticos"]:
+                print(f"Van {r['pasada']} pasadas y sigue habiendo avisos: enséñale la hoja a Emi antes de seguir.")
         elif a.cmd == "comparar":
             f = comparar(Path(a.dir), a.escena)
             print(f"Comparación en {f}: A con el recurso, B en plano. Enséñasela a Emi y deja la que él elija; si duda, gana B.")

@@ -2,8 +2,8 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.13.2"
-  release_date: "2026-11-13"
+  version: "0.14.0"
+  release_date: "2026-11-24"
   language: "es-MX"
 ---
 
@@ -83,6 +83,7 @@ $V imagen --perfil personal --prompt-file $D/prompts/01.txt --out $D/originales/
 $V recorte $D/originales/01.jpg $D/public/img/01.png
 $V voz $D/guion.json --dir $D --execute # narra una vez y guarda la alineación
 $V armar $D/guion.json --dir $D         # tras cambiar textos o imágenes: no vuelve a pagar la voz
+$V previa $D                            # cuadros fijos de cada escena y revisión ANTES del render (obligatoria)
 $V render $D                            # render + portada + master + hojas + auditorías + manifiesto
 $V revisar $D                           # transiciones y tamaño teléfono + informe; sin él no hay cierre
 $V cierre $D                            # saldos: gastado y restante
@@ -102,6 +103,13 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 - Texto dentro de la zona segura de TikTok (x 90–960, y 230–1440).
 - Música y efectos: siempre, compuestos con código (ver arriba). Una pista externa (Flow Music) solo como complemento y con su origen escrito en el guion.
 
+## Dos estilos de escena más (sin costo de imagen)
+
+- **Tipografía en movimiento** (`"cinetica": true`): en lugar del recorte, las palabras de la narración caen en pantalla justo cuando se dicen, grandes, con la palabra de `resaltar` en el color de acento; en esa escena no hay subtítulo. Para una frase que pega sola (gancho, opinión, una cifra dicha con fuerza) o cuando ninguna imagen la mejora. Entre 3 y 18 palabras; sin nota ni remate encima. Es un acento: no más de una de cada tres escenas.
+- **Foto viva** (`"foto_viva": {"archivo": "img/foto.jpg", "origen": "..."}`): una foto real de Emi (o con licencia comprobada) cobra profundidad: se separa el sujeto del fondo en local (rembg, gratis) y cada capa se mueve a su velocidad dentro de un marco de foto. Para videos personales, momentos reales, lugares, personas reales con su permiso. `origen` es obligatorio. Nunca para fotos de terceros sin derechos, nunca con caras generadas.
+
+Las dos se revisan en la previa como cualquier escena.
+
 ## 3D, sombreadores, Blender y ComfyUI (la respuesta por defecto es no)
 
 Existen, pero **el estilo es el recorte ilustrado**: tiene trazo, carácter y humor, y un objeto 3D es más frío. El primer demo que los usó en casi todas las escenas le gustó menos a Emi (11/11/2026). Regla: lo normal es un video sin ninguno; a veces uno; nunca más de uno salvo que Emi lo pida.
@@ -120,6 +128,15 @@ Nunca en la escena de `opinion` ni en el `cierre`. `validar` rechaza más de un 
 ## Auditar y corregir
 
 `render` deja `out/hoja.png` con el inicio, el cambio y la mitad de cada escena, y `out/hoja-tiktok.png` con las zonas que tapa la interfaz de TikTok sombreadas en rojo: ningún texto ni rostro debe quedar debajo. Mirarla siempre: recortes, encimados, textos cortados, transiciones. Corregir en `src/Vox.tsx` de la producción y, si la mejora sirve a todos, pasarla a `plantilla/` con su prueba. `render` imprime los avisos de `out/auditoria-audio.json` y `out/auditoria-video.json` (formato del archivo, contenido bajo la interfaz de TikTok, cuadros vacíos, niveles): se corrigen todos antes de entregar. Sin avisos significa en rango, no aprobado: **en cada video se le pide a Emi que escuche voz, música y efectos** y se guarda lo que diga. Lo que una IA no puede juzgar (cómo suena la voz, el ritmo, la gracia del chiste) se le pregunta a Emi con el MP4 delante.
+
+## Previa: mirar antes de rendir (obligatoria)
+
+El render completo tarda minutos; una toma débil se ve en segundos. `$V previa $D` hornea lo necesario, saca tres cuadros fijos de cada escena (entrada, mitad y asentada) en unos 40 s y deja `out/previa.png`.
+
+1. Revisión automática de lo medible: cuadro casi vacío, centro de la pantalla vacío (el recorte no aparece o es chico), algo que toca el borde, contenido bajo la interfaz de TikTok.
+2. Revisión a ojo de lo que no se mide: un sujeto tapado por otro elemento o por el titular, una figura plana o sin carácter, texto que no se lee, un chiste que no se entiende, dos escenas seguidas que se ven iguales.
+3. Cada toma débil se rehace (otra imagen, otro estilo, otra entrada) y se repite la previa; cada cambio cuenta como pasada. A la tercera pasada con avisos, se le enseña la hoja a Emi.
+4. En `out/previa.json`: `tomas_debiles`, `decisiones` (por cada aviso, `aviso` y `que_se_hizo`) y `revisado_por`. `render` se niega si la previa falta, no está firmada, tiene avisos sin decisión o es de otra versión del video.
 
 ## Revisar el render (obligatorio antes de cerrar)
 
