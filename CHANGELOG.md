@@ -9,6 +9,7 @@
 - Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md`, `espacios/castorena/aprendizajes.md` y este registro.
 - Verificación: pruebas de vox-studio 58/58 → aprobado; el aviso nuevo detecta los tres titubeos del video → aprobado. Escucha de Emi del video → aprobado («ESTÁ PERFECTO»).
 - Pendiente: aplicar la regla de frases cortas en el próximo guion.
+- Corrección en el mismo día: la lección general había perdido la palabra «armar» por un error de comillas en la terminal; se restituyó.
 
 ## 2026-11-24 · Tercer video semanal de Castorena: tres jurisprudencias del Pleno (P./J. 233, 234 y 235/2026)
 
