@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-24 · Corrección: lección de titubeos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: mantenimiento propio tras el registro de Vox Studio 0.12.4.
+- Cambios: `espacios/APRENDIZAJES.md` recupera «vox.py armar» en la lección de titubeos; se había perdido por un error de comillas en la terminal.
+- Archivos: `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: la frase completa aparece una vez en el archivo → aprobado.
+- Pendiente: ninguno.
+
 ## 2026-11-24 · Vox Studio 0.12.4: auditoría de naturalidad de la voz y aviso de titubeos
 
 - Agente: Claude Code (sesión en la nube)
@@ -9,7 +18,7 @@
 - Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md`, `espacios/castorena/aprendizajes.md` y este registro.
 - Verificación: pruebas de vox-studio 58/58 → aprobado; el aviso nuevo detecta los tres titubeos del video → aprobado. Escucha de Emi del video → aprobado («ESTÁ PERFECTO»).
 - Pendiente: aplicar la regla de frases cortas en el próximo guion.
-- Corrección en el mismo día: la lección general había perdido la palabra «armar» por un error de comillas en la terminal; se restituyó.
+- Corrección en el mismo día: la lección general había perdido la palabra «armar» por un error de comillas en la terminal; se restituyó (segundo intento: el primero no aplicó el reemplazo).
 
 ## 2026-11-24 · Tercer video semanal de Castorena: tres jurisprudencias del Pleno (P./J. 233, 234 y 235/2026)
 
