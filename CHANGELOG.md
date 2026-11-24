@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-24 · Vox Studio 0.14.0: previa antes del render, tipografía en movimiento y foto viva
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026, tras la comparación con la skill de Tobia Donadon («How to Create TV Production Level Videos with Fable 5.2», llegada por la Matriz de Redes): «razónalo y hazlo de manera perfecta». Se tomaron ideas; no se descargó ni se copió código de terceros.
+- Cambios: (1) `previa`: hornea lo necesario y rinde solo tres cuadros fijos por escena (entrada, mitad, asentada) con un solo empaquetado (`scripts/previa.mjs`, `renderStill`), revisa lo medible (cuadro vacío, centro vacío, algo en el borde, zonas de TikTok), deja `out/previa.png` y `out/previa.json` y cuenta pasadas; `render` se niega sin una previa vigente, firmada y con decisión para cada aviso. (2) `cinetica: true`: tipografía en movimiento con las palabras de la voz en su tiempo real, acomodo estable y sin subtítulo encima. (3) `foto_viva`: foto real con profundidad, sujeto separado en local con rembg y hueco del fondo rellenado; exige `origen`. (4) Los subtítulos ya no se quedan pegados más de 1.2 s después de la última palabra (se veía un subtítulo viejo al salir de una escena sin subtítulos). Personajes constantes: no se hizo (Emi eligió «sin personaje» en pizarra y falta comprobar si Kie mantiene un personaje con imagen de referencia).
+- Archivos: `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md,plantilla/src/Vox.tsx,scripts/vox.py,scripts/previa.mjs,scripts/test_vox.py}`, `espacios/APRENDIZAJES.md`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de vox-studio 82/82 (once nuevas), pizarra-studio, editor-studio, milla-video-studio e `ia/test_guard.py` → aprobado; `tsc --noEmit` → aprobado. Con ejecución real en una copia privada del demo (voz ya pagada, sin gasto): previa de 15 cuadros en 43 s que detectó la toma débil real (cierre con el centro vacío); render completo con los dos estilos nuevos (20.97 s, −14.05 LUFS, sin avisos); capas de foto viva con rembg en 3.6–5.8 s; el subtítulo viejo detectado al revisar los cuadros → corregido y comprobado. No comprobado: foto viva con una foto real de una persona (la prueba usó una ilustración del demo); que Emi vea los estilos.
+- Pendiente: que Emi vea la prueba y elija; fusionar a `main`; subir el paquete nuevo a la app.
+
 ## 2026-11-18 · Vox Studio 0.13.2: ideas de temas desde la skill de TikTok y usuario de TikTok guardado
 
 - Agente: Claude Code (sesión en la nube)

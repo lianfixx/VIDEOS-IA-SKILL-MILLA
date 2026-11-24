@@ -1,5 +1,5 @@
 import React from 'react';
-import {AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Easing, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Audio} from '@remotion/media';
 import {loadFont} from '@remotion/fonts';
 import antonUrl from '@fontsource/anton/files/anton-latin-400-normal.woff2';
@@ -15,6 +15,7 @@ export type Colores = {papel: string; tinta: string; acento: string; apoyo: stri
 export type Escena = {
   id: string; desde: number; dur: number; keyword: string; resaltar: string; kicker: string;
   nota: string; dato: string; fuente: string; imagen: string; foto: boolean; entrada: string; transicion?: string; sonido?: string; remate?: string; secuencia?: {carpeta: string; cuadros: number; bucle?: boolean; inicio?: number} | null; tratada?: boolean;
+  cinetica?: boolean; fotoViva?: {fondo: string; sujeto: string; ancho: number; alto: number} | null;
 };
 export type Palabra = {t: string; a: number; b: number};
 export type VideoVox = {
@@ -116,6 +117,7 @@ const FUENTES: Record<string, {ancho: number; tope: number; espacio: number}> = 
   Gelasio: {ancho: 0.64, tope: 132, espacio: -2},
 };
 const FuenteCtx = React.createContext('Anton');
+const PalabrasCtx = React.createContext<Palabra[]>([]);
 const medidas = (keyword: string, fuente: string) => {
   const m = FUENTES[fuente] ?? FUENTES.Anton;
   const lineas = partir(keyword);
@@ -168,6 +170,63 @@ const borde = (px: number, color: string) =>
   [[px, 0], [-px, 0], [0, px], [0, -px], [px * 0.7, px * 0.7], [-px * 0.7, px * 0.7], [px * 0.7, -px * 0.7], [-px * 0.7, -px * 0.7]]
     .map(([x, y]) => `drop-shadow(${x}px ${y}px 0 ${color})`).join(' ');
 
+/** Palabras de la voz que caen en esta escena (las reparte la propia alineación, no se inventan). */
+const palabrasDe = (e: Escena, palabras: Palabra[], fps: number) =>
+  palabras.filter((w) => Math.round(w.a * fps) >= e.desde - 3 && Math.round(w.a * fps) < e.desde + e.dur - 3);
+
+/** Tipografía en movimiento: la narración de la escena, palabra por palabra, cuando se dice.
+ *  El acomodo se calcula una vez con todas las palabras (las que faltan ocupan su lugar sin verse): nada salta. */
+const Cinetica: React.FC<{e: Escena; c: Colores; ancho: number; alto: number}> = ({e, c, ancho, alto}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const fuente = React.useContext(FuenteCtx);
+  const palabras = palabrasDe(e, React.useContext(PalabrasCtx), fps);
+  const medio = (FUENTES[fuente] ?? FUENTES.Anton).ancho;
+  const textos = palabras.map((w) => sinSignos(w.t).toUpperCase() || w.t.toUpperCase());
+  // el tamaño más grande con el que todo cabe: ninguna palabra más ancha que la caja y todas las líneas dentro
+  let tam = 56;
+  for (let t = 190; t >= 56; t -= 4) {
+    if (textos.some((x) => x.length * t * medio > ancho)) continue;
+    let lineas = 1, usado = 0;
+    for (const x of textos) {
+      const w = x.length * t * medio + t * 0.28;
+      if (usado + w > ancho && usado > 0) { lineas += 1; usado = 0; }
+      usado += w;
+    }
+    if (lineas * t * 1.08 <= alto * 0.94) { tam = t; break; }
+  }
+  const clave = sinSignos(e.resaltar || '').toUpperCase();
+  return (
+    <div style={{width: ancho, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignContent: 'center', columnGap: tam * 0.28, rowGap: tam * 0.08}}>
+      {palabras.map((w, n) => {
+        const llega = Math.round(w.a * fps) - 1;
+        const t = spring({frame: frame - llega, fps, config: RESORTES.titular});
+        const es = clave && textos[n] === clave;
+        return (
+          <span key={n} style={{fontFamily: fuente, fontWeight: fuente === 'Anton' ? 400 : 700, fontSize: tam, lineHeight: 1.0, color: es ? c.papel : c.tinta,
+            background: es ? c.acento : 'transparent', padding: es ? `0 ${tam * 0.12}px` : 0, visibility: frame >= llega ? 'visible' : 'hidden',
+            transform: `scale(${1.25 - 0.25 * t}) rotate(${(azar(n + e.desde) - 0.5) * 3}deg)`, display: 'inline-block'}}>{textos[n]}</span>
+        );
+      })}
+    </div>
+  );
+};
+
+/** Foto propia con profundidad: el fondo y el sujeto se mueven a distinta velocidad. Lento y sin temblor. */
+const FotoViva: React.FC<{e: Escena; c: Colores; f: number; ancho: number; alto: number}> = ({e, c, f, ancho, alto}) => {
+  const v = e.fotoViva!;
+  const k = Math.min((ancho - 60) / v.ancho, (alto - 40) / v.alto);
+  const w = Math.round(v.ancho * k), h = Math.round(v.alto * k);
+  const p = interpolate(f, [0, e.dur + 16], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: Easing.inOut(Easing.cubic)});
+  const capa: React.CSSProperties = {position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover'};
+  return (
+    <div style={{width: w, height: h, position: 'relative', overflow: 'hidden', border: `14px solid #fff`, boxShadow: `16px 16px 0 ${c.tinta}`, background: '#fff'}}>
+      <Img src={staticFile(v.fondo)} style={{...capa, transform: `scale(${1.08 + 0.03 * p}) translate(${-8 * p}px, ${3 * p}px)`}} />
+      <Img src={staticFile(v.sujeto)} style={{...capa, transform: `scale(${1.08 + 0.075 * p}) translate(${7 * p}px, ${-5 * p}px)`, filter: `drop-shadow(0 10px 18px rgba(0,0,0,0.28))`}} />
+    </div>
+  );
+};
+
 const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arriba: number}> = ({e, c, f, indice, arriba}) => {
   const {fps} = useVideoConfig();
   const alto = (e.nota ? 1150 : 1265) - arriba;
@@ -183,7 +242,7 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
   return (
     <div style={{position: 'absolute', left: SEGURO.izq, width: DER_BAJO - SEGURO.izq, top: arriba, height: alto, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
       {/* semitono de periódico detrás del sujeto */}
-      {(e.imagen || e.dato || e.secuencia) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
+      {(e.imagen || e.dato || e.secuencia || e.fotoViva) && <div style={{position: 'absolute', width: alto * 0.95, height: alto * 0.95, borderRadius: '50%', transform: `scale(${medio}) rotate(${f * 0.06}deg)`, backgroundColor: c.apoyo, backgroundImage: `radial-gradient(${c.tinta} 22%, transparent 24%)`, backgroundSize: '26px 26px', opacity: 0.9}} />}
       {(e.imagen || e.dato) && <svg width={alto * 1.3} height={alto * 1.3} viewBox="-100 -100 200 200" style={{position: 'absolute'}}>
         {Array.from({length: 12}).map((_, n) => {
           const ang = (n / 12) * Math.PI * 2 + indice;
@@ -191,9 +250,13 @@ const Sticker: React.FC<{e: Escena; c: Colores; f: number; indice: number; arrib
           return <line key={n} x1={Math.cos(ang) * 72} y1={Math.sin(ang) * 72} x2={Math.cos(ang) * (72 + 20 * t)} y2={Math.sin(ang) * (72 + 20 * t)} stroke={c.tinta} strokeWidth={2.6} strokeLinecap="round" />;
         })}
       </svg>}
-      <div style={{...entrada, position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-        <div style={{transform: `${vaiven} scale(${pulso})`}}>
-          {e.secuencia ? (
+      <div style={{...(e.cinetica ? {} : entrada), position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+        <div style={{transform: e.cinetica ? 'none' : `${vaiven} scale(${pulso})`}}>
+          {e.cinetica ? (
+            <Cinetica e={e} c={c} ancho={DER_BAJO - SEGURO.izq} alto={alto} />
+          ) : e.fotoViva ? (
+            <FotoViva e={e} c={c} f={f} ancho={DER_BAJO - SEGURO.izq} alto={alto} />
+          ) : e.secuencia ? (
             // Secuencia rendida aparte (objeto 3D horneado o Blender): un cuadro por frame. Función pura del tiempo.
             // En bucle gira sin fin; sin bucle sigue la entrada del objeto y se queda en su último cuadro.
             <Img src={staticFile(`${e.secuencia.carpeta}/${String(e.secuencia.bucle === false
@@ -288,7 +351,7 @@ const Subtitulos: React.FC<{palabras: Palabra[]; c: Colores; fuente: string}> = 
     if (actual.length) g.push(actual);
     return g;
   }, [palabras, fuente]);
-  const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < (grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : g[g.length - 1].b + 0.12));
+  const i = grupos.findIndex((g, k) => t >= g[0].a - 0.04 && t < Math.min(grupos[k + 1] ? grupos[k + 1][0].a - 0.04 : 1e9, g[g.length - 1].b + (grupos[k + 1] ? 1.2 : 0.12)));  // tras 1.2 s de silencio el subtítulo se va: nunca queda uno viejo
   if (i < 0) return null;
   const grupo = grupos[i];
   return (
@@ -360,6 +423,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
   const avance = frame / v.frames;
   return (
     <FuenteCtx.Provider value={v.perfil.titular && FUENTES[v.perfil.titular] ? v.perfil.titular : 'Anton'}>
+    <PalabrasCtx.Provider value={v.palabras}>
     <AbsoluteFill style={{backgroundColor: c.papel, overflow: 'hidden'}}>
       <Papel c={c} cuadricula={v.perfil.cuadricula} />
       <div style={{position: 'absolute', left: W / 2, top: H / 2, transform: `scale(${cam.zoom}) rotate(${-cam.giro}deg) translate(${-cam.x}px, ${-cam.y}px)`}}>
@@ -388,7 +452,8 @@ export const Vox: React.FC<VideoVox> = (v) => {
       )}
       {v.cierre && v.finVoz != null && <Cierre texto={v.cierre} c={c} desde={Math.round((v.finVoz + 0.15) * fps)} />}
       {v.cierre && v.finVoz != null && v.sfx && <Audio src={staticFile('sfx/pop.wav')} from={Math.round((v.finVoz + 0.15) * fps)} volume={0.35} />}
-      {v.palabras.length > 0 && <Subtitulos palabras={v.palabras} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} />}
+      {/* en tipografía en movimiento las palabras ya están en pantalla: sin subtítulo encima */}
+      {v.palabras.length > 0 && !(actual.cinetica && frame >= actual.desde - 2) && <Subtitulos palabras={v.palabras.filter((w) => !v.escenas.some((e) => e.cinetica && palabrasDe(e, [w], fps).length > 0))} c={c} fuente={v.perfil.subtitulos && FUENTES[v.perfil.subtitulos] ? v.perfil.subtitulos : 'Anton'} />}
       {/* barra de avance y firma, dentro de la zona segura */}
       <div style={{position: 'absolute', left: SEGURO.izq, top: SEGURO.arriba - 8, width: SEGURO.der - SEGURO.izq, height: 10, background: `${c.tinta}22`}}>
         <div style={{width: `${avance * 100}%`, height: '100%', background: c.acento}} />
@@ -405,6 +470,7 @@ export const Vox: React.FC<VideoVox> = (v) => {
       ))}
       
     </AbsoluteFill>
+    </PalabrasCtx.Provider>
     </FuenteCtx.Provider>
   );
 };
