@@ -1,5 +1,15 @@
 # Cambios
 
+## 2026-11-24 · Vox Studio 0.13.0: estabilidad y estilo de la voz por guion, y elección de toma con el reconocedor
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026, sobre el video de las tres jurisprudencias: «Modifica este también, así como su pronunciación perfecta de las palabras».
+- Evidencia: siete tomas transcritas con el reconocedor de ElevenLabs (`scribe_v1`). Todas pronuncian el guion completo; solo «ping-pong» quedó con baja confianza y una toma oyó «INPI». Pausas a media frase de 0.3 s o más: 6 en la toma aprobada, 7 a 12 con estabilidad 0.4 y estilo 0.3, 4 con estabilidad 0.6 y estilo 0.15 (la de mayor confianza), 8 con estabilidad 0.75.
+- Cambios: el guion acepta `voz_estabilidad` y `voz_estilo` (0 a 1), que entran en los ajustes de ElevenLabs, en la huella de la toma y en la validación. La skill documenta cómo elegir toma con el reconocedor y que cambiar ajustes invalida la toma pagada. Lección general guardada.
+- Archivos: `skills/vox-studio/scripts/{vox.py,test_vox.py}`, `skills/vox-studio/SKILL.md`, `espacios/APRENDIZAJES.md` y este registro.
+- Verificación: pruebas de vox-studio → aprobado (incluye `test_estabilidad_de_la_toma`). Render y auditoría del video corregido → en curso al registrar; escucha de Emi → no ejecutado.
+- Pendiente: visto bueno de Emi a la versión corregida.
+
 ## 2026-11-24 · Corrección: lección de titubeos
 
 - Agente: Claude Code (sesión en la nube)

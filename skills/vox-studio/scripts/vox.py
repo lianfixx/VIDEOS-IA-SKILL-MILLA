@@ -205,7 +205,10 @@ def plan_de_voz(g: dict, perfil: dict) -> list[dict]:
             raise ErrorVox(f"la escena {s.get('id')} pide la voz de comentario y el espacio no tiene `voz_comentario` en su perfil")
         cambio = bool(s.get("cambio_tema")) and i > 0
         v = velocidad_voz({}, voz) if coment else vel
-        clave = (voz["voice_id"], voz.get("modelo", "eleven_multilingual_v2"), v)
+        extra = {k: g[f"voz_{k}"] for k in ("estabilidad", "estilo") if not coment and g.get(f"voz_{k}") is not None}
+        if extra:  # ajuste de la toma pedido en el guion (p. ej. más estabilidad para un ritmo más parejo)
+            voz = {**voz, **extra}
+        clave = (voz["voice_id"], voz.get("modelo", "eleven_multilingual_v2"), v, *[f"{k}={voz[k]}" for k in ("estabilidad", "estilo") if k in voz])
         nuevo = not tramos or tramos[-1]["clave"] != clave  # solo otra voz abre otra toma
         if nuevo:
             silencio = SILENCIO_ENTRE_VOCES if tramos else 0.0
@@ -226,7 +229,8 @@ def firma_de_voz(g: dict, tramos: list[dict]) -> str:
     """Huella de lo que se narró. Con un solo tramo sin marcas es la de siempre: las voces ya pagadas siguen vigentes."""
     if len(tramos) == 1 and tramos[0]["texto"] == texto_completo(g):  # sin marcas ni cambios de tema
         t = tramos[0]
-        return huella(t["texto"], t["voz"]["voice_id"], t["voz"].get("modelo", ""), *([f"vel={t['velocidad']}"] if t["velocidad"] != 1.0 else []))
+        return huella(t["texto"], t["voz"]["voice_id"], t["voz"].get("modelo", ""), *([f"vel={t['velocidad']}"] if t["velocidad"] != 1.0 else []),
+                      *[f"{k}={t['voz'][k]}" for k in ("estabilidad", "estilo") if k in t["voz"]])
     return huella("tramos", json.dumps([[t["texto"], *t["clave"], t["silencio"]] for t in tramos], ensure_ascii=False))
 
 
@@ -668,6 +672,10 @@ def validar_guion(g: dict) -> list[str]:
         e.append("cierre: texto de hasta 16 caracteres (sustituye al llamado del espacio solo en este video)")
     if g.get("estilo", "collage") not in ESTILOS_VIDEO:
         e.append(f"estilo {g.get('estilo')!r} no existe; opciones {list(ESTILOS_VIDEO)}")
+    for k in ("voz_estabilidad", "voz_estilo"):
+        x = g.get(k)
+        if x is not None and (isinstance(x, bool) or not isinstance(x, (int, float)) or not 0 <= x <= 1):
+            e.append(f"{k} va de 0 a 1")
     bucle = g.get("bucle")
     if bucle is not None:
         ids = [x.get("id") for x in (g.get("escenas") or []) if isinstance(x, dict)]
@@ -1005,8 +1013,14 @@ def velocidad_voz(g: dict, voz: dict) -> float:
     return float(v)
 
 
-def ajustes_voz(velocidad: float = 1.0) -> dict:
-    a = {"stability": 0.4, "similarity_boost": 0.8, "style": 0.3, "use_speaker_boost": True}
+ESTABILIDAD_VOZ = 0.4  # más alta: ritmo más parejo y menos pausas expresivas a media frase
+ESTILO_VOZ = 0.3
+
+
+def ajustes_voz(velocidad: float = 1.0, voz: dict | None = None) -> dict:
+    voz = voz or {}
+    a = {"stability": float(voz.get("estabilidad", ESTABILIDAD_VOZ)), "similarity_boost": 0.8,
+         "style": float(voz.get("estilo", ESTILO_VOZ)), "use_speaker_boost": True}
     if velocidad != 1.0:
         a["speed"] = velocidad
     return a
@@ -1014,7 +1028,7 @@ def ajustes_voz(velocidad: float = 1.0) -> dict:
 
 def narrar(texto: str, voz: dict, velocidad: float = 1.0, previo: str = "", siguiente: str = "") -> tuple[bytes, list[dict]]:
     cuerpo = {"text": texto, "model_id": voz.get("modelo", "eleven_multilingual_v2"),
-              "voice_settings": ajustes_voz(velocidad)}
+              "voice_settings": ajustes_voz(velocidad, voz)}
     if previo:  # contexto para que la entonación continúe entre tramos
         cuerpo["previous_text"] = previo
     if siguiente:

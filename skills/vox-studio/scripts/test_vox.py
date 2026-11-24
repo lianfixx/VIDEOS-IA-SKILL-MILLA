@@ -637,6 +637,17 @@ class Tiempos(unittest.TestCase):
         self.assertIn("no dice después", errores({"tipo": "dato", "dato": "1", "en": "nueve"}))
         self.assertIn("junto", errores({"tipo": "barras", "barras": [{"etiqueta": "A", "valor": 1}, {"etiqueta": "B", "valor": 2}]}))  # sin origen
 
+    def test_estabilidad_de_la_toma(self):
+        g = guion(); g["perfil"] = "castorena"; pf = vox.perfiles()["castorena"]
+        base = vox.firma_de_voz(g, vox.plan_de_voz(g, pf))
+        g["voz_estabilidad"] = 0.65
+        t = vox.plan_de_voz(g, pf)[0]
+        self.assertEqual(vox.ajustes_voz(1.0, t["voz"])["stability"], 0.65)
+        self.assertNotEqual(vox.firma_de_voz(g, [t]), base)  # otra estabilidad es otra toma: no reutiliza la pagada
+        self.assertEqual(vox.ajustes_voz()["stability"], vox.ESTABILIDAD_VOZ)
+        g["voz_estabilidad"] = 2
+        self.assertIn("voz_estabilidad", " | ".join(vox.validar_guion(g)))
+
     def test_titubeos(self):
         w = [{"t": "el", "a": 0.0, "b": 0.2}, {"t": "colegiado", "a": 0.25, "b": 0.8}, {"t": "decide,", "a": 1.3, "b": 1.7},
              {"t": "sin", "a": 2.3, "b": 2.5}, {"t": "más.", "a": 2.55, "b": 2.9}]
