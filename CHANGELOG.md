@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-24 · Tercer video semanal de Castorena: tres jurisprudencias del Pleno (P./J. 233, 234 y 235/2026)
+
+- Agente: Claude Code (sesión en la nube), con un subagente revisor jurídico independiente
+- Solicitud: Emi, 24/11/2026: video del reporte DOF y SJF del 20 al 24 de noviembre, centrado en las tres jurisprudencias del Pleno; su opinión: la P./J. 234 es la de uso más inmediato. Con Kie en 3.5 créditos pidió hacerlo «con código». Aprobó el guion corregido.
+- Cambios: producción privada `productions/castorena/jurisprudencias-23nov`: piezas de código y tres recortes reciclados, sin imágenes nuevas. Cotejo independiente antes de enseñar el guion (regla del 17/11): corrigió generalizaciones del SAR (caso ISSSTE), el tachado del art. 333 LFPPI, la ubicación del plazo de 24 h y la atribución del TFJA.
+- Archivos: este registro.
+- Verificación: las tres tesis leídas completas en el Semanario el 24/11/2026 → aprobado; cotejo independiente → aprobado tras correcciones. Render: 73.41 s, H.264 1080×1920, −14.11 LUFS, pico −1.70 dBTP, sin avisos de audio ni de imagen → aprobado técnicamente; 0 cuadros sin palabra resaltada en el archivo final; tira de 147 cuadros revisada por la IA → aprobado. Ritmo de voz entre 2.3 y 3.0 palabras por segundo, salvo la escena 07 (3.4) → aprobado con ese aviso. Escucha y visto bueno de Emi → no ejecutado.
+- Pendiente: opinión de Emi; recargar Kie para volver a la receta con imagen en cada escena.
+
 ## 2026-11-24 · Biblioteca: tres recortes reciclados para el video de jurisprudencias
 
 - Agente: Claude Code (sesión en la nube)
