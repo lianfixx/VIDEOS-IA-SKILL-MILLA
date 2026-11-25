@@ -69,6 +69,11 @@ La música se genera con una semilla derivada del título y la narración: decid
 ## 5. Imágenes
 
 - Prompt = sujeto + estilo del espacio + fondo de croma + «sin texto, logos ni marcas de agua». Solo el sujeto; sin mesas ni suelos.
+- Encuadre del sujeto, en inglés y uno de cada clase (dos ángulos o dos planos se contradicen):
+  - Plano: `full body, head to toe` (persona completa), `medium shot from the waist up`, `close-up of the face`, `extreme close-up of the hands` o del objeto (firma, sello, billete).
+  - Ángulo: `eye-level` (neutral, por defecto), `low-angle view looking up` (fuerza, autoridad), `high-angle view looking down` (pequeñez, alguien rebasado), `top-down view` (documentos, dinero, objetos planos), `three-quarter view`, `side profile`.
+- Luz: la suave y pareja del estilo, nada más. Nunca contraluz, luz de borde, neón, reflejos, rayos de luz, silueta, destellos de lente, hora dorada ni fondo desenfocado: dejan halo, sombra o derrame de color que el recorte no quita.
+- Personas en estilo `foto`: añadir al prompt `natural skin texture with pores, no artificial smoothing`; si salen manos, `anatomically correct hands with five fingers`. Si el resultado trae varias acciones a la vez, `doing only one simple action`.
 - Recorte (`recortar_croma`): mide el color del fondo en el marco de la imagen, exige que al menos el 90 % del marco sea uniforme, elimina lo conectado al borde y los huecos casi idénticos al fondo, suaviza una franja de 3 px y le quita el derrame de color.
 - El estado de cada tarea guarda la huella de prompt, aspecto y modelo: no se reutiliza para otra imagen ni se reenvía tras un fallo.
 - Descargas solo desde los dominios de resultado de Kie; fotos reales con tope de 15 MB y verificación de que son imágenes.
