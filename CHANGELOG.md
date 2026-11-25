@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-25 · Decisiones de Emi sobre el lenguaje de cámara y paquetes en la app
+
+- Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
+- Solicitud: Emi, 25/11/2026, respondió las tres dudas de la entrada anterior: Flow (Veo) «No por ahora», cámara de Kling «Suave con motivo», prueba de personaje con referencia «Todavía no». Antes había autorizado: «Te doy permiso de hacer todos los cambios… y sube tú todo».
+- Cambios: `docs/REFERENCIAS-EXTERNAS.md` cambia «Dudas para Emi» por «Decisiones de Emi». Sin cambios en las skills. Paquetes de Vox Studio 0.14.1, MILLA Video Studio 1.1.2 y Editor Studio 0.2.2 entregados como plugins e instalados por Emi en la app (él confirmó que reemplazaron a los anteriores).
+- Archivos: `docs/REFERENCIAS-EXTERNAS.md` y este registro.
+- Verificación: pruebas y controles exigidos por `ia/REGLAS.md` antes del push → ver el commit.
+- Pendiente: nada de esta referencia. La prueba de personaje con referencia queda para cuando Emi la pida.
+
 ## 2026-11-25 · Lenguaje de cámara para prompts de imagen y de video generado (Editor Studio 0.2.2, Vox Studio 0.14.1, MILLA Video Studio 1.1.2)
 
 - Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
