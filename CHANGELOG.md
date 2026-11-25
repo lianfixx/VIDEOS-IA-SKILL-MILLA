@@ -7,7 +7,16 @@
 - Cambios: se fusiona `main` en la rama del PR. Las dos líneas de trabajo no se tocan entre sí (paletas, música y modismos en scripts y `OFICIO.md`; lenguaje de cámara en `ANIMACIONES.md`); solo chocaba el número de versión de `SKILL.md`. Juntas quedan como 0.2.4. Las entradas anteriores de este registro se dejan como se escribieron: el «0.2.2» del lenguaje de cámara y el «0.2.2» de las paletas son dos cambios distintos que se hicieron en paralelo.
 - Archivos: `skills/editor-studio/SKILL.md` y este registro.
 - Verificación: pruebas de milla-video-studio 43/43, vox-studio 82/82, pizarra-studio 22/22, editor-studio 112/112, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; paquete de Editor (57 archivos) sin enlaces rotos → aprobado; `MANUAL_COMPLETO.md` regenerado sin cambios.
-- Pendiente: que Emi o Muse fusionen el PR #9.
+- Pendiente: que Emi o Muse fusionen el PR #9. Después, reemplazar en la app el paquete de Editor Studio 0.2.2 (instalado el 25/11) por el 0.2.4, que suma la paleta, la música por código y los modismos.
+
+## 2026-11-25 · Decisiones de Emi sobre el lenguaje de cámara y paquetes en la app
+
+- Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
+- Solicitud: Emi, 25/11/2026, respondió las tres dudas de la entrada anterior: Flow (Veo) «No por ahora», cámara de Kling «Suave con motivo», prueba de personaje con referencia «Todavía no». Antes había autorizado: «Te doy permiso de hacer todos los cambios… y sube tú todo».
+- Cambios: `docs/REFERENCIAS-EXTERNAS.md` cambia «Dudas para Emi» por «Decisiones de Emi». Sin cambios en las skills. Paquetes de Vox Studio 0.14.1, MILLA Video Studio 1.1.2 y Editor Studio 0.2.2 entregados como plugins e instalados por Emi en la app (él confirmó que reemplazaron a los anteriores).
+- Archivos: `docs/REFERENCIAS-EXTERNAS.md` y este registro.
+- Verificación: pruebas y controles exigidos por `ia/REGLAS.md` antes del push → ver el commit.
+- Pendiente: nada de esta referencia. La prueba de personaje con referencia queda para cuando Emi la pida.
 
 ## 2026-11-25 · Lenguaje de cámara para prompts de imagen y de video generado (Editor Studio 0.2.2, Vox Studio 0.14.1, MILLA Video Studio 1.1.2)
 

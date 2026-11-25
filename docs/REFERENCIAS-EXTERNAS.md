@@ -138,8 +138,8 @@ Pedido de Emi: leer la página completa y llevar a la edición y a la generació
 | Códigos de audio (ambiente, diálogo, voz en off, música) | Los insertos entran mudos; la voz es de Fish o ElevenLabs y la música se compone con código |
 | Movimientos de cámara nuevos en Remotion | Ya existen equivalentes: `viaje` (la cámara recorre el lienzo), `barrido` (barrido rápido) y la deriva de zoom; Editor Studio tiene `zoom` |
 
-### Dudas para Emi
+### Decisiones de Emi (25/11/2026)
 
-- **Google Flow (Veo) como fuente de B-roll.** No se añadió. Tendría que decidir Emi: costo o plan que lo cubra, si sus clips salen con marca de agua visible (MILLA la prohíbe) y si choca con «que nada se vea hecho por IA». Hoy el único video generado previsto es Kling por Kie.
-- **Movimiento suave en Kling.** La regla decía «cámara fija»; ahora admite uno de cinco movimientos suaves solo con porqué escrito y su aprobación del plan. Si Emi prefiere fija siempre, se quita la tabla de movimiento.
-- **Personaje constante con imagen de referencia en Kie.** Sigue sin comprobarse que `nano-banana-2-lite` o Kling por Kie lo mantengan; la corrección «mismo personaje» solo sirve si el modelo acepta la referencia.
+- **Google Flow (Veo) como fuente de B-roll: no por ahora.** El único video generado previsto sigue siendo Kling por Kie. Si se retoma, primero se investigan costo, marca de agua visible y aspecto «hecho por IA».
+- **Movimiento suave en Kling: sí, con motivo.** Queda como está en `editor-studio/ANIMACIONES.md`: cámara fija por defecto y uno de cinco movimientos suaves solo con su porqué escrito en el plan que Emi aprueba.
+- **Personaje constante con imagen de referencia en Kie: todavía no.** No se prueba ni se gasta; se sigue sin personaje recurrente. La corrección «mismo personaje» queda sin comprobar.
