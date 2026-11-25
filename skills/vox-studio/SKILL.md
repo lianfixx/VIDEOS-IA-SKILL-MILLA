@@ -2,7 +2,7 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.14.0"
+  version: "0.14.1"
   release_date: "2026-11-24"
   language: "es-MX"
 ---
@@ -96,7 +96,7 @@ Sin `--execute` nada gasta saldo. Costos medidos el 10/11/2026: 4 créditos de K
 
 - **Nunca se dice que el video lo hizo una IA** (regla de Emi, 13/11/2026: «jamás en nada digas que lo armó una IA»). Ni «lo hizo una IA», «hecho con IA», «nadie lo editó», «sin editor», «voz de IA» ni nada parecido, en narración, titulares, notas, remates, portada o cierre, en ningún espacio. Hablar de la IA como tema sí se puede. `validar` lo rechaza (`scripts/autoria.py`, la misma revisión para las tres skills de video).
 - **Imágenes naturales**: `--perfil E` toma el estilo del espacio (`estilo_imagen`: ilustración en personal y MILLA, foto en Castorena y PAN); también `--estilo ilustracion` (editorial pintada) o `foto`; `sticker` (cartoon) solo si Emi lo pide. Modelo `nano-banana-2-lite` primero; Seedream 5 Lite para lo más realista. Cualquier otro modelo exige añadir su esquema comprobado a `MODELOS_KIE`. GPT Image solo como último recurso documentado, nunca en `milla`, y hoy lo bloquea el freno de `ia/politica.json`: cambiarlo requiere confirmación expresa de Emi.
-- El prompt describe solo el sujeto, sin mesas ni suelos; se genera sobre verde (o `--croma magenta` si el sujeto es verde) y se recorta en local. Revisar cada PNG antes de montar.
+- El prompt describe solo el sujeto, sin mesas ni suelos; se genera sobre verde (o `--croma magenta` si el sujeto es verde) y se recorta en local. Plano, ángulo y luz que sí sirven para recortar: [TECNICA.md §5](TECNICA.md#5-imágenes). Revisar cada PNG antes de montar.
 - Fotos reales (Apify) solo para personas, logos o hechos que no se pueden ilustrar, con derechos verificados; pedir el token a Emi cuando haga falta.
 - Subtítulos: solo con los tiempos por palabra que devuelve el proveedor de voz.
 - **Nada tiembla**: flotación lenta, rebotes amortiguados. Sin fades. Entradas y transiciones (`viaje`, `barrido`, `rasgado`) variadas; el validador rechaza repetir la anterior.

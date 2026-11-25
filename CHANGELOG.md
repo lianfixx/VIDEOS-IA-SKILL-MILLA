@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-25 · Lenguaje de cámara para prompts de imagen y de video generado (Editor Studio 0.2.2, Vox Studio 0.14.1, MILLA Video Studio 1.1.2)
+
+- Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
+- Solicitud: Emi, 25/11/2026, sobre la página «Códigos de cámara para Google Flow» (tomas-de-cine-ia.netlify.app): «Lee página por página, palabra por palabra… revisa qué nos sirve de aquí e impleméntalo a la Edición de Video y Generación si es que sirve».
+- Cambios: (1) Editor Studio, `ANIMACIONES.md`: apartado «Cómo se escribe el prompt de cada clip» para el video generado con Kling por Kie: orden fijo (escena → cámara → luz → correcciones → formato del video), un solo movimiento, ángulo y plano por toma, cámara fija por defecto y cinco movimientos suaves solo con porqué en el plan aprobado, tablas de ángulos, planos, luz y correcciones por falla, y lo que no se usa y por qué. (2) Vox Studio, `TECNICA.md` §5 y una línea en `SKILL.md`: plano, ángulo y luz compatibles con el recorte de croma, piel natural y manos en estilo `foto`. (3) MILLA Video Studio, `references/prompts.md`: encuadre y luz del prompt de recorte y correcciones de manos y acción única. (4) `docs/REFERENCIAS-EXTERNAS.md`: qué se leyó, qué se adoptó, qué se descartó y las dudas para Emi. `MANUAL_COMPLETO.md` regenerado. No se cambió código, ni se añadió Google Flow (Veo) como proveedor.
+- Archivos: `skills/editor-studio/{SKILL.md,ANIMACIONES.md}`, `skills/vox-studio/{SKILL.md,TECNICA.md}`, `skills/milla-video-studio/{SKILL.md,references/prompts.md}`, `docs/REFERENCIAS-EXTERNAS.md`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de milla-video-studio 43/43, vox-studio 82/82, pizarra-studio 22/22, editor-studio 106/106, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; `secret-scan` sin hallazgos; paquetes de Editor y Vox regenerados sin enlaces rotos (el primer intento detectó un enlace a `docs/` que se rompía en el paquete → corregido a texto). El armador de la página se probó con una escena de ejemplo y se dejó vacío. No comprobado: ningún prompt nuevo se probó con gasto real en Kie ni en Kling.
+- Pendiente: que Emi decida las tres dudas de `docs/REFERENCIAS-EXTERNAS.md` (Flow/Veo como B-roll, movimiento suave en Kling, personaje con referencia); publicar en GitHub desde una sesión con escritura; subir los paquetes nuevos a la app.
+
 ## 2026-11-24 · Vox Studio 0.14.0: previa antes del render, tipografía en movimiento y foto viva
 
 - Agente: Claude Code (sesión en la nube)
