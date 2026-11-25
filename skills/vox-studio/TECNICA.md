@@ -69,6 +69,11 @@ La música se genera con una semilla derivada del título y la narración: decid
 ## 5. Imágenes
 
 - Prompt = sujeto + estilo del espacio + fondo de croma + «sin texto, logos ni marcas de agua». Solo el sujeto; sin mesas ni suelos.
+- Encuadre del sujeto, en inglés y uno de cada clase (dos ángulos o dos planos se contradicen):
+  - Plano: `full body, head to toe` (persona completa), `medium shot from the waist up`, `close-up of the face`, `extreme close-up of the hands` o del objeto (firma, sello, billete).
+  - Ángulo: `eye-level` (neutral, por defecto), `low-angle view looking up` (fuerza, autoridad), `high-angle view looking down` (pequeñez, alguien rebasado), `top-down view` (documentos, dinero, objetos planos), `three-quarter view`, `side profile`.
+- Luz: la suave y pareja del estilo, nada más. Nunca contraluz, luz de borde, neón, reflejos, rayos de luz, silueta, destellos de lente, hora dorada ni fondo desenfocado: dejan halo, sombra o derrame de color que el recorte no quita.
+- Personas en estilo `foto`: añadir al prompt `natural skin texture with pores, no artificial smoothing`; si salen manos, `anatomically correct hands with five fingers`. Si el resultado trae varias acciones a la vez, `doing only one simple action`.
 - Recorte (`recortar_croma`): mide el color del fondo en el marco de la imagen, exige que al menos el 90 % del marco sea uniforme, elimina lo conectado al borde y los huecos casi idénticos al fondo, suaviza una franja de 3 px y le quita el derrame de color.
 - El estado de cada tarea guarda la huella de prompt, aspecto y modelo: no se reutiliza para otra imagen ni se reenvía tras un fallo.
 - Descargas solo desde los dominios de resultado de Kie; fotos reales con tope de 15 MB y verificación de que son imágenes.
@@ -81,6 +86,12 @@ La música se genera con una semilla derivada del título y la narración: decid
 - **Blender.** Módulo `bpy` 5.3 con Cycles en CPU, vista «Standard» para que el color de marca salga exacto. `plano`: emisión + sombra de una banda y contorno Freestyle. `real`: material físico y tres luces de área. Cámara de 70 mm a la distancia que encierra el objeto. El giro fija el ángulo cuadro por cuadro (sin fotogramas clave) y cuelga del eje la raíz de cada pieza.
 - **Límites del validador.** Una escena con 3D por video (`MAX_3D`); cada objeto solo en las funciones de `LUGAR_3D`; ninguno en `opinion` ni `cierre`; un solo tratamiento por video. `excepcion_3d` (el pedido de Emi, con fecha) levanta los dos primeros. `comparar` rinde el cuadro a tres cuartos de la escena con el recurso y con su `alternativa_plana`.
 - **ComfyUI.** Cliente HTTP (`/prompt`, `/history`, `/view`) contra `COMFY_URL` (https, o http solo en la misma máquina); nunca se llama sin esa variable y lo que baja se verifica como imagen antes de guardarse.
+
+## 5 ter. Previa, tipografía en movimiento y foto viva
+
+- **Previa.** `previa.mjs` empaqueta el video una vez y rinde solo los cuadros pedidos (`renderStill`): 15 cuadros en unos 40 s contra 4–5 min del render completo. Cuadros por escena: entrada (14 cuadros locales después del corte; el primero, el cuadro 0), mitad y asentada (75 %; la última, 6 cuadros antes del final). Avisos medibles: tinta en la zona útil < 6 %; franja central (y 720–1290) < 3 %; bordes (24 px a cada lado) > 5 %; zonas de TikTok > 0.4 % en el cuadro asentado. La huella de la previa cubre `_render.json`, cada archivo que se pinta y el código de `Vox.tsx`, `Tres.tsx` y `Root.tsx`.
+- **Tipografía en movimiento.** Las palabras de la escena son las de la alineación cuyo inicio cae dentro de ella. El tamaño es el mayor (190 a 56 px) con el que ninguna palabra pasa de 810 px y todas las líneas caben en el 94 % del alto disponible; el acomodo se calcula con todas las palabras y las que faltan ocupan su lugar sin verse, así nada salta. Cada palabra entra con el resorte del titular desde 1.25× un cuadro antes de decirse.
+- **Foto viva.** Capas de hasta 1400 px: sujeto con rembg (`isnet-general-use`, local; el modelo se descarga una vez, 179 MB) y fondo con el hueco relleno por promedio ponderado a cinco escalas y suavizado. Se rechaza si el sujeto ocupa menos del 3 % o más del 85 % de la foto. Movimiento en toda la escena: fondo de 1.08× a 1.11× y −8 px; sujeto de 1.08× a 1.155× y +7 px, con curva suave.
 
 ## 6. Auditorías automáticas de `render`
 

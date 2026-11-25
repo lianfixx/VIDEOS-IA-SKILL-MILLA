@@ -826,6 +826,118 @@ class AutoriaIA(unittest.TestCase):
         self.assertEqual(rutas, ["escenas[0].narracion"])
 
 
+class LooksNuevos(unittest.TestCase):
+    """Tipografía en movimiento y foto propia con profundidad (24/11/2026)."""
+
+    def test_cinetica(self):
+        g = guion(); g["escenas"][1]["cinetica"] = True
+        self.assertEqual(vox.validar_guion(g), [])
+        g["escenas"][1]["imagen_archivo"] = "img/a.png"
+        self.assertIn("cinetica ocupa el lugar del recorte", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["escenas"][1]["cinetica"] = "sí"
+        self.assertIn("cinetica es true", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["escenas"][1].update(cinetica=True, narracion="Muy corta.")
+        self.assertIn("al menos 3 palabras", " | ".join(vox.validar_guion(g)))
+        g = guion(); g["escenas"][1].update(cinetica=True, nota="ojo")
+        self.assertIn("compiten con las palabras", " | ".join(vox.avisos_guion(g)))
+        self.assertNotIn("sin imagen ni dato", " | ".join(a for a in vox.avisos_guion(g) if "[2" in a))
+
+    def test_foto_viva_exige_origen_y_va_sola(self):
+        g = guion(); g["escenas"][1]["foto_viva"] = {"archivo": "img/yo.jpg"}
+        self.assertIn("foto_viva.origen", " | ".join(vox.validar_guion(g)))
+        g["escenas"][1]["foto_viva"]["origen"] = "foto de Emi en el gym, suya"
+        self.assertEqual(vox.validar_guion(g), [])
+        for malo in ({"archivo": "../yo.jpg", "origen": "x" * 12}, {"archivo": "img/yo.gif", "origen": "x" * 12}, "img/yo.jpg"):
+            g["escenas"][1]["foto_viva"] = malo
+            self.assertIn("foto_viva", " | ".join(vox.validar_guion(g)), malo)
+        g["escenas"][1].update(foto_viva={"archivo": "img/yo.jpg", "origen": "foto de Emi"}, tratamiento="semitono", imagen_archivo="img/b.png")
+        self.assertIn("foto_viva ocupa el lugar", " | ".join(vox.validar_guion(g)))
+
+    def test_plan_de_foto_viva_y_capas(self):
+        from PIL import Image, ImageDraw
+        g = guion(); g["escenas"][1]["foto_viva"] = {"archivo": "img/yo.jpg", "origen": "foto de Emi"}
+        palabras, fin = alinear(g)
+        with tempfile.TemporaryDirectory() as d:
+            pub = Path(d) / "public"; (pub / "img").mkdir(parents=True)
+            Image.new("RGB", (2800, 2100), (40, 120, 200)).save(pub / "img" / "yo.jpg")
+            datos = vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], pub)
+            self.assertEqual(datos["escenas"][1]["fotoViva"], {"archivo": "img/yo.jpg"})
+            listo, trabajos = vox.plan_horno(datos, pub)
+            fv = listo["escenas"][1]["fotoViva"]
+            self.assertEqual((fv["ancho"], fv["alto"]), (1400, 1050))                     # lado mayor 1400
+            self.assertTrue(fv["fondo"].endswith("/fondo.jpg") and fv["sujeto"].endswith("/sujeto.png"))
+            self.assertEqual([t["modo"] for t in trabajos], ["viva"])
+            real = vox.capas_foto_viva
+            def falso(origen, carpeta):
+                carpeta.mkdir(parents=True); (carpeta / "fondo.jpg").write_bytes(b"f"); (carpeta / "sujeto.png").write_bytes(b"s")
+                return {}
+            vox.capas_foto_viva = falso
+            try:
+                self.assertEqual(vox.hornear(Path(d), trabajos, ""), 1)
+                self.assertEqual(vox.hornear(Path(d), trabajos, ""), 0)                    # ya horneada
+            finally:
+                vox.capas_foto_viva = real
+            self.assertTrue((Path(d) / "public" / fv["fondo"]).is_file())
+            with self.assertRaises(vox.ErrorVox):                                          # sin foto no se arma
+                (pub / "img" / "yo.jpg").unlink()
+                vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], pub)
+
+
+class Previa(unittest.TestCase):
+    """Cuadros fijos antes del render y la compuerta que exige mirarlos."""
+
+    def datos(self):
+        g = guion(); palabras, fin = alinear(g)
+        return vox.armar_video(g, palabras, fin, vox.perfiles()["personal"], None)
+
+    def test_cuadros_por_escena(self):
+        v = self.datos()
+        c = vox.cuadros_previa(v)
+        self.assertEqual(len(c), 3 * len(v["escenas"]))
+        self.assertEqual(c[0], {"escena": "01", "momento": "entrada", "frame": 0})       # el primer cuadro detiene el scroll
+        self.assertEqual(c[-1]["frame"], v["frames"] - 6)                                  # la última, con el cierre asentado
+        self.assertTrue(all(0 <= x["frame"] < v["frames"] for x in c))
+
+    def test_revision_automatica(self):
+        import numpy as np
+        vacio = np.zeros((1920, 1080), dtype=bool)
+        self.assertIn("casi vacío", " ".join(vox.revisar_cuadro(vacio, "asentada")))
+        self.assertEqual(vox.revisar_cuadro(vacio, "entrada"), [])                         # la entrada se mira a ojo
+        solo_arriba = vacio.copy(); solo_arriba[300:700, 90:960] = True
+        self.assertIn("centro de la pantalla está vacío", " ".join(vox.revisar_cuadro(solo_arriba, "mitad")))
+        bien = solo_arriba.copy(); bien[750:1250, 200:850] = True
+        self.assertEqual(vox.revisar_cuadro(bien, "asentada"), [])
+        borde = bien.copy(); borde[400:1400, 0:24] = True
+        self.assertIn("toca el borde", " ".join(vox.revisar_cuadro(borde, "mitad")))
+        abajo = bien.copy(); abajo[1500:1700, 100:900] = True
+        self.assertIn("descripción inferior", " ".join(vox.revisar_cuadro(abajo, "asentada")))
+
+    def test_render_exige_la_previa_vigente_y_revisada(self):
+        import json
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp); (d / "out").mkdir(); (d / "src").mkdir(); (d / "public").mkdir()
+            (d / "src" / "Vox.tsx").write_text("v1")
+            listo = self.datos()
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.exigir_previa(d, listo)
+            self.assertIn("falta la previa", str(cm.exception))
+            h = vox.huella_previa(d, listo)
+            escribir = lambda **k: (d / "out" / "previa.json").write_text(json.dumps({"huella": h, "automaticos": [], "decisiones": [], "revisado_por": "", **k}))  # noqa: E731
+            escribir()
+            with self.assertRaises(vox.ErrorVox):
+                vox.exigir_previa(d, listo)                                                # nadie la miró
+            escribir(revisado_por="Claude Code", automaticos=["escena 05: vacío"])
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.exigir_previa(d, listo)
+            self.assertIn("avisos sin decisión", str(cm.exception))
+            escribir(revisado_por="Claude Code", automaticos=["escena 05: vacío"], decisiones=[{"aviso": "escena 05", "que_se_hizo": "se puso un recorte"}])
+            vox.exigir_previa(d, listo)
+            (d / "src" / "Vox.tsx").write_text("v2")                                       # cambió el compositor
+            with self.assertRaises(vox.ErrorVox) as cm:
+                vox.exigir_previa(d, listo)
+            self.assertIn("otra versión", str(cm.exception))
+
+
 class MusicaExterna(unittest.TestCase):
     def tono(self, ruta, segundos, silencio=0.0):
         import subprocess

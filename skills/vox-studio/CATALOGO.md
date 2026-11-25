@@ -54,6 +54,11 @@ El `remate` es un sello de hasta 14 letras que cae a media escena («PLOT TWIST�
 - Fondo de recorte (`--croma`): `verde`, `magenta`, `ninguno`.
 - Fotos reales: `foto` y `foto-bajar` (Apify), solo con fuente y licencia comprobadas.
 
+## Estilos de escena sin imagen generada
+
+- `cinetica: true`: tipografía en movimiento con las palabras de la voz.
+- `foto_viva: {archivo, origen}`: foto real con profundidad (sujeto y fondo separados en local).
+
 ## 3D y tratamientos (por defecto no; como mucho uno por video)
 
 - Objetos 3D del compositor (`objeto3d.tipo`): `moneda`, `monedas`, `barras`, `caja`, `globo`.

@@ -1,5 +1,32 @@
 # Cambios
 
+## 2026-11-25 · Editor Studio 0.2.4: se juntan el lenguaje de cámara y la paleta, la música por código y los modismos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: el PR #9 (Editor Studio 0.2.2 y 0.2.3 de esta rama) quedó en conflicto al entrar a `main` el lenguaje de cámara, registrado ahí también como Editor Studio 0.2.2.
+- Cambios: se fusiona `main` en la rama del PR. Las dos líneas de trabajo no se tocan entre sí (paletas, música y modismos en scripts y `OFICIO.md`; lenguaje de cámara en `ANIMACIONES.md`); solo chocaba el número de versión de `SKILL.md`. Juntas quedan como 0.2.4. Las entradas anteriores de este registro se dejan como se escribieron: el «0.2.2» del lenguaje de cámara y el «0.2.2» de las paletas son dos cambios distintos que se hicieron en paralelo.
+- Archivos: `skills/editor-studio/SKILL.md` y este registro.
+- Verificación: pruebas de milla-video-studio 43/43, vox-studio 82/82, pizarra-studio 22/22, editor-studio 112/112, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; paquete de Editor (57 archivos) sin enlaces rotos → aprobado; `MANUAL_COMPLETO.md` regenerado sin cambios.
+- Pendiente: que Emi o Muse fusionen el PR #9.
+
+## 2026-11-25 · Lenguaje de cámara para prompts de imagen y de video generado (Editor Studio 0.2.2, Vox Studio 0.14.1, MILLA Video Studio 1.1.2)
+
+- Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
+- Solicitud: Emi, 25/11/2026, sobre la página «Códigos de cámara para Google Flow» (tomas-de-cine-ia.netlify.app): «Lee página por página, palabra por palabra… revisa qué nos sirve de aquí e impleméntalo a la Edición de Video y Generación si es que sirve».
+- Cambios: (1) Editor Studio, `ANIMACIONES.md`: apartado «Cómo se escribe el prompt de cada clip» para el video generado con Kling por Kie: orden fijo (escena → cámara → luz → correcciones → formato del video), un solo movimiento, ángulo y plano por toma, cámara fija por defecto y cinco movimientos suaves solo con porqué en el plan aprobado, tablas de ángulos, planos, luz y correcciones por falla, y lo que no se usa y por qué. (2) Vox Studio, `TECNICA.md` §5 y una línea en `SKILL.md`: plano, ángulo y luz compatibles con el recorte de croma, piel natural y manos en estilo `foto`. (3) MILLA Video Studio, `references/prompts.md`: encuadre y luz del prompt de recorte y correcciones de manos y acción única. (4) `docs/REFERENCIAS-EXTERNAS.md`: qué se leyó, qué se adoptó, qué se descartó y las dudas para Emi. `MANUAL_COMPLETO.md` regenerado. No se cambió código, ni se añadió Google Flow (Veo) como proveedor.
+- Archivos: `skills/editor-studio/{SKILL.md,ANIMACIONES.md}`, `skills/vox-studio/{SKILL.md,TECNICA.md}`, `skills/milla-video-studio/{SKILL.md,references/prompts.md}`, `docs/REFERENCIAS-EXTERNAS.md`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de milla-video-studio 43/43, vox-studio 82/82, pizarra-studio 22/22, editor-studio 106/106, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; `secret-scan` sin hallazgos; paquetes de Editor y Vox regenerados sin enlaces rotos (el primer intento detectó un enlace a `docs/` que se rompía en el paquete → corregido a texto). El armador de la página se probó con una escena de ejemplo y se dejó vacío. No comprobado: ningún prompt nuevo se probó con gasto real en Kie ni en Kling.
+- Pendiente: que Emi decida las tres dudas de `docs/REFERENCIAS-EXTERNAS.md` (Flow/Veo como B-roll, movimiento suave en Kling, personaje con referencia); publicar en GitHub desde una sesión con escritura; subir los paquetes nuevos a la app.
+
+## 2026-11-24 · Vox Studio 0.14.0: previa antes del render, tipografía en movimiento y foto viva
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 24/11/2026, tras la comparación con la skill de Tobia Donadon («How to Create TV Production Level Videos with Fable 5.2», llegada por la Matriz de Redes): «razónalo y hazlo de manera perfecta». Se tomaron ideas; no se descargó ni se copió código de terceros.
+- Cambios: (1) `previa`: hornea lo necesario y rinde solo tres cuadros fijos por escena (entrada, mitad, asentada) con un solo empaquetado (`scripts/previa.mjs`, `renderStill`), revisa lo medible (cuadro vacío, centro vacío, algo en el borde, zonas de TikTok), deja `out/previa.png` y `out/previa.json` y cuenta pasadas; `render` se niega sin una previa vigente, firmada y con decisión para cada aviso. (2) `cinetica: true`: tipografía en movimiento con las palabras de la voz en su tiempo real, acomodo estable y sin subtítulo encima. (3) `foto_viva`: foto real con profundidad, sujeto separado en local con rembg y hueco del fondo rellenado; exige `origen`. (4) Los subtítulos ya no se quedan pegados más de 1.2 s después de la última palabra (se veía un subtítulo viejo al salir de una escena sin subtítulos). Personajes constantes: no se hizo (Emi eligió «sin personaje» en pizarra y falta comprobar si Kie mantiene un personaje con imagen de referencia).
+- Archivos: `skills/vox-studio/{SKILL.md,CATALOGO.md,TECNICA.md,plantilla/src/Vox.tsx,scripts/vox.py,scripts/previa.mjs,scripts/test_vox.py}`, `espacios/APRENDIZAJES.md`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas de vox-studio 82/82 (once nuevas), pizarra-studio, editor-studio, milla-video-studio e `ia/test_guard.py` → aprobado; `tsc --noEmit` → aprobado. Con ejecución real en una copia privada del demo (voz ya pagada, sin gasto): previa de 15 cuadros en 43 s que detectó la toma débil real (cierre con el centro vacío); render completo con los dos estilos nuevos (20.97 s, −14.05 LUFS, sin avisos); capas de foto viva con rembg en 3.6–5.8 s; el subtítulo viejo detectado al revisar los cuadros → corregido y comprobado. No comprobado: foto viva con una foto real de una persona (la prueba usó una ilustración del demo); que Emi vea los estilos.
+- Pendiente: que Emi vea la prueba y elija; fusionar a `main`; subir el paquete nuevo a la app.
+
 ## 2026-11-18 · Vox Studio 0.13.2: ideas de temas desde la skill de TikTok y usuario de TikTok guardado
 
 - Agente: Claude Code (sesión en la nube)

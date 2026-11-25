@@ -106,3 +106,40 @@ Three.js, sombreadores, Blender y ComfyUI se habían descartado por el riesgo de
 | Contenedor primero y texto después | Se probó en el recuadro del dato: llegaba vacío y se veía peor. Revertido |
 | Skills oficiales de Remotion (`remotion-dev/skills`) | El repositorio existe; no se instaló para no mezclar instrucciones ajenas con las de estas skills. Sirve como consulta al modificar la plantilla |
 | Precios, paquetes y venta del servicio | Fuera del alcance: aquí solo se hace video |
+
+## 25 de noviembre de 2026 · «Códigos de cámara para Google Flow» (tomas-de-cine-ia.netlify.app)
+
+Pedido de Emi: leer la página completa y llevar a la edición y a la generación de video lo que sirva. Se leyeron con el navegador de Emi las 77 tarjetas (nombre, explicación y texto en inglés) en sus nueve grupos (movimientos de cámara, ángulos, planos y encuadres, tomas aéreas, tiempo y velocidad, luz, estilo y look, audio, «si algo sale mal»), el texto de ayuda y el armador. El orden del armador se comprobó probándolo con una escena de ejemplo y se dejó vacío: escena → códigos en el orden en que se suman → formato al final.
+
+**Licencia.** La página dice «Creado por Yuly» y no trae licencia. Se sigue la regla de esta carpeta: se toma el método y el vocabulario de oficio, reescritos aquí; no se copia el catálogo.
+
+**Contexto real.** Google Flow genera video con Veo a partir de texto. Ninguna de estas skills usa Flow para video: Vox y MILLA animan imágenes fijas de Kie con código y Editor Studio solo genera clips con Kling por Kie, en nivel 3 y con el sí de Emi en cada video. Por eso casi todo el catálogo no aplica tal cual; sirve el lenguaje de cámara para escribir prompts de imagen y de los clips de Kling.
+
+### Qué se adoptó (Editor Studio 0.2.2, Vox Studio 0.14.1, MILLA Video Studio 1.1.2)
+
+| Idea | Dónde quedó |
+|---|---|
+| Un prompt en orden fijo: escena concreta → cámara → luz y acabado → correcciones → formato al final | `editor-studio/ANIMACIONES.md`, «Cómo se escribe el prompt de cada clip» |
+| Por toma, un solo movimiento, un solo ángulo y un solo plano; luz, estilo y correcciones sí se suman | Ese mismo apartado; para imágenes, `vox-studio/TECNICA.md` §5 y `milla-video-studio/references/prompts.md` |
+| Términos de cámara en inglés, escena en español si se quiere | Las tres skills |
+| Cinco movimientos suaves (acercamiento, alejamiento, lateral, paneo, tilt), cada uno ligado a una idea; la cámara sigue fija por defecto | Editor Studio, tabla de movimiento, con su porqué en el plan que Emi aprueba |
+| Ángulos y planos con su efecto (contrapicado = fuerza, picado = vulnerabilidad, cenital = documentos) | Las tres skills |
+| Luz que no delata a la IA (ventana, estudio suave, documental) y piel con poros, sin suavizado | Editor Studio; personas en estilo `foto` de Vox |
+| El formato, al final del prompt e igual al del video que se edita (9:16, 16:9 o 1:1) | Editor Studio; Vox y MILLA ya lo fijan en código |
+| Correcciones por falla: una sola acción, física real, manos correctas, cámara estable, sin texto, mismo personaje de la referencia | Editor Studio, tabla de correcciones; manos y acción única también en Vox y MILLA |
+
+### Descartado, con motivo
+
+| Idea | Por qué no |
+|---|---|
+| Tomas aéreas, FPV, órbita de 360°, efecto vértigo, hyperlapse, momento congelado, cámara lenta, rampa de velocidad, cámara en mano con temblor | Son la firma del video hecho con IA (Emi, 11/11/2026: que nada lo parezca); varias tiemblan, y Vox prohíbe que algo tiemble |
+| Contraluz, luz de borde, neón, rayos, silueta, reflejo, anamórfico, hora dorada y fondo desenfocado en imágenes para recortar | Dejan halo y derrame de color que el recorte no quita; MILLA prohíbe halos (regla 3) |
+| Acabado de animación 3D y «grabado con celular» | El 3D choca con la regla de Vox (por defecto no); el falso video de celular se ve impostado |
+| Códigos de audio (ambiente, diálogo, voz en off, música) | Los insertos entran mudos; la voz es de Fish o ElevenLabs y la música se compone con código |
+| Movimientos de cámara nuevos en Remotion | Ya existen equivalentes: `viaje` (la cámara recorre el lienzo), `barrido` (barrido rápido) y la deriva de zoom; Editor Studio tiene `zoom` |
+
+### Dudas para Emi
+
+- **Google Flow (Veo) como fuente de B-roll.** No se añadió. Tendría que decidir Emi: costo o plan que lo cubra, si sus clips salen con marca de agua visible (MILLA la prohíbe) y si choca con «que nada se vea hecho por IA». Hoy el único video generado previsto es Kling por Kie.
+- **Movimiento suave en Kling.** La regla decía «cámara fija»; ahora admite uno de cinco movimientos suaves solo con porqué escrito y su aprobación del plan. Si Emi prefiere fija siempre, se quita la tabla de movimiento.
+- **Personaje constante con imagen de referencia en Kie.** Sigue sin comprobarse que `nano-banana-2-lite` o Kling por Kie lo mantengan; la corrección «mismo personaje» solo sirve si el modelo acepta la referencia.
