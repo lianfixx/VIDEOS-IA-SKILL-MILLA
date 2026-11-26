@@ -143,3 +143,33 @@ Pedido de Emi: leer la página completa y llevar a la edición y a la generació
 - **Google Flow (Veo) como fuente de B-roll: no por ahora.** El único video generado previsto sigue siendo Kling por Kie. Si se retoma, primero se investigan costo, marca de agua visible y aspecto «hecho por IA».
 - **Movimiento suave en Kling: sí, con motivo.** Queda como está en `editor-studio/ANIMACIONES.md`: cámara fija por defecto y uno de cinco movimientos suaves solo con su porqué escrito en el plan que Emi aprueba.
 - **Personaje constante con imagen de referencia en Kie: todavía no.** No se prueba ni se gasta; se sigue sin personaje recurrente. La corrección «mismo personaje» queda sin comprobar.
+
+## 25 de noviembre de 2026 · Nativo, English Flight Plan, El Último Kilómetro (Imperio Agéntico) y Brújula de Nicho
+
+Pedido de Emi: leer las cuatro páginas palabra por palabra y llevar a la edición y generación de video, y a las páginas que se construyan para vender, lo que sirva. Se leyeron completas con un navegador real (TinyFish), con sus ligas internas: legales de Nativo, presentación y kit de El Último Kilómetro, la guía oficial de Opus 5.5 que cita el kit y la página del CLI de Higgsfield. English Flight Plan es una app cuyo contenido aparece después del registro; se leyeron su pantalla inicial, menú y metadatos. Los repositorios `pbakaus/impeccable`, `Carlos-Dominguez-faber/forja-landing` y `nextlevelbuilder/ui-ux-pro-max-skill` se clonaron en modo lectura, sin ejecutar nada.
+
+**Licencias.** Se toma el método, reescrito aquí; no se copia código ni texto de terceros.
+
+### Qué se adoptó para video (Vox Studio 0.15.0, Editor Studio 0.3.0, MILLA Video Studio 1.2.0)
+
+| Idea | De dónde | Dónde quedó |
+|---|---|---|
+| Video de una página: MP4 H.264 y WebM, el del fondo de menos de 3 MB, con póster y una versión fija para quien pide menos movimiento | Kit de El Último Kilómetro | `scripts/exportar_web.py` (el mismo archivo en las tres skills) y la sección «Versión para página web» |
+| Video que avanza con el scroll: necesita un cuadro clave en cada cuadro para no saltar | Kit (secuencia del implante) | `--scrub` |
+| Cerrar cada entrega con lo que espera a Emi primero, después el resumen, los saldos y lo que no se pudo confirmar | Guía de Opus 5.5 citada por el kit | «Informe al entregar» en las tres skills |
+
+Para páginas de venta (fuera de este repositorio) se creó la skill `paginas-de-venta` en la cuenta de Emi, junto con su estándar web.
+
+### Descartado, con motivo
+
+| Idea | Por qué no |
+|---|---|
+| Higgsfield (CLI y MCP) con GPT Image 2.5 y Seedance 2.5 | Emi, 25/11/2026: «afuera». GPT Image es de OpenAI (prohibido aquí), cobra créditos aparte y Kie ya da Kling. Sus «videos de reseña» con presentadores generados serían testimonios falsos |
+| Impeccable, forja-landing y UI UX Pro Max | Emi, 25/11/2026: instalar «solo si es muy necesario». No lo es: el estándar web de Emi y `paginas-de-venta` ya cubren sus listas. forja-landing además impone cursivas en titulares y una paleta propia que chocan con ese estándar |
+| Contador regresivo, «los primeros 10», precio tachado | Solo si son verdad (LFPC arts. 32 y 48); quedó como regla en `paginas-de-venta`, no aquí |
+| Generar el perfil de voz desde chats de WhatsApp (Nativo) | Emi ya tiene `estilo-emi` para eso |
+
+### Comprobado hoy en este entorno
+
+- `exportar_web.py` con clips sintéticos (vertical, horizontal, con y sin audio, loop que cierra y loop que brinca, tope imposible, póster en otro segundo, errores): ocho pruebas en `skills/vox-studio/scripts/test_exportar_web.py`, más la que exige que las tres copias sean idénticas.
+- No comprobado: un video real de Emi en una página publicada, ni en Safari de iPhone.

@@ -1,5 +1,14 @@
 # Cambios
 
+## 2026-11-25 · Versión para página web e informe de entrega (Vox Studio 0.15.0, Editor Studio 0.3.0, MILLA Video Studio 1.2.0)
+
+- Agente: Claude Code (sesión en la nube; modelo Claude Opus 5.5)
+- Solicitud: Emi, 25/11/2026, sobre Nativo, English Flight Plan, El Último Kilómetro y Brújula de Nicho: «revisa qué nos sirve de aquí e impleméntalo a la Edición de Video y Generación». A la pregunta de si se subía al repositorio: «Razona de manera perfecta y hazlo». Higgsfield: «afuera». Impeccable: «solo si es muy necesario» (no lo es).
+- Cambios: (1) `scripts/exportar_web.py`, idéntico en las tres skills: del archivo final saca `web.mp4` (H.264, faststart), `web.webm` (VP9), `poster.webp`, `poster.jpg` y `web.json`; para fondo en loop quita el audio y sube la compresión hasta 3 MB; `--con-audio` para video explicativo sin tope; `--scrub` para video que avanza con el scroll; `--poster-en`; revisa si el loop cierra sin salto. (2) Sección «Versión para página web» e «Informe al entregar» en los tres `SKILL.md`. (3) `tools/empaquetar_editor.py` reescribe cualquier `python3 skills/editor-studio/scripts/` del paquete. (4) `docs/REFERENCIAS-EXTERNAS.md`: qué se leyó, qué se adoptó y qué se descartó. `MANUAL_COMPLETO.md` regenerado.
+- Archivos: `skills/{vox-studio,editor-studio,milla-video-studio}/{SKILL.md,scripts/exportar_web.py}`, `skills/vox-studio/scripts/test_exportar_web.py`, `tools/empaquetar_editor.py`, `docs/REFERENCIAS-EXTERNAS.md`, `MANUAL_COMPLETO.md` y este registro.
+- Verificación: pruebas y controles exigidos por `ia/REGLAS.md` → ver el commit. `test_exportar_web.py`: 8/8 con clips sintéticos y ffmpeg 6.1.1. No comprobado: un video real de Emi en una página publicada ni en Safari de iPhone.
+- Pendiente: instalar en la app los paquetes nuevos de Vox Studio y Editor Studio (en la cuenta, Vox y MILLA ya tienen la sección por tarjeta, con una ruta del script que estos paquetes corrigen).
+
 ## 2026-11-25 · Decisiones de Emi sobre el lenguaje de cámara y paquetes en la app
 
 - Agente: Claude (claude.ai, panel de Claude in Chrome; modelo Claude Opus 5.5)
