@@ -309,7 +309,7 @@ def unir(cortes: list[dict], fps: int, palabras: list[dict] | None = None) -> li
     def hay_palabra(a: float, b: float) -> bool:
         return any(a - 0.02 <= (p["t0"] + p["t1"]) / 2 <= b + 0.02 for p in palabras or [])
 
-    peso = {"silencio": 0, "muletilla": 1, "manual": 2, "toma": 3}
+    peso = {"silencio": 0, "muletilla": 1, "modismo": 1, "manual": 2, "toma": 3}
     for c in orden:
         c.setdefault("estado", "propuesto")
         pegado = bool(out) and c["t0"] - out[-1]["t1"] < PEGADOS and not hay_palabra(out[-1]["t1"], c["t0"])
@@ -328,7 +328,22 @@ def unir(cortes: list[dict], fps: int, palabras: list[dict] | None = None) -> li
     return out
 
 
-def plan(wav: Path, palabras: list[dict], ritmo: str, fps: int, muletillas: str = "seguras") -> dict:
+def proponer_modismos(palabras: list[dict], fps: int) -> list[dict]:
+    """Modismos que el espacio no quiere oír («güey»): se propone cortarlos, con un respiro a cada lado."""
+    out = []
+    for i, p in enumerate(palabras):
+        if normal(p["txt"]) in MODISMOS:
+            antes = p["t0"] - (palabras[i - 1]["t1"] if i else 0.0)
+            despues = (palabras[i + 1]["t0"] if i + 1 < len(palabras) else p["t1"] + 9) - p["t1"]
+            t0 = _al_cuadro(p["t0"] - min(antes, 0.2) / 2, fps, arriba=True)
+            t1 = _al_cuadro(p["t1"] + min(despues, 0.2) / 2, fps)
+            if t1 - t0 >= MIN_CUADROS / fps:
+                out.append({"t0": t0, "t1": t1, "tipo": "modismo", "texto": p["txt"],
+                            "motivo": "modismo que este espacio no usa: escucha si la frase sigue sonando natural"})
+    return out
+
+
+def plan(wav: Path, palabras: list[dict], ritmo: str, fps: int, muletillas: str = "seguras", modismos: str = "avisar") -> dict:
     muestras, hz = leer_wav(wav)
     db = energia_db(muestras, hz)
     total = len(muestras) / hz
@@ -351,10 +366,13 @@ def plan(wav: Path, palabras: list[dict], ritmo: str, fps: int, muletillas: str 
                     c["estado"] = "dudoso"
         cortes += m
         cortes += proponer_tomas(palabras, fps)
+    if palabras and modismos == "cortar":
+        cortes += proponer_modismos(palabras, fps)
+    censura = [c for c in proponer_censura(palabras) if not (modismos == "cortar" and c["accion"] == "avisar")]
     return {"version": 1, "fps": fps, "ritmo": ritmo, "duracion_crudo_s": round(total, 3),
             "voz_db": round(voz, 1), "piso_db": round(piso, 1), "umbral_db": round(umbral, 1), "muletillas": muletillas,
             "avisos": avisos,
-            "cortes": unir(cortes, fps, palabras), "censura": proponer_censura(palabras), "aprobacion": None,
+            "cortes": unir(cortes, fps, palabras), "censura": censura, "modismos": modismos, "aprobacion": None,
             "creado": time.strftime("%Y-%m-%d %H:%M:%S")}
 
 

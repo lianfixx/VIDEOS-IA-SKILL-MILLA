@@ -335,6 +335,16 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
     forma = revisar_forma(plan)
     if forma:
         return err + forma, avi, []
+    if plan.get("paleta"):
+        pal = (perfil.get("paletas") or {}).get(plan["paleta"])
+        if not pal:
+            err.append(f"paleta «{plan['paleta']}» no existe en espacios/{perfil['espacio']}/paletas.json; "
+                       f"hay: {', '.join(perfil.get('paletas') or {}) or 'ninguna'}")
+        elif not str(pal.get("aprobada_por_emi", "")).strip():
+            err.append(f"la paleta «{plan['paleta']}» no tiene `aprobada_por_emi`: una combinación de colores la decide Emi")
+        elif sorted(pal.get("colores", {})) != ["acento", "apoyo", "papel", "tinta"] or not all(
+                re.fullmatch(r"#[0-9A-Fa-f]{6}", str(v)) for v in pal["colores"].values()):
+            err.append(f"la paleta «{plan['paleta']}» debe traer papel, tinta, acento y apoyo en hexadecimal (#RRGGBB)")
     nivel = plan.get("nivel")
     if nivel not in (1, 2, 3) or isinstance(nivel, bool):
         err.append("falta `nivel` (1, 2 o 3, como número): se le explican los tres a Emi y elige")
@@ -557,8 +567,17 @@ def validar(plan: dict, brief: dict, perfil: dict, palabras: list[dict], duracio
     # sonido
     son = plan.get("sonido") or {}
     mus = son.get("musica") or {}
-    if mus.get("decision") not in ("ninguna", "archivo"):
-        err.append("sonido.musica.decision debe ser «ninguna» o «archivo» (la pista se le pregunta a Emi en cada video)")
+    if mus.get("decision") not in ("ninguna", "archivo", "codigo"):
+        err.append("sonido.musica.decision debe ser «ninguna», «codigo» (compuesta aquí, sin derechos de terceros) o «archivo» "
+                   "(la pista se le pregunta a Emi en cada video)")
+    if mus.get("decision") == "codigo":
+        try:
+            import sonido as SON
+            animos = set(SON.ANIMOS)
+        except ImportError:
+            animos = {"tension", "energia", "serio", "ironia", "motivacion"}
+        if mus.get("animo") not in animos:
+            err.append(f"sonido.musica.animo debe ser uno de {sorted(animos)} para componer la pista")
     if mus.get("decision") == "archivo" and (mus.get("archivo") not in archivos or not str(mus.get("origen", "")).strip()):
         err.append("sonido.musica: falta el archivo en assets/ o su `origen` (de dónde salió y con qué derecho se usa)")
     if mus.get("decision") == "archivo" and str(mus.get("archivo", "")).lower().rsplit(".", 1)[-1] not in ("mp3", "wav", "m4a", "aac", "flac", "ogg"):
@@ -614,6 +633,8 @@ def armar_html(plan: dict, piezas: list[dict], perfil: dict, grupos: list[dict],
     formato = plan.get("formato", "9:16")
     W, H = FORMATOS[formato]
     ed, col = perfil["edicion"], perfil["colores"]
+    if plan.get("paleta") and (perfil.get("paletas") or {}).get(plan["paleta"]):
+        col = perfil["paletas"][plan["paleta"]]["colores"]           # paleta aprobada por Emi para una serie
     titular, texto = ed.get("fuente_titular", perfil.get("titular", "Anton")), ed.get("fuente_texto", "Inter")
     sub = {**(ed.get("subtitulos") or {}), **(plan.get("subtitulos") or {})}
     zonas = ZONAS[formato]

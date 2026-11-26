@@ -1,5 +1,5 @@
 {
- "_doc": "Estilo de EDICIÓN de este espacio (Editor Studio). La marca vive en perfil.json. Candidato hasta que Emi lo apruebe sobre un video real; pasar `estado` a «aprobado» se hace a mano, con su aprobación registrada. El validador CUMPLE: nivel_tope, sonido.densidad, subtitulos, movimiento, fuentes y marca_en_pantalla. Son notas para quien edita (no las comprueba el código): humor, groserias, modismos, quienes_salen, cierres y referencias.",
+ "_doc": "Estilo de EDICIÓN de este espacio (Editor Studio). La marca vive en perfil.json. Candidato hasta que Emi lo apruebe sobre un video real; pasar `estado` a «aprobado» se hace a mano, con su aprobación registrada. El validador CUMPLE: nivel_tope, sonido.densidad, subtitulos, movimiento, fuentes, marca_en_pantalla y modismos_accion («cortar»: se propone cortar «güey» y similares). Son notas para quien edita (no las comprueba el código): humor, groserias, modismos, quienes_salen, cierres y referencias.",
  "estado": "candidato",
  "nivel_partida": 2,
  "nivel_tope": 3,
@@ -21,11 +21,12 @@
   "densidad": "media"
  },
  "groserias": "tapar",
- "modismos": "se quedan (pendiente de confirmar con Emi)",
+ "modismos": "se quitan: Emi, 13/11/2026: «Güey, quítalo, suena horrible»",
  "humor": "sí: sarcasmo en texto y remates; nunca a costa del dato",
  "quienes_salen": "Emi",
  "marca_en_pantalla": null,
  "cierres": [],
  "referencias": [],
- "actualizado": "2026-11-11"
+ "actualizado": "2026-11-11",
+ "modismos_accion": "cortar"
 }

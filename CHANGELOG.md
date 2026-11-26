@@ -1,5 +1,23 @@
 # Cambios
 
+## 2026-11-26 · Editor Studio 0.3.1: se juntan la versión web y el lenguaje de cámara con la paleta, la música por código y los modismos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: el PR #9 (Editor Studio 0.2.2 y 0.2.3 de esta rama: paletas de serie, música por código y modismos) quedó en conflicto tres veces al entrar a `main` el lenguaje de cámara (registrado como Editor 0.2.2), las decisiones de cámara y la versión para página web (Editor 0.3.0).
+- Cambios: se fusiona `main` en la rama del PR. Las líneas de trabajo no se tocan entre sí (paletas, música y modismos en scripts y `OFICIO.md`; lenguaje de cámara en `ANIMACIONES.md`; versión web en `exportar_web.py` y su sección de `SKILL.md`); solo chocaban la versión de `SKILL.md` y este registro. Juntas quedan como 0.3.1. Las entradas anteriores se dejan como se escribieron: el «0.2.2» del lenguaje de cámara y el «0.2.2» de las paletas son dos cambios distintos hechos en paralelo.
+- Archivos: `skills/editor-studio/SKILL.md` y este registro.
+- Verificación: pruebas de milla-video-studio 43/43, vox-studio 90/90, pizarra-studio 22/22, editor-studio 112/112, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; paquete de Editor (58 archivos, con `exportar_web.py`, `sonido.py` y `paletas.json`) sin enlaces rotos → aprobado; `MANUAL_COMPLETO.md` regenerado sin cambios.
+- Pendiente: que Emi o Muse fusionen el PR #9. Después, reemplazar en la app el paquete de Editor Studio (el instalado el 25/11 es el 0.2.2, sin paleta, música por código ni modismos) por el 0.3.1.
+
+## 2026-11-25 · Editor Studio 0.2.4: se juntan el lenguaje de cámara y la paleta, la música por código y los modismos
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: el PR #9 (Editor Studio 0.2.2 y 0.2.3 de esta rama) quedó en conflicto al entrar a `main` el lenguaje de cámara, registrado ahí también como Editor Studio 0.2.2.
+- Cambios: se fusiona `main` en la rama del PR. Las dos líneas de trabajo no se tocan entre sí (paletas, música y modismos en scripts y `OFICIO.md`; lenguaje de cámara en `ANIMACIONES.md`); solo chocaba el número de versión de `SKILL.md`. Juntas quedan como 0.2.4. Las entradas anteriores de este registro se dejan como se escribieron: el «0.2.2» del lenguaje de cámara y el «0.2.2» de las paletas son dos cambios distintos que se hicieron en paralelo.
+- Archivos: `skills/editor-studio/SKILL.md` y este registro.
+- Verificación: pruebas de milla-video-studio 43/43, vox-studio 82/82, pizarra-studio 22/22, editor-studio 112/112, radar 11/11 e `ia/test_guard.py` → aprobado; `check_skill` de las cuatro skills con sus puentes → aprobado; paquete de Editor (57 archivos) sin enlaces rotos → aprobado; `MANUAL_COMPLETO.md` regenerado sin cambios.
+- Pendiente: que Emi o Muse fusionen el PR #9. Después, reemplazar en la app el paquete de Editor Studio 0.2.2 (instalado el 25/11) por el 0.2.4, que suma la paleta, la música por código y los modismos.
+
 ## 2026-11-25 · Versión para página web e informe de entrega (Vox Studio 0.15.0, Editor Studio 0.3.0, MILLA Video Studio 1.2.0)
 
 - Agente: Claude Code (sesión en la nube; modelo Claude Opus 5.5)
@@ -44,6 +62,24 @@
 - Archivos: `skills/vox-studio/SKILL.md`, `espacios/personal/{perfil.json,MARCA.md,aprendizajes.md}` y este registro.
 - Verificación: el archivo enlazado existe; `vox.py espacios`, `ia/check_skill.py` y pruebas de vox-studio → aprobado.
 - Pendiente: avisar a la Matriz de Redes y a `tiktok-studio` con fecha y commit. Para Emi: el puente de TikTok pide «sin voces realistas hechas con IA»; la voz de Vox (ElevenLabs) lo es, y eso lo decide él con la sesión de TikTok.
+
+## 2026-11-13 · Editor Studio 0.2.3: música compuesta por código y modismos fuera en el espacio personal
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: respuestas de Emi del 13/11/2026 a las preguntas de Editor Studio, recogidas por la sesión «Matriz de Redes» y registradas en lianfixx/redes `docs/DECISIONES-EMI-2026-11-13.md`; Emi autorizó en esta sesión enviarle esas preguntas.
+- Cambios: `sonido.musica.decision: "codigo"` con `animo` compone una pista original con el compositor de Vox Studio (`sonido.py`), a la medida del video y 18 LU bajo la voz; el empaquetador lleva `sonido.py`. `modismos_accion: "cortar"` en `edicion.json` hace que `cortes` proponga cortar «güey» y similares en vez de solo avisar; activado en el espacio personal («Güey, quítalo, suena horrible»). Las demás respuestas (marcas nombradas, «datos de ejemplo», cierre con pregunta, nivel 2 con gancho en 3, ironía sin efectos de chiste, nadie más a cuadro, guion y tres ganchos antes de grabar) quedan en `espacios/APRENDIZAJES-EDICION.md`.
+- Archivos: `skills/editor-studio/{SKILL.md,OFICIO.md}`, `skills/editor-studio/scripts/{corte.py,editor.py,montaje.py,test_editor.py}`, `tools/empaquetar_editor.py`, `espacios/personal/edicion.json`, `espacios/APRENDIZAJES-EDICION.md` y este registro.
+- Verificación: pruebas de editor-studio 112/112 (cuatro nuevas: modismos cortados, música por código validada, pista compuesta a la medida y bajo la voz, espacio personal configurado) → aprobado; paquete sin enlaces rotos → aprobado.
+- Pendiente: escuchar la pista compuesta con un video real de Emi.
+
+## 2026-11-13 · Editor Studio 0.2.2: paletas de serie y la paleta «ia-derecho»
+
+- Agente: Claude Code (sesión en la nube)
+- Solicitud: Emi, 13/11/2026, para sus cuatro videos de IA + Derecho del espacio personal: «Usa también esos de castorena y los que acabas de crear por favor» (combinar su marca personal con los colores de Castorena).
+- Cambios: una serie de videos puede llevar una paleta propia sin tocar la marca del espacio: `espacios/<espacio>/paletas.json` (cada paleta con `aprobada_por_emi` y su origen) y `"paleta"` en `plan.json`; el validador rechaza una paleta inexistente, sin aprobación o con colores mal escritos. Paleta `ia-derecho` en el espacio personal: papel #F4ECD6 y acento #FF5A1F (marca personal), tinta #0D1B2A y apoyo #C8A96B (Castorena). La marca de `perfil.json` y los demás espacios no cambian.
+- Archivos: `espacios/personal/paletas.json` (nuevo), `skills/editor-studio/scripts/{comun.py,montaje.py,test_editor.py}`, `skills/editor-studio/OFICIO.md` y este registro.
+- Verificación: pruebas de editor-studio con dos nuevas (paleta de serie; la de este repositorio está aprobada y se lee: contraste papel/tinta 7 o más, acento sobre oscuro 4.5 o más) → aprobado; clip de prueba armado con la paleta y cuadros de muestra mirados → se lee en títulos, dato, panel, sello y cierre.
+- Pendiente: ver la paleta sobre el primer video real de Emi.
 
 ## 2026-11-13 · Vox Studio 0.13.1: ideas de temas desde la skill de LinkedIn
 

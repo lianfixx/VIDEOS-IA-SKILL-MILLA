@@ -70,6 +70,7 @@ def perfil(espacio: str) -> dict:
     base = dir_espacios() / espacio
     p = leer_json(base / "perfil.json")
     p["edicion"] = leer_json(base / "edicion.json")
+    p["paletas"] = leer_json(base / "paletas.json").get("paletas", {}) if (base / "paletas.json").exists() else {}
     p["espacio"] = espacio
     return p
 
