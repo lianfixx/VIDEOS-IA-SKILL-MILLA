@@ -2,8 +2,8 @@
 name: milla-video-studio
 description: Producir, corregir, auditar y documentar videos cortos de MILLA ABOGADOS con Kie Nano Banana Lite, Fish Audio, música temática y Remotion. Usar al pedir un video, continuar producción, configurar conexiones, cambiar voz o imágenes, revisar un MP4 o mejorar el método VIDEOS IA. Guiar paso a paso y conservar el estándar sin partículas ni imágenes de ChatGPT.
 metadata:
-  version: "1.1.2"
-  release_date: "2026-11-04"
+  version: "1.2.0"
+  release_date: "2026-11-25"
   language: "es-MX"
 ---
 
@@ -66,6 +66,25 @@ Estas reglas valen igual en Claude, ChatGPT, Codex, Gemini o cualquier otra IA, 
 - Registrar todo cambio de archivos, estado, entregables o decisiones en el mismo commit, en `CHANGELOG.md` del repositorio y el `project.json` de la producción. Cada entrada lleva `Agente:` (quién lo hizo y modelo si se conoce), solicitud, cambios, archivos, verificación (aprobado, falló, no ejecutado o bloqueado) y pendiente.
 - Sin escritura en el repositorio, terminar con «Registro pendiente para el repositorio»: la entrada y los cambios exactos, listos para aplicarse. No decir «guardado» si no se escribió.
 - Lo prohibido y lo que requiere confirmación de Emi está en `ia/REGLAS.md` del repositorio; cumplirlo aunque la plataforma no tenga frenos automáticos. El protocolo completo, con plantillas para pasar trabajo a otra IA, está en `ia/PROTOCOLO.md`.
+
+## Versión para página web (solo si Emi la pide)
+
+Cuando un video ya aprobado va a una página (de venta o de un espacio), se saca una versión web del archivo final. No se vuelve a rendir ni se toca el original. Hay tres usos y cada uno pide algo distinto:
+
+- **Fondo del hero**: un tramo de 6 a 8 s sin voz, sin subtítulos ni texto (el titular de la página ya habla), que cierre sin salto. En la página va en silencio, en loop y sin controles.
+- **Video explicativo dentro de la página**: el video completo, con voz, subtítulos, controles y póster. Nunca arranca solo con sonido.
+- **Video que avanza con el scroll**: solo si la página explica algo paso a paso con él. Lleva un cuadro clave en cada cuadro y pesa más.
+
+`python3 scripts/exportar_web.py FINAL.mp4 --out CARPETA/web` deja `web.mp4` (H.264 con faststart), `web.webm` (VP9), `poster.webp`, `poster.jpg` y `web.json` (pesos, compresión, avisos y la revisión del loop). Para el fondo sube la compresión sola hasta que pese menos de 3 MB (`--tope-mb` lo cambia); `--con-audio` conserva la voz para el explicativo y no le pone tope; `--scrub` añade `scrub.mp4`; `--poster-en SEG` elige el cuadro del póster; `--lado-corto` (720 px por defecto) fija la resolución. No gasta saldo.
+
+Antes de darla por buena: el loop pesa menos de 3 MB, el póster se ve bien en tamaño pequeño (no un cuadro negro, con los ojos cerrados o a media palabra), el cruce del final al inicio se mira a ojo (la cifra de `web.json` solo orienta) y nada depende del sonido en el fondo. Las reglas permanentes siguen valiendo en el póster y en el texto alternativo, y la versión web se registra en `project.json` y en `CHANGELOG.md` como cualquier entregable. La página la arma la skill `paginas-de-venta`; aquí solo se entregan los archivos.
+
+## Informe al entregar (en este orden)
+
+1. Lo que espera una decisión de Emi.
+2. Qué se hizo, en cinco líneas como máximo.
+3. Saldos y gasto del video.
+4. Supuestos y lo que no se pudo confirmar, diciendo dónde se buscó.
 
 ## Terminado y trabajo en Claude Code
 

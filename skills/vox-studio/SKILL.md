@@ -2,8 +2,8 @@
 name: vox-studio
 description: "Producir shorts verticales 9:16 estilo documental-collage (tipo Vox) con Remotion para los espacios de Emi (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado. Usar al pedir un short, video explicativo o video estilo Vox, al cambiar la marca de un espacio o al auditar y corregir animaciones, recortes, transiciones o subtítulos. Pregunta siempre la opinión de Emi antes del guion, aprende de cada video e informa los saldos al entregar."
 metadata:
-  version: "0.14.1"
-  release_date: "2026-11-24"
+  version: "0.15.0"
+  release_date: "2026-11-25"
   language: "es-MX"
 ---
 
@@ -182,6 +182,25 @@ Reglas para cualquier caso que no sea el primero:
 - Si no se puede leer `espacios/` (copia vieja o incompleta), avisar que la skill instalada está desactualizada y que la vigente está en `main` del repositorio.
 
 El paquete para la app se genera con `python3 tools/empaquetar_vox.py` y lleva los espacios y la guía de entrevista de pizarra dentro.
+
+## Versión para página web (solo si Emi la pide)
+
+Cuando un video ya aprobado va a una página (de venta o de un espacio), se saca una versión web del archivo final. No se vuelve a rendir ni se toca el original. Hay tres usos y cada uno pide algo distinto:
+
+- **Fondo del hero**: un tramo de 6 a 8 s sin voz, sin subtítulos ni texto (el titular de la página ya habla), que cierre sin salto. En la página va en silencio, en loop y sin controles.
+- **Video explicativo dentro de la página**: el video completo, con voz, subtítulos, controles y póster. Nunca arranca solo con sonido.
+- **Video que avanza con el scroll**: solo si la página explica algo paso a paso con él. Lleva un cuadro clave en cada cuadro y pesa más.
+
+`python3 skills/vox-studio/scripts/exportar_web.py FINAL.mp4 --out CARPETA/web` deja `web.mp4` (H.264 con faststart), `web.webm` (VP9), `poster.webp`, `poster.jpg` y `web.json` (pesos, compresión, avisos y la revisión del loop). Para el fondo sube la compresión sola hasta que pese menos de 3 MB (`--tope-mb` lo cambia); `--con-audio` conserva la voz para el explicativo y no le pone tope; `--scrub` añade `scrub.mp4`; `--poster-en SEG` elige el cuadro del póster; `--lado-corto` (720 px por defecto) fija la resolución. No gasta saldo.
+
+Antes de darla por buena: el loop pesa menos de 3 MB, el póster se ve bien en tamaño pequeño (no un cuadro negro, con los ojos cerrados o a media palabra), el cruce del final al inicio se mira a ojo (la cifra de `web.json` solo orienta) y nada depende del sonido en el fondo. Para el fondo, el tramo se recorta del render final o se arma como composición corta aparte. La página la arma la skill `paginas-de-venta`; aquí solo se entregan los archivos.
+
+## Informe al entregar (en este orden)
+
+1. Lo que espera una decisión de Emi.
+2. Qué se hizo, en cinco líneas como máximo.
+3. La tabla de saldos.
+4. Supuestos y lo que no se pudo confirmar, diciendo dónde se buscó.
 
 ## Terminado
 
