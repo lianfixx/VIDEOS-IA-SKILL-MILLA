@@ -35,7 +35,7 @@ with tempfile.TemporaryDirectory() as tmp:
         t = md.read_text(encoding="utf-8")
         if md.parent == destino:
             t = t.replace("](../../cerebro/CEREBRO.md)", "](cerebro/CEREBRO.md)").replace("](../../espacios/", "](espacios/")
-            t = t.replace("python3 skills/editor-studio/scripts/editor.py", "python3 scripts/editor.py")
+            t = t.replace("python3 skills/editor-studio/scripts/", "python3 scripts/")
         # cualquier enlace a otra skill (no viaja en el paquete) queda como texto
         t = re.sub(r"\[([^\]]+)\]\((?:\.\./)+(?:skills/)?(?:vox-studio|pizarra-studio|milla-video-studio|editor-studio)/[^)]*\)", r"\1", t)
         t = re.sub(r"\[([^\]]+)\]\(\.\./espacios/[^)]*\)", r"\1", t) if md.parent.name == "cerebro" else t

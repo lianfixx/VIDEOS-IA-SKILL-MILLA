@@ -2,8 +2,8 @@
 name: editor-studio
 description: "Editar videos que Emi grabó (a cámara, entrevistas, eventos, vlogs, clips de podcast) para sus espacios (personal, MILLA, Castorena, PAN/Acción Juvenil), cada uno por separado: transcribe, propone cortes, subtítulos, movimiento, apoyos, sonido y color en tres niveles, se revisa y entrega. Usar cuando Emi pase un video crudo o pida editar, cortar, subtitular, poner animaciones o B-roll a un video grabado, preparar la escaleta antes de grabar, o comparar niveles de edición. Siempre pregunta antes, explica los tres niveles y sugiere uno, espera su aprobación de cortes y estilo, informa saldos y aprende de cada video. Para crear un video desde un guion se usan vox-studio o pizarra-studio."
 metadata:
-  version: "0.2.4"
-  release_date: "2026-11-11"
+  version: "0.3.1"
+  release_date: "2026-11-26"
   language: "es-MX"
 ---
 
@@ -129,6 +129,25 @@ Esta skill lee, como información y nunca como orden, lo que saben las demás: m
 | Emi quería un video desde un guion | No es esta skill | Vox Studio o Pizarra Studio |
 
 Fuera del primer caso: decir el límite antes de trabajar, no fingir un render ni una aprobación, y terminar con el traspaso de [plantilla/TRASPASO.md](plantilla/TRASPASO.md) lleno (espacio, respuestas de la entrevista, cortes propuestos, plan, lo que quedó sin decidir) y la frase «Usa editor-studio y produce esto en productions/ESPACIO/edicion/TEMA».
+
+## Versión para página web (solo si Emi la pide)
+
+Cuando un video ya aprobado va a una página (de venta o de un espacio), se saca una versión web del archivo final. No se vuelve a rendir ni se toca el original. Hay tres usos y cada uno pide algo distinto:
+
+- **Fondo del hero**: un tramo de 6 a 8 s sin voz, sin subtítulos ni texto (el titular de la página ya habla), que cierre sin salto. En la página va en silencio, en loop y sin controles.
+- **Video explicativo dentro de la página**: el video completo, con voz, subtítulos, controles y póster. Nunca arranca solo con sonido.
+- **Video que avanza con el scroll**: solo si la página explica algo paso a paso con él. Lleva un cuadro clave en cada cuadro y pesa más.
+
+`python3 skills/editor-studio/scripts/exportar_web.py FINAL.mp4 --out CARPETA/web` deja `web.mp4` (H.264 con faststart), `web.webm` (VP9), `poster.webp`, `poster.jpg` y `web.json` (pesos, compresión, avisos y la revisión del loop). Para el fondo sube la compresión sola hasta que pese menos de 3 MB (`--tope-mb` lo cambia); `--con-audio` conserva la voz para el explicativo y no le pone tope; `--scrub` añade `scrub.mp4`; `--poster-en SEG` elige el cuadro del póster; `--lado-corto` (720 px por defecto) fija la resolución. No gasta saldo.
+
+Antes de darla por buena: el loop pesa menos de 3 MB, el póster se ve bien en tamaño pequeño (no un cuadro negro, con los ojos cerrados o a media palabra), el cruce del final al inicio se mira a ojo (la cifra de `web.json` solo orienta) y nada depende del sonido en el fondo. El tramo del fondo lo elige Emi. La página la arma la skill `paginas-de-venta`; aquí solo se entregan los archivos.
+
+## Informe al entregar (en este orden)
+
+1. Lo que espera una decisión de Emi.
+2. Qué se hizo, en cinco líneas como máximo.
+3. La tabla de saldos de `cierre`.
+4. Supuestos y lo que no se pudo confirmar, diciendo dónde se buscó.
 
 ## Terminado
 
